@@ -8,6 +8,7 @@ import logging
 import uuid
 import threading
 import tempfile
+import html
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telebot import TeleBot
 from telebot.types import (
@@ -618,15 +619,21 @@ def generate_and_show_preview(chat_id, uid, data):
     # Send preview
     header = (
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📖 <b>{data.get('book_title', '')}</b> ፕሮቶኮል\n"
-        f"👤 {data.get('age_range', '')} | {data.get('gender', '')} | {data.get('goal', '')}\n"
+        f"📖 <b>{html.escape(data.get('book_title', ''))}</b> ፕሮቶኮል\n"
+        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))} | {html.escape(data.get('goal', ''))}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     )
     # Truncate preview if too long for Telegram (4096 chars max)
     max_len = 4096 - len(header) - 200
     display_preview = preview[:max_len] if len(preview) > max_len else preview
 
-    bot.send_message(chat_id, header + display_preview, parse_mode="HTML" if "<" not in display_preview else None)
+    # If the markdown preview has unescaped HTML-like characters, avoid HTML parse_mode
+    use_html = "<" not in display_preview and "&" not in display_preview
+    
+    try:
+        bot.send_message(chat_id, header + display_preview, parse_mode="HTML" if use_html else None)
+    except Exception:
+        bot.send_message(chat_id, header.replace("<b>", "").replace("</b>", "") + display_preview)
 
     # CTA
     bot.send_message(
@@ -705,12 +712,18 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         return
 
     # Send PDF
-    with open(tmp_path, "rb") as f:
-        doc = bot.send_document(
-            chat_id, f,
-            caption=f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n📖 {data.get('book_title', '')}\n👤 {data.get('age_range', '')} | {data.get('goal', '')}",
-            parse_mode="HTML",
-        )
+    try:
+        with open(tmp_path, "rb") as f:
+            doc = bot.send_document(
+                chat_id, f,
+                caption=f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n📖 {html.escape(data.get('book_title', ''))}\n👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('goal', ''))}",
+                parse_mode="HTML",
+            )
+    except Exception as e:
+        logging.error(f"Failed to send PDF doc: {e}")
+        # fallback without HTML
+        with open(tmp_path, "rb") as f:
+            doc = bot.send_document(chat_id, f, caption=f"ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!\n{data.get('book_title', '')}")
 
     # Save to database
     order_id = data.get("order_id")
@@ -742,9 +755,9 @@ def generate_and_deliver_pdf(chat_id, uid, data):
     # Notify admin
     notify_admin(
         f"🔔 <b>PDF ተላልፏል!</b>\n"
-        f"👤 {data.get('gender', '')} | {data.get('age_range', '')}\n"
-        f"📖 {data.get('book_title', '')}\n"
-        f"🎯 {data.get('goal', '')}"
+        f"👤 {html.escape(data.get('gender', ''))} | {html.escape(data.get('age_range', ''))}\n"
+        f"📖 {html.escape(data.get('book_title', ''))}\n"
+        f"🎯 {html.escape(data.get('goal', ''))}"
     )
 
     # Ask for rating

@@ -757,19 +757,20 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         except Exception:
             pass
 
-    # Show referral CTA instead of rating
-    show_referral_cta(chat_id, uid)
+    # Show tip CTA instead of referral
+    show_tip_cta(chat_id)
     
     clear_state(uid)
 
 
-def show_referral_cta(chat_id, uid):
-    bot_info = bot.get_me()
-    link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
+def show_tip_cta(chat_id):
     bot.send_message(
         chat_id,
-        f"🎁 <b>ጓደኛዎን ይጋብዙ፣ ነጻ PDF ያግኙ!</b>\n\n"
-        f"🔗 <code>{link}</code>",
+        "☕ <b>ስራችንን ከወደዱት ሊደግፉን ይችላሉ!</b>\n\n"
+        "ይህን ፕሮቶኮል ጠቃሚ ሆኖ ካገኙት፣ ከታች ባለው አካውንት የፈለጉትን ያህል ስጦታ በመላክ ቡድናችንን ማበረታታት ይችላሉ፦\n\n"
+        f"📱 Telebirr: <code>{config.TELEBIRR_PHONE}</code>\n"
+        f"👤 ስም: <b>{config.TELEBIRR_NAME}</b>\n\n"
+        "🙏 ከልብ እናመሰግናለን!",
         parse_mode="HTML",
     )
 

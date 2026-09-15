@@ -1,5 +1,10 @@
-import logging
 import os
+# SSL fix for local Windows development only (not needed on Render)
+if os.environ.get("DEV_MODE"):
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+import logging
 import uuid
 import threading
 import tempfile

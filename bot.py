@@ -18,7 +18,7 @@ from telebot.types import (
 import config
 import database
 import ai_engine
-import pdf_generator
+import telegraph_generator
 
 logging.basicConfig(level=logging.INFO)
 
@@ -690,8 +690,8 @@ def show_payment_instructions(chat_id, amount):
 
 
 def generate_and_deliver_pdf(chat_id, uid, data):
-    """Generate full protocol PDF and deliver it."""
-    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ PDF ፕሮቶኮልዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
+    """Generate full protocol and deliver it."""
+    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ ፕሮቶኮልዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
 
     full_text = ai_engine.generate_full_protocol(
         data.get("book_title", ""),
@@ -706,42 +706,41 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።")
         return
 
-    # Generate PDF
-    safe_title = data.get("book_title", "Protocol").replace(" ", "_")[:30]
-    tmp_path = os.path.join(tempfile.gettempdir(), f"baya_{uid}_{safe_title}.pdf")
-
-    success = pdf_generator.markdown_to_pdf(full_text, tmp_path, data.get("book_title", "Protocol"))
+    # Generate Telegraph URL
+    page_url = telegraph_generator.create_protocol_page(
+        data.get("book_title", "Baya Books Protocol"), 
+        full_text
+    )
 
     bot.delete_message(chat_id, loading.message_id)
 
-    if not success or not os.path.exists(tmp_path):
-        bot.send_message(chat_id, "⚠️ PDF ሊፈጠር አልቻለም። @Bayabooks ያናግሩን።")
+    if not page_url:
+        bot.send_message(chat_id, "⚠️ የቴክኒክ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።")
         return
 
-    # Send PDF
+    # Send Link
+    msg_text = (
+        f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n"
+        f"📖 <b>{html.escape(data.get('book_title', ''))}</b>\n"
+        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('goal', ''))}\n\n"
+        f"👇 <b>ከታች ያለውን ሊንክ ተጭነው ያንብቡ:</b>\n"
+        f"{page_url}"
+    )
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("📖 ፕሮቶኮልዎን ያንብቡ", url=page_url))
+    
     try:
-        with open(tmp_path, "rb") as f:
-            doc = bot.send_document(
-                chat_id, f,
-                caption=f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n📖 {html.escape(data.get('book_title', ''))}\n👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('goal', ''))}",
-                parse_mode="HTML",
-            )
+        sent_msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
     except Exception as e:
-        logging.error(f"Failed to send PDF doc: {e}")
-        # fallback without HTML
-        with open(tmp_path, "rb") as f:
-            doc = bot.send_document(chat_id, f, caption=f"ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!\n{data.get('book_title', '')}")
+        logging.error(f"Failed to send Telegraph link: {e}")
+        sent_msg = bot.send_message(chat_id, f"ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!\n{page_url}")
 
     # Save to database
     order_id = data.get("order_id")
     if order_id:
-        database.update_order_full(order_id, full_text, doc.document.file_id)
-
-    # Clean up temp file
-    try:
-        os.remove(tmp_path)
-    except Exception:
-        pass
+        # Save the URL instead of file_id
+        database.update_order_full(order_id, full_text, page_url)
 
     # Handle referral reward
     referrer_id = database.get_referrer(uid)
@@ -761,7 +760,7 @@ def generate_and_deliver_pdf(chat_id, uid, data):
 
     # Notify admin
     notify_admin(
-        f"🔔 <b>PDF ተላልፏል!</b>\n"
+        f"🔔 <b>ፕሮቶኮል ተላልፏል!</b>\n"
         f"👤 {html.escape(data.get('gender', ''))} | {html.escape(data.get('age_range', ''))}\n"
         f"📖 {html.escape(data.get('book_title', ''))}\n"
         f"🎯 {html.escape(data.get('goal', ''))}"

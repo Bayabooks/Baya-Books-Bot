@@ -195,19 +195,22 @@ def send_welcome(chat_id, first_name):
     )
 
     credits = database.get_credits(chat_id)
-    credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} PDF(s)</b>\n" if credits > 0 else ""
+    credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} ፕሮቶኮል</b>\n" if credits > 0 else ""
+
+    previews_left, _ = database.get_preview_quota(chat_id)
+    preview_line = f"🎁 <b>{previews_left} ነጻ የሙከራ ምርመራዎች (Free Trials) አልዎት!</b>\n" if previews_left > 0 else "🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n"
 
     bot.send_message(
         chat_id,
         f"🕊️ <b>እንኳን ወደ Baya Books በደህና መጡ!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{preview_line}{credit_line}\n"
         f"የአለማችን ምርጥ መጽሐፍት ጥበብ ለእርስዎ\n"
         f"ህይወት ብቻ የተዘጋጀ ግላዊ የለውጥ መመሪያ\n"
         f"እናዘጋጃለን።\n\n"
         f"📖 መጽሐፍ ይምረጡ → ጥያቄዎችን ይመልሱ →\n"
-        f"✨ ግላዊ የለውጥ PDF ያግኙ!\n"
-        f"{credit_line}\n"
-        f"ከየትኛው ይጀምራሉ?",
+        f"🔥 ህይወትዎን የሚቀይር መመሪያ ያግኙ!\n\n"
+        f"👇 ከታች ያለውን በመጫን ይጀምሩ:",
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -306,6 +309,46 @@ def cmd_admin(message):
         reply_markup=markup, parse_mode="HTML",
     )
 
+def enforce_preview_quota(uid, chat_id, call_id=None):
+    if str(uid) in config.ADMIN_IDS:
+        return True
+    previews_left, timer_start = database.get_preview_quota(uid)
+    if previews_left > 0:
+        return True
+        
+    if call_id:
+        bot.answer_callback_query(call_id, "🚫 የነጻ ምርመራ ኮታዎ አልቋል!", show_alert=True)
+        
+    from datetime import datetime, timedelta
+    try:
+        start_dt = datetime.fromisoformat(timer_start)
+    except:
+        start_dt = datetime.now() - timedelta(hours=24)
+        
+    time_left = (start_dt + timedelta(hours=24)) - datetime.now()
+    if time_left.total_seconds() < 0:
+        time_left = timedelta(seconds=0)
+        
+    hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+    minutes, _ = divmod(remainder, 60)
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("💳 100 ብር - 3 ምርመራ ይግዙ", callback_data="buy_previews"),
+        InlineKeyboardButton("📖 የጀመሩትን ፕሮቶኮል ይግዙ", callback_data="show_drafts")
+    )
+    
+    bot.send_message(
+        chat_id,
+        f"🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n\n"
+        f"⏳ በድጋሚ በነጻ ለማግኘት: <b>{hours} ሰዓት ከ {minutes} ደቂቃ</b> ይጠብቁ።\n\n"
+        f"<b>ወይም አሁኑኑ ይክፈቱ፡</b>\n"
+        f"1️⃣ 100 ብር በመክፈል 3 ምርመራዎችን ያግኙ\n"
+        f"2️⃣ <b>የጀመሩትን ሙሉ ፕሮቶኮል ይግዙ!</b>\n(ሙሉውን ሲገዙ ተጨማሪ 3 ምርመራ በቦነስ ያገኛሉ!)\n",
+        parse_mode="HTML", reply_markup=markup
+    )
+    return False
+
 # ══════════════════════════════════════════
 #  CALLBACK HANDLER (The Brain)
 # ══════════════════════════════════════════
@@ -338,6 +381,7 @@ def handle_callback(call):
 
     # ── Start: "I have a book" ───────────────
     if data == "has_book":
+        if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_BOOK_INPUT")
         bot.send_message(
@@ -349,6 +393,7 @@ def handle_callback(call):
 
     # ── Start: "Choose for me" ───────────────
     if data == "choose_for_me":
+        if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_CATEGORY")
         markup = InlineKeyboardMarkup(row_width=1)
@@ -359,6 +404,35 @@ def handle_callback(call):
             "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል\nትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
             parse_mode="HTML", reply_markup=markup,
         )
+        return
+
+    # ── Buy Previews Top-Up ──────────────────
+    if data == "buy_previews":
+        bot.answer_callback_query(call.id)
+        show_payment_instructions(chat_id, 100)
+        set_state(uid, "AWAITING_RECEIPT_TOPUP")
+        return
+
+    # ── Show Drafts ──────────────────────────
+    if data == "show_drafts":
+        bot.answer_callback_query(call.id)
+        drafts = database.get_user_drafts(uid)
+        if not drafts:
+            bot.send_message(chat_id, "ምንም የተጀመረ ፕሮቶኮል የለዎትም።")
+            return
+        markup = InlineKeyboardMarkup(row_width=1)
+        for d in drafts:
+            markup.add(InlineKeyboardButton(f"📖 {d['book_title'][:30]}", callback_data=f"buy_draft_{d['id']}"))
+        bot.send_message(chat_id, "💳 <b>ለመግዛት የሚፈልጉትን ፕሮቶኮል ይምረጡ:</b>", parse_mode="HTML", reply_markup=markup)
+        return
+
+    # ── Buy Draft ────────────────────────────
+    if data.startswith("buy_draft_"):
+        order_id = int(data.split("_")[2])
+        bot.answer_callback_query(call.id)
+        session = get_session(uid)
+        session["data"] = {"order_id": order_id}
+        show_pricing(chat_id, uid)
         return
 
     # ── Category Selected ────────────────────
@@ -621,6 +695,13 @@ def ask_language(chat_id):
 # ══════════════════════════════════════════
 def generate_and_show_preview(chat_id, uid, data):
     """Generate Part 1 (free hook) and show it."""
+    # Enforce quota one last time just in case
+    if str(uid) not in config.ADMIN_IDS:
+        previews_left, _ = database.get_preview_quota(uid)
+        if previews_left <= 0:
+            enforce_preview_quota(uid, chat_id)
+            return
+
     loading = bot.send_message(chat_id, "⏳ <b>ግላዊ ምርመራዎ በመዘጋጀት ላይ...</b>", parse_mode="HTML")
 
     preview = ai_engine.generate_preview(
@@ -636,6 +717,10 @@ def generate_and_show_preview(chat_id, uid, data):
     if not preview:
         bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። እባክዎ /new ይጫኑ እንደገና ለመሞከር።")
         return
+
+    # Consume a preview quota
+    if str(uid) not in config.ADMIN_IDS:
+        database.consume_preview(uid)
 
     # Save order
     order_id = database.create_order(
@@ -796,10 +881,17 @@ def handle_payment_approved(payment_id):
     database.approve_payment(payment_id)
     uid = payment["user_id"]
     order_id = payment["order_id"]
-    order = database.get_order(order_id)
+    if order_id == -1:
+        database.reset_previews(uid, 3)
+        bot.send_message(uid, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n3 ተጨማሪ ነጻ ምርመራዎች ተጨምሮልዎታል!\n/new ይጫኑ", parse_mode="HTML")
+        return
 
+    order = database.get_order(order_id)
     if not order:
         return
+
+    # User bought a full protocol, reset their preview quota too!
+    database.reset_previews(uid, 3)
 
     # Add bundle credits if applicable
     session = get_session(uid)
@@ -1015,7 +1107,7 @@ def handle_messages(message):
         return
 
     # ── Receipt Photo ────────────────────────
-    if state == "AWAITING_RECEIPT":
+    if state in ["AWAITING_RECEIPT", "AWAITING_RECEIPT_TOPUP"]:
         if message.photo:
             bot.send_message(chat_id, "⏳ <b>ክፍያዎን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
             file_id = message.photo[-1].file_id
@@ -1023,6 +1115,9 @@ def handle_messages(message):
             file_bytes = bot.download_file(file_info.file_path)
 
             expected_amount = session["data"].get("payment_amount", config.PRICE_SINGLE)
+            if state == "AWAITING_RECEIPT_TOPUP":
+                expected_amount = 100
+
             result = ai_engine.verify_receipt(
                 file_bytes, expected_amount,
                 config.TELEBIRR_NAME, config.TELEBIRR_PHONE,
@@ -1033,7 +1128,7 @@ def handle_messages(message):
                 bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
                 return
 
-            order_id = session["data"].get("order_id")
+            order_id = session["data"].get("order_id", -1) if state == "AWAITING_RECEIPT" else -1
             payment_id = database.record_payment(uid, order_id, expected_amount, tx_id or uuid.uuid4().hex, file_id)
 
             if result.get("auto_approved"):

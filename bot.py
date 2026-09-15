@@ -152,6 +152,15 @@ def cmd_start(message):
 
     if referred_by:
         database.record_referral(referred_by, user.id)
+        # Check if they hit 5 uncredited referrals
+        ref_count = database.get_uncredited_referral_count(referred_by)
+        if ref_count >= 5:
+            database.add_credits(referred_by, 1)
+            database.mark_n_referrals_credited(referred_by, 5)
+            try:
+                bot.send_message(referred_by, "🎉 <b>እንኳን ደስ አሎት!</b>\n\n5 ጓደኞችዎ ስለተቀላቀሉ 1 ነጻ የፕሮቶኮል ክሬዲት አግኝተዋል!\n\n/new ይጫኑ እና ፕሮቶኮልዎን ያዘጋጁ!", parse_mode="HTML")
+            except Exception:
+                pass
 
     # Channel check
     if not is_admin(user) and not check_channel_member(user.id):
@@ -161,6 +170,24 @@ def cmd_start(message):
     send_welcome(message.chat.id, user.first_name)
 
 def send_welcome(chat_id, first_name):
+    bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    bottom_markup.add(
+        KeyboardButton("➕ አዲስ ፕሮቶኮል"),
+        KeyboardButton("📚 የኔ ፕሮቶኮሎች")
+    )
+    bottom_markup.add(
+        KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
+        KeyboardButton("☕ ቡድኑን ያበረታቱ")
+    )
+    bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"))
+    
+    bot.send_message(
+        chat_id, 
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b>\nእንኳን ወደ Baya Books በደህና መጡ።", 
+        parse_mode="HTML", 
+        reply_markup=bottom_markup
+    )
+
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("📖 መጽሐፉን እኔው ራሴ እመርጣለሁ", callback_data="has_book"),
@@ -234,22 +261,19 @@ def cmd_library(message):
 
 @bot.message_handler(commands=["referral"])
 def cmd_referral(message):
-    ref_count = database.get_referral_count(message.from_user.id)
-    credits = database.get_credits(message.from_user.id)
+    ref_count = database.get_uncredited_referral_count(message.from_user.id)
     bot_info = bot.get_me()
     link = f"https://t.me/{bot_info.username}?start=ref_{message.from_user.id}"
 
     bot.send_message(
         message.chat.id,
-        f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ PDF ያግኙ!</b>\n"
+        f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ ፕሮቶኮል ያግኙ!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"👥 አንድ ጓደኛዎ ይህን ሊንክ ተጠቅሞ\n"
-        f"PDF ሲገዛ — እርስዎ ነጻ 1 PDF ያገኛሉ!\n\n"
+        f"👥 5 ጓደኞችዎን ይህን ሊንክ ተጠቅመው\n"
+        f"ቦቱን ሲቀላቀሉ — እርስዎ ነጻ 1 ፕሮቶኮል ያገኛሉ!\n\n"
         f"🔗 <b>የእርስዎ ሊንክ:</b>\n<code>{link}</code>\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👥 ጓደኞች ገዝተዋል: <b>{ref_count}</b>\n"
-        f"🎫 ክሬዲትዎ: <b>{credits} PDF(s)</b>",
-        parse_mode="HTML",
+        f"📊 ያጋበዙት: <b>{ref_count}</b>/5\n",
+        parse_mode="HTML"
     )
 
 @bot.message_handler(commands=["new"])
@@ -568,7 +592,7 @@ def ask_gender(chat_id, book_title):
     )
 
 def ask_age(chat_id):
-    markup = InlineKeyboardMarkup(row_width=2)
+    markup = InlineKeyboardMarkup(row_width=3)
     buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=aid) for aid, emoji, label in AGE_RANGES]
     markup.add(*buttons)
     bot.send_message(chat_id, "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>", parse_mode="HTML", reply_markup=markup)
@@ -647,25 +671,25 @@ def generate_and_show_preview(chat_id, uid, data):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "⬆️ <b>ይህ የመነሻ ምርመራ ብቻ ነው!</b>\n\n"
         "ሙሉው የ90-ቀን ስትራቴጂ፣ ዕለታዊ ልምምድ፣\n"
-        "የሳምንታዊ ግምገማ፣ እና ሙሉ PDF ፕሮቶኮል\n"
+        "የሳምንታዊ ግምገማ፣ እና ሙሉ ግላዊ ፕሮቶኮል\n"
         "ለማግኘት ከታች ይዘዙ 👇\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup().add(
-            InlineKeyboardButton("💳 ሙሉውን PDF ይዘዙ", callback_data="buy_now")
+            InlineKeyboardButton("💳 ሙሉውን ፕሮቶኮል ያግኙ", callback_data="buy_now")
         ),
     )
 
 
 def show_pricing(chat_id, uid):
     credits = database.get_credits(uid)
-    markup = InlineKeyboardMarkup()
+    markup = InlineKeyboardMarkup(row_width=1)
 
     if credits > 0:
         markup.add(InlineKeyboardButton(f"🎫 ክሬዲት ተጠቀም ({credits} ቀሪ)", callback_data="use_credit"))
 
-    markup.add(InlineKeyboardButton(f"1️⃣ 1 PDF — {config.PRICE_SINGLE} ብር", callback_data="pay_single"))
-    markup.add(InlineKeyboardButton(f"3️⃣ 3 PDFs — {config.PRICE_BUNDLE} ብር (17% ቅናሽ!)", callback_data="pay_bundle"))
+    markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር", callback_data="pay_single"))
+    markup.add(InlineKeyboardButton(f"3️⃣ 3 ፕሮቶኮሎች — {config.PRICE_BUNDLE} ብር (17% ቅናሽ!)", callback_data="pay_bundle"))
 
     bot.send_message(
         chat_id,
@@ -741,21 +765,7 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         # Save the URL instead of file_id
         database.update_order_full(order_id, full_text, page_url)
 
-    # Handle referral reward
-    referrer_id = database.get_referrer(uid)
-    if referrer_id:
-        database.mark_referral_credited(uid)
-        database.add_credits(referrer_id, 1)
-        try:
-            bot.send_message(
-                referrer_id,
-                "🎉 <b>ጓደኛዎ PDF ገዝቷል!</b>\n\n"
-                "🎫 ነጻ 1 PDF ክሬዲት ተጨምሮልዎታል!\n\n"
-                "/new ይጫኑ ነጻ PDF ዎን ለመጀመር! 🎁",
-                parse_mode="HTML",
-            )
-        except Exception:
-            pass
+
 
     # Show tip CTA instead of referral
     show_tip_cta(chat_id)
@@ -889,6 +899,58 @@ def handle_messages(message):
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):
         send_join_channel_msg(chat_id); return
+
+    # ── Bottom Menu Handlers ─────────────────
+    if message.text == "➕ አዲስ ፕሮቶኮል":
+        send_welcome(chat_id, message.from_user.first_name)
+        return
+
+    if message.text == "📚 የኔ ፕሮቶኮሎች":
+        orders = database.get_user_orders(uid)
+        if not orders:
+            bot.send_message(chat_id, "በአሁኑ ሰዓት የተዘጋጀ ፕሮቶኮል የለዎትም። አዲስ ለመጀመር '➕ አዲስ ፕሮቶኮል' ይጫኑ።")
+        else:
+            bot.send_message(chat_id, "📚 <b>የእርስዎ ፕሮቶኮሎች</b>\n━━━━━━━━━━━━━━━━━━━━", parse_mode="HTML")
+            for order in orders:
+                bot.send_message(
+                    chat_id,
+                    f"📖 <b>{html.escape(order['book_title'])}</b>\n"
+                    f"📅 {order['delivered_date'][:10]}\n\n"
+                    f"🔗 {order['pdf_file_id']}",
+                    parse_mode="HTML"
+                )
+        return
+
+    if message.text == "🎁 ጓደኛ ይጋብዙ":
+        bot_info = bot.get_me()
+        link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
+        count = database.get_uncredited_referral_count(uid)
+        bot.send_message(
+            chat_id,
+            f"🎁 <b>ጓደኛዎን ይጋብዙ፣ ነጻ ፕሮቶኮል ያግኙ!</b>\n\n"
+            f"5 ጓደኞችዎን ሲጋብዙ 1 ነጻ ፕሮቶኮል ያገኛሉ!\n\n"
+            f"📊 ያጋበዙት: <b>{count}</b>/5\n\n"
+            f"🔗 የእርስዎ መጋበዣ ሊንክ:\n<code>{link}</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    if message.text == "☕ ቡድኑን ያበረታቱ":
+        show_tip_cta(chat_id)
+        return
+
+    if message.text == "💬 አስተያየት ይስጡን":
+        bot.send_message(chat_id, "💡 አስተያየትዎን፣ ጥያቄዎን ወይም ያጋጠመዎትን ችግር እዚህ ይጻፉልን። (ወደ አድሚን ይላካል)")
+        set_state(uid, "AWAITING_FEEDBACK")
+        return
+
+    if state == "AWAITING_FEEDBACK" and message.text:
+        admin_id = config.ADMIN_IDS[0] if config.ADMIN_IDS else None
+        if admin_id:
+            bot.send_message(admin_id, f"💬 <b>አዲስ አስተያየት:</b>\n👤 {message.from_user.first_name} (@{message.from_user.username})\n\n{html.escape(message.text)}", parse_mode="HTML")
+        bot.send_message(chat_id, "✅ አስተያየትዎ ደርሶናል! ከልብ እናመሰግናለን።")
+        clear_state(uid)
+        return
 
     # ── Book Input (title or photo) ──────────
     if state == "AWAITING_BOOK_INPUT":

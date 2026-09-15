@@ -146,10 +146,33 @@ def mark_referral_credited(referred_id):
     conn.commit()
     conn.close()
 
+def mark_n_referrals_credited(referrer_id, n=5):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        UPDATE referrals 
+        SET credit_given = 1 
+        WHERE id IN (
+            SELECT id FROM referrals 
+            WHERE referrer_id = ? AND credit_given = 0 
+            LIMIT ?
+        )
+    ''', (referrer_id, n))
+    conn.commit()
+    conn.close()
+
 def get_referral_count(user_id):
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND credit_given = 1", (user_id,))
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
+def get_uncredited_referral_count(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND credit_given = 0", (user_id,))
     count = c.fetchone()[0]
     conn.close()
     return count

@@ -475,14 +475,6 @@ def handle_callback(call):
             bot.answer_callback_query(call.id, "❌ ክሬዲት የለዎትም!", show_alert=True)
         return
 
-    # ── Rating ───────────────────────────────
-    if data.startswith("rate_"):
-        stars = data.replace("rate_", "")
-        bot.answer_callback_query(call.id, f"⭐ {stars} — እናመሰግናለን!")
-        bot.send_message(chat_id, "🙏 ግምገማዎ ደርሶናል! ለድጋፍዎ ከልብ እናመሰግናለን!")
-        show_referral_cta(chat_id, uid)
-        return
-
     # ── Admin: Stats ─────────────────────────
     if data == "admin_stats":
         if not is_admin(call.from_user): return
@@ -772,15 +764,9 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         f"🎯 {html.escape(data.get('goal', ''))}"
     )
 
-    # Ask for rating
-    markup = InlineKeyboardMarkup(row_width=5)
-    markup.add(*[InlineKeyboardButton(f"{'⭐' * i}", callback_data=f"rate_{i}") for i in range(1, 6)])
-    bot.send_message(
-        chat_id,
-        "🙏 <b>Baya Books ን ስለመረጡ እናመሰግናለን!</b>\n\n⭐ ፕሮቶኮሉን እንዴት አገኙት?",
-        parse_mode="HTML", reply_markup=markup,
-    )
-
+    # Show referral CTA instead of rating
+    show_referral_cta(chat_id, uid)
+    
     clear_state(uid)
 
 

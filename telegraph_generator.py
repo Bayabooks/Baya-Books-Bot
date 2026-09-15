@@ -2,12 +2,8 @@ import logging
 import markdown
 from telegraph import Telegraph
 
-# Initialize Telegraph account (we can reuse this)
-telegraph = Telegraph()
-try:
-    telegraph.create_account(short_name='BayaBooks', author_name='Baya Books')
-except Exception as e:
-    logging.error(f"Failed to create Telegraph account: {e}")
+# Use a persistent Telegraph account to avoid rate limits on Render
+telegraph = Telegraph(access_token='2331b63c27557de84d9a0369818028ed0b4dae84f8cb3576b813387b382c')
 
 def create_protocol_page(title, markdown_text):
     """
@@ -15,8 +11,16 @@ def create_protocol_page(title, markdown_text):
     Returns the URL of the published page.
     """
     try:
+        # Telegraph only supports h3 and h4, NOT h1 and h2
+        # So we convert all # and ## to ###
+        markdown_text = markdown_text.replace('\n# ', '\n### ')
+        markdown_text = markdown_text.replace('\n## ', '\n### ')
+        if markdown_text.startswith('# '):
+            markdown_text = '### ' + markdown_text[2:]
+        if markdown_text.startswith('## '):
+            markdown_text = '### ' + markdown_text[3:]
+            
         # 1. Convert Markdown to HTML
-        # Telegraph supports basic HTML tags (b, i, u, s, a, p, br, h3, h4, ul, ol, li, etc)
         html_content = markdown.markdown(markdown_text)
         
         # 2. Publish to Telegraph
@@ -28,5 +32,6 @@ def create_protocol_page(title, markdown_text):
         )
         return response['url']
     except Exception as e:
-        logging.error(f"Telegraph error: {e}")
-        return None
+        err_msg = str(e)
+        logging.error(f"Telegraph error: {err_msg}")
+        return f"ERROR: {err_msg}"

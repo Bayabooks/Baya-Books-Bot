@@ -720,8 +720,8 @@ def generate_and_deliver_pdf(chat_id, uid, data):
 
     bot.delete_message(chat_id, loading.message_id)
 
-    if not page_url:
-        bot.send_message(chat_id, "⚠️ የቴክኒክ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።")
+    if not page_url or page_url.startswith("ERROR:"):
+        bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር ተፈጥሯል: {page_url}")
         return
 
     # Send Link

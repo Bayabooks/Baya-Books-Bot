@@ -444,6 +444,12 @@ def handle_callback(call):
     # ── Buy / Pricing ────────────────────────
     if data == "buy_now":
         bot.answer_callback_query(call.id)
+        if is_admin(call.from_user):
+            bot.send_message(chat_id, "👑 <b>የአድሚን መብት!</b> ክፍያ አያስፈልግም።", parse_mode="HTML")
+            session = get_session(uid)
+            generate_and_deliver_pdf(chat_id, uid, session["data"])
+            return
+            
         show_pricing(chat_id, uid)
         return
 

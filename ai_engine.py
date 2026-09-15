@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 3.6 Flash for speed and vision
-MODEL_TEXT = "gemini-3.6-flash"
-MODEL_VISION = "gemini-3.6-flash"
+# Use Gemini 3.8 Flash for speed and vision
+MODEL_TEXT = "gemini-3.8-flash"
+MODEL_VISION = "gemini-3.8-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 
@@ -224,10 +224,13 @@ def recommend_books(category):
         model = genai.GenerativeModel(MODEL_TEXT)
         response = model.generate_content(prompt)
         text = response.text.strip()
-        # Clean potential markdown code block
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"\s*```$", "", text)
-        text = text.strip()
+        # Extract JSON array robustly
+        start_idx = text.find('[')
+        end_idx = text.rfind(']')
+        if start_idx != -1 and end_idx != -1:
+            text = text[start_idx:end_idx+1]
+        else:
+            text = "[]"
         return json.loads(text)
     except Exception as e:
         logging.error(f"Book recommendation error: {e}")
@@ -243,9 +246,13 @@ def identify_book_cover(image_bytes):
             {"mime_type": "image/jpeg", "data": image_bytes}
         ])
         text = response.text.strip()
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"\s*```$", "", text)
-        text = text.strip()
+        # Extract JSON object robustly
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            text = text[start_idx:end_idx+1]
+        else:
+            text = "{}"
         return json.loads(text)
     except Exception as e:
         logging.error(f"Book cover identification error: {e}")
@@ -267,9 +274,13 @@ def verify_receipt(image_bytes, expected_amount, expected_recipient, expected_ph
             {"mime_type": "image/jpeg", "data": image_bytes}
         ])
         text = response.text.strip()
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"\s*```$", "", text)
-        text = text.strip()
+        # Extract JSON object robustly
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            text = text[start_idx:end_idx+1]
+        else:
+            text = "{}"
         result = json.loads(text)
         
         # Final verdict

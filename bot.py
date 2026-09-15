@@ -328,8 +328,8 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_CATEGORY")
         markup = InlineKeyboardMarkup(row_width=2)
-        for cid, emoji, am, en in CATEGORIES:
-            markup.add(InlineKeyboardButton(f"{emoji} {am}", callback_data=cid))
+        buttons = [InlineKeyboardButton(f"{emoji} {am}", callback_data=cid) for cid, emoji, am, en in CATEGORIES]
+        markup.add(*buttons)
         bot.send_message(
             chat_id,
             "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል\nትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
@@ -339,7 +339,8 @@ def handle_callback(call):
 
     # ── Category Selected ────────────────────
     if data.startswith("cat_"):
-        bot.answer_callback_query(call.id, "⏳ መጽሐፍት በመፈለግ ላይ...")
+        bot.answer_callback_query(call.id)
+        loading_msg = bot.send_message(chat_id, "⏳ <b>መጽሐፍት በመፈለግ ላይ...</b>", parse_mode="HTML")
         set_state(uid, "AWAITING_BOOK_PICK")
         cat = next((c for c in CATEGORIES if c[0] == data), None)
         if not cat:
@@ -348,6 +349,12 @@ def handle_callback(call):
         cat_name_am = cat[2]
 
         books = ai_engine.recommend_books(cat_name_en)
+        bot.delete_message(chat_id, loading_msg.message_id)
+        
+        if isinstance(books, dict) and "error" in books:
+            bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር: {html.escape(books['error'])}")
+            return
+            
         if not books or len(books) < 3:
             bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ። /new")
             return

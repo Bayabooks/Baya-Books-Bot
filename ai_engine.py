@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 3.8 Flash for speed and vision
-MODEL_TEXT = "gemini-3.8-flash"
-MODEL_VISION = "gemini-3.8-flash"
+# Use Gemini 3.7 Flash for speed and vision
+MODEL_TEXT = "gemini-3.7-flash"
+MODEL_VISION = "gemini-3.7-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 
@@ -233,8 +233,9 @@ def recommend_books(category):
             text = "[]"
         return json.loads(text)
     except Exception as e:
-        logging.error(f"Book recommendation error: {e}")
-        return None
+        err_msg = str(e)
+        logging.error(f"Book recommendation error: {err_msg}")
+        return {"error": err_msg}
 
 
 def identify_book_cover(image_bytes):

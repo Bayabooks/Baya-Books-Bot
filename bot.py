@@ -162,10 +162,9 @@ def cmd_start(message):
 
 def send_welcome(chat_id, first_name):
     markup = InlineKeyboardMarkup(row_width=1)
-    markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("📖 መጽሐፍ አለኝ", callback_data="has_book"),
-        InlineKeyboardButton("🧭 መጽሐፍ ምረጡልኝ", callback_data="choose_for_me"),
+        InlineKeyboardButton("📖 መጽሐፉን እኔው ራሴ እመርጣለሁ", callback_data="has_book"),
+        InlineKeyboardButton("🧭 መጽሐፎቹን እናንተ አማርጡኝ", callback_data="choose_for_me"),
     )
 
     credits = database.get_credits(chat_id)

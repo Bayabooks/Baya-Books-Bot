@@ -756,14 +756,6 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         except Exception:
             pass
 
-    # Notify admin
-    notify_admin(
-        f"🔔 <b>ፕሮቶኮል ተላልፏል!</b>\n"
-        f"👤 {html.escape(data.get('gender', ''))} | {html.escape(data.get('age_range', ''))}\n"
-        f"📖 {html.escape(data.get('book_title', ''))}\n"
-        f"🎯 {html.escape(data.get('goal', ''))}"
-    )
-
     # Show referral CTA instead of rating
     show_referral_cta(chat_id, uid)
     

@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 2.0 Flash for speed and vision
-MODEL_TEXT = "gemini-2.0-flash"
-MODEL_VISION = "gemini-2.0-flash"
+# Use Gemini 3.6 Flash for speed and vision
+MODEL_TEXT = "gemini-3.6-flash"
+MODEL_VISION = "gemini-3.6-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 
@@ -225,10 +225,8 @@ def recommend_books(category):
         response = model.generate_content(prompt)
         text = response.text.strip()
         # Clean potential markdown code block
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
         text = text.strip()
         return json.loads(text)
     except Exception as e:
@@ -245,10 +243,8 @@ def identify_book_cover(image_bytes):
             {"mime_type": "image/jpeg", "data": image_bytes}
         ])
         text = response.text.strip()
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
         text = text.strip()
         return json.loads(text)
     except Exception as e:
@@ -271,10 +267,8 @@ def verify_receipt(image_bytes, expected_amount, expected_recipient, expected_ph
             {"mime_type": "image/jpeg", "data": image_bytes}
         ])
         text = response.text.strip()
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
         text = text.strip()
         result = json.loads(text)
         

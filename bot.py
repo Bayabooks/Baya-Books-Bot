@@ -632,13 +632,14 @@ def generate_and_show_preview(chat_id, uid, data):
     max_len = 4096 - len(header) - 200
     display_preview = preview[:max_len] if len(preview) > max_len else preview
 
-    # If the markdown preview has unescaped HTML-like characters, avoid HTML parse_mode
-    use_html = "<" not in display_preview and "&" not in display_preview
-    
     try:
-        bot.send_message(chat_id, header + display_preview, parse_mode="HTML" if use_html else None)
+        bot.send_message(chat_id, header + display_preview, parse_mode="HTML")
     except Exception:
-        bot.send_message(chat_id, header.replace("<b>", "").replace("</b>", "") + display_preview)
+        # If Telegram rejects the HTML (due to unclosed tags or invalid characters),
+        # strip the <b> tags and send as plain text
+        clean_preview = display_preview.replace("<b>", "").replace("</b>", "")
+        clean_header = header.replace("<b>", "").replace("</b>", "")
+        bot.send_message(chat_id, clean_header + clean_preview)
 
     # CTA
     bot.send_message(

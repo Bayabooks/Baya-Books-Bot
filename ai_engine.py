@@ -124,6 +124,17 @@ If you cannot identify the book, respond:
 {{"title": "", "author": "", "found": false}}"""
 
 
+BOOK_VERIFY_PROMPT = """Check if the following user input corresponds to a real, known published book (can be English, Amharic, or any language).
+User Input: "{query}"
+
+If it is a real book, respond with its official title and author.
+Respond in this exact JSON format only:
+{{"title": "Official Book Title", "author": "Author Name", "found": true}}
+
+If it is NOT a real book, or just random text, respond:
+{{"title": "", "author": "", "found": false}}"""
+
+
 RECEIPT_VERIFY_PROMPT = """You are a payment receipt verification system for Ethiopian mobile money (Telebirr) and bank transfers (CBE).
 
 Analyze this screenshot carefully and extract:
@@ -257,6 +268,26 @@ def identify_book_cover(image_bytes):
         return json.loads(text)
     except Exception as e:
         logging.error(f"Book cover identification error: {e}")
+        return {"title": "", "author": "", "found": False}
+
+def verify_book_title(query):
+    """Verify if a user-typed book is a real book."""
+    prompt = BOOK_VERIFY_PROMPT.format(query=query)
+    try:
+        model = genai.GenerativeModel(MODEL_TEXT)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            text = text[start_idx:end_idx+1]
+        else:
+            text = "{}"
+            
+        return json.loads(text)
+    except Exception as e:
+        logging.error(f"Book verification error: {e}")
         return {"title": "", "author": "", "found": False}
 
 

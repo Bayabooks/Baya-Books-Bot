@@ -161,7 +161,8 @@ def cmd_start(message):
     send_welcome(message.chat.id, user.first_name)
 
 def send_welcome(chat_id, first_name):
-    markup = InlineKeyboardMarkup()
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("📖 መጽሐፍ አለኝ", callback_data="has_book"),
         InlineKeyboardButton("🧭 መጽሐፍ ምረጡልኝ", callback_data="choose_for_me"),
@@ -940,8 +941,29 @@ def handle_messages(message):
 
         if message.text:
             book_title = message.text.strip()
-            set_state(uid, "AWAITING_GENDER", book_title=book_title)
-            ask_gender(chat_id, book_title)
+            loading = bot.send_message(chat_id, "⏳ <b>መጽሐፉን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
+            
+            result = ai_engine.verify_book_title(book_title)
+            bot.delete_message(chat_id, loading.message_id)
+            
+            if result and result.get("found"):
+                title = result.get("title", book_title)
+                author = result.get("author", "")
+                
+                set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
+                markup = InlineKeyboardMarkup()
+                markup.add(
+                    InlineKeyboardButton("✅ አዎ", callback_data="confirm_book"),
+                    InlineKeyboardButton("✏️ ልቀይር", callback_data="retry_book"),
+                )
+                bot.send_message(
+                    chat_id,
+                    f"📖 <b>{html.escape(title)}</b>{' (' + html.escape(author) + ')' if author else ''}\n\n"
+                    f"ያሰቡት ይህንን መጽሐፍ ነው?",
+                    parse_mode="HTML", reply_markup=markup,
+                )
+            else:
+                bot.send_message(chat_id, "⚠️ እንዲህ ዓይነት መጽሐፍ ማግኘት አልቻልኩም። እባክዎ የመጽሐፉን ትክክለኛ ስም እና የጸሐፊውን ስም አብረው ይጻፉ።")
             return
 
     # ── Custom Goal Input ────────────────────

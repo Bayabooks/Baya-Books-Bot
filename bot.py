@@ -569,14 +569,14 @@ def ask_gender(chat_id, book_title):
 
 def ask_age(chat_id):
     markup = InlineKeyboardMarkup(row_width=2)
-    for aid, emoji, label in AGE_RANGES:
-        markup.add(InlineKeyboardButton(f"{emoji} {label}", callback_data=aid))
+    buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=aid) for aid, emoji, label in AGE_RANGES]
+    markup.add(*buttons)
     bot.send_message(chat_id, "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>", parse_mode="HTML", reply_markup=markup)
 
 def ask_goal(chat_id):
     markup = InlineKeyboardMarkup(row_width=2)
-    for gid, emoji, label in GOALS:
-        markup.add(InlineKeyboardButton(f"{emoji} {label}", callback_data=gid))
+    buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=gid) for gid, emoji, label in GOALS]
+    markup.add(*buttons)
     markup.add(InlineKeyboardButton("✏️ ሌላ ግብ አለኝ", callback_data="goal_custom"))
     bot.send_message(chat_id, "🎯 <b>ማሳካት የሚፈልጉት ትልቁ ግብ?</b>", parse_mode="HTML", reply_markup=markup)
 

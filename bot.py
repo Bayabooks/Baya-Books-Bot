@@ -396,7 +396,7 @@ def handle_callback(call):
         if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_CATEGORY")
-        markup = InlineKeyboardMarkup(row_width=1)
+        markup = InlineKeyboardMarkup(row_width=2)
         buttons = [InlineKeyboardButton(f"{emoji} {am}", callback_data=cid) for cid, emoji, am, en in CATEGORIES]
         markup.add(*buttons)
         bot.send_message(

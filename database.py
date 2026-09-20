@@ -22,11 +22,15 @@ def setup_database():
         credits INTEGER DEFAULT 0
     )''')
     try:
-        c.execute("ALTER TABLE users ADD COLUMN previews_left INTEGER DEFAULT 3")
+        c.execute("ALTER TABLE users ADD COLUMN previews_left INTEGER DEFAULT 5")
     except:
         pass
     try:
         c.execute("ALTER TABLE users ADD COLUMN preview_timer_start TEXT")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN free_protocol_used INTEGER DEFAULT 0")
     except:
         pass
 
@@ -193,6 +197,23 @@ def get_uncredited_referral_count(user_id):
     conn.close()
     return count
 
+def has_free_protocol(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT IFNULL(free_protocol_used, 0) as free_protocol_used FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return True # Default to true if user not found, though should exist
+    return row['free_protocol_used'] == 0
+
+def mark_free_protocol_used(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET free_protocol_used = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
 # ─── Order Functions ───────────────────────
 
 def create_order(user_id, book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language):
@@ -356,11 +377,11 @@ setup_database()
 def get_preview_quota(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT IFNULL(previews_left, 3) as previews_left, preview_timer_start FROM users WHERE user_id = ?", (user_id,))
+    c.execute("SELECT IFNULL(previews_left, 5) as previews_left, preview_timer_start FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     if not row:
         conn.close()
-        return 3, None
+        return 5, None
 
     previews_left = row['previews_left']
     timer_start = row['preview_timer_start']
@@ -370,9 +391,9 @@ def get_preview_quota(user_id):
         try:
             start_dt = datetime.fromisoformat(timer_start)
             if datetime.now() >= start_dt + timedelta(hours=24):
-                c.execute("UPDATE users SET previews_left = 3, preview_timer_start = NULL WHERE user_id = ?", (user_id,))
+                c.execute("UPDATE users SET previews_left = 5, preview_timer_start = NULL WHERE user_id = ?", (user_id,))
                 conn.commit()
-                previews_left = 3
+                previews_left = 5
                 timer_start = None
         except ValueError:
             pass
@@ -383,7 +404,7 @@ def get_preview_quota(user_id):
 def consume_preview(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT IFNULL(previews_left, 3) as previews_left FROM users WHERE user_id = ?", (user_id,))
+    c.execute("SELECT IFNULL(previews_left, 5) as previews_left FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     if row and row['previews_left'] > 0:
         new_left = row['previews_left'] - 1
@@ -395,10 +416,10 @@ def consume_preview(user_id):
         conn.commit()
     conn.close()
 
-def reset_previews(user_id, amount=3):
+def reset_previews(user_id, amount=5):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT IFNULL(previews_left, 3) as previews_left FROM users WHERE user_id = ?", (user_id,))
+    c.execute("SELECT IFNULL(previews_left, 5) as previews_left FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     if row:
         new_amount = row['previews_left'] + amount

@@ -387,17 +387,17 @@ def enforce_preview_quota(uid, chat_id, call_id=None):
     
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("💳 100 ብር - 3 ምርመራ ይግዙ", callback_data="buy_previews"),
+        InlineKeyboardButton("💳 100 ብር - 5 ነጻ ምርመራ ይግዙ", callback_data="buy_previews"),
         InlineKeyboardButton("📖 የጀመሩትን ፕሮቶኮል ይግዙ", callback_data="show_drafts")
     )
     
     bot.send_message(
         chat_id,
-        f"🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n\n"
-        f"⏳ በድጋሚ በነጻ ለማግኘት: <b>{hours} ሰዓት ከ {minutes} ደቂቃ</b> ይጠብቁ።\n\n"
+        f"🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል! (5/5)</b>\n\n"
+        f"⏳ በድጋሚ 5 ነጻ ምርመራ ለማግኘት: <b>{hours} ሰዓት ከ {minutes} ደቂቃ</b> ይጠብቁ።\n\n"
         f"<b>ወይም አሁኑኑ ይክፈቱ፡</b>\n"
-        f"1️⃣ 100 ብር በመክፈል 3 ምርመራዎችን ያግኙ\n"
-        f"2️⃣ <b>የጀመሩትን ሙሉ ፕሮቶኮል ይግዙ!</b>\n(ሙሉውን ሲገዙ ተጨማሪ 3 ምርመራ በቦነስ ያገኛሉ!)\n",
+        f"1️⃣ 100 ብር በመክፈል 5 ተጨማሪ ምርመራዎችን ያግኙ\n"
+        f"2️⃣ <b>የጀመሩትን ሙሉ ፕሮቶኮል ይግዙ!</b>\n(ሙሉውን ሲገዙ ተጨማሪ 5 ምርመራ በቦነስ ያገኛሉ!)\n",
         parse_mode="HTML", reply_markup=markup
     )
     return False
@@ -492,6 +492,26 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         session = get_session(uid)
         session["data"] = {"order_id": order_id}
+        
+        if database.has_free_protocol(uid):
+            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ ፕሮቶኮል ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
+            database.mark_free_protocol_used(uid)
+            # Reconstruct data from order
+            order = database.get_order(order_id)
+            if order:
+                session["data"] = {
+                    "book_title": order["book_title"],
+                    "gender": order["gender"],
+                    "age_range": order["age_range"],
+                    "location": order.get("location", ""),
+                    "living_situation": order.get("living_situation", ""),
+                    "specific_change": order.get("specific_change", ""),
+                    "language": order["language"],
+                    "order_id": order_id,
+                }
+                generate_and_deliver_pdf(chat_id, uid, session["data"])
+            return
+            
         show_pricing(chat_id, uid)
         return
 
@@ -644,6 +664,13 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         if is_admin(call.from_user):
             bot.send_message(chat_id, "👑 <b>የአድሚን መብት!</b> ክፍያ አያስፈልግም።", parse_mode="HTML")
+            session = get_session(uid)
+            generate_and_deliver_pdf(chat_id, uid, session["data"])
+            return
+            
+        if database.has_free_protocol(uid):
+            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ ፕሮቶኮል ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
+            database.mark_free_protocol_used(uid)
             session = get_session(uid)
             generate_and_deliver_pdf(chat_id, uid, session["data"])
             return
@@ -898,6 +925,8 @@ def generate_and_show_preview(chat_id, uid, data):
         bot.send_message(chat_id, clean_header + clean_preview)
 
     # CTA
+    btn_text = "🎁 የመጀመሪያዎን ሙሉ ፕሮቶኮል በነጻ ያግኙ" if database.has_free_protocol(uid) else "💳 ሙሉውን ፕሮቶኮል ያግኙ"
+    
     bot.send_message(
         chat_id,
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -908,7 +937,7 @@ def generate_and_show_preview(chat_id, uid, data):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup().add(
-            InlineKeyboardButton("💳 ሙሉውን ፕሮቶኮል ያግኙ", callback_data="buy_now")
+            InlineKeyboardButton(btn_text, callback_data="buy_now")
         ),
     )
 
@@ -1035,8 +1064,8 @@ def handle_payment_approved(payment_id):
     uid = payment["user_id"]
     order_id = payment["order_id"]
     if order_id == -1:
-        database.reset_previews(uid, 3)
-        bot.send_message(uid, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n3 ተጨማሪ ነጻ ምርመራዎች ተጨምሮልዎታል!\n/new ይጫኑ", parse_mode="HTML")
+        database.reset_previews(uid, 5)
+        bot.send_message(uid, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n5 ተጨማሪ ነጻ ምርመራዎች ተጨምሮልዎታል!\n/new ይጫኑ", parse_mode="HTML")
         return
 
     order = database.get_order(order_id)
@@ -1044,7 +1073,7 @@ def handle_payment_approved(payment_id):
         return
 
     # User bought a full protocol, reset their preview quota too!
-    database.reset_previews(uid, 3)
+    database.reset_previews(uid, 5)
 
     # Add bundle credits if applicable
     session = get_session(uid)

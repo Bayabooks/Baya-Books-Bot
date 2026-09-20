@@ -405,7 +405,7 @@ def handle_callback(call):
                 markup.row(buttons[i])
         bot.send_message(
             chat_id,
-            "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል\nትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
+            "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል ትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
             parse_mode="HTML", reply_markup=markup,
         )
         return

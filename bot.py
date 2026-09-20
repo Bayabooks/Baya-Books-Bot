@@ -760,7 +760,7 @@ def ask_gender(chat_id, book_title):
         chat_id,
         f"✨ <b>ድንቅ ምርጫ!</b>\n\n"
         f"📖 <i>{book_title}</i> — ለእርስዎ ህይወት ብቻ\n"
-        f"ልዩ አድርጌ ላዘጋጅልዎ 3 ጥያቄዎችን ልጠይቅዎት።\n\n"
+        f"ልዩ አድርጌ ላዘጋጅልዎ ጥቂት ጥያቄዎችን ልጠይቅዎት።\n\n"
         f"👤 <b>ጾታዎ?</b>",
         parse_mode="HTML", reply_markup=markup,
     )
@@ -879,7 +879,9 @@ def generate_and_show_preview(chat_id, uid, data):
     header = (
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📖 <b>{html.escape(data.get('book_title', ''))}</b> ፕሮቶኮል\n"
-        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))} | {html.escape(data.get('goal', ''))}\n"
+        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
+        f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
+        f"🎯 {html.escape(data.get('specific_change', ''))}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     )
     # Truncate preview if too long for Telegram (4096 chars max)
@@ -979,7 +981,9 @@ def generate_and_deliver_pdf(chat_id, uid, data):
     msg_text = (
         f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n"
         f"📖 <b>{html.escape(data.get('book_title', ''))}</b>\n"
-        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('goal', ''))}\n\n"
+        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
+        f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
+        f"🎯 {html.escape(data.get('specific_change', ''))}\n\n"
         f"👇 <b>ከታች ያለውን ሊንክ ተጭነው ያንብቡ:</b>\n"
         f"{page_url}"
     )

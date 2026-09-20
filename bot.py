@@ -680,14 +680,8 @@ def handle_callback(call):
 
     if data == "pay_single":
         bot.answer_callback_query(call.id)
-        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE, bundle_credits=0)
+        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
         show_payment_instructions(chat_id, config.PRICE_SINGLE)
-        return
-
-    if data == "pay_bundle":
-        bot.answer_callback_query(call.id)
-        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_BUNDLE, bundle_credits=2)
-        show_payment_instructions(chat_id, config.PRICE_BUNDLE)
         return
 
     if data == "use_credit":
@@ -952,7 +946,6 @@ def show_pricing(chat_id, uid):
 
     strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
     markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
-    markup.add(InlineKeyboardButton(f"3️⃣ 3 ፕሮቶኮሎች — {config.PRICE_BUNDLE} ብር (17% ቅናሽ!)", callback_data="pay_bundle"))
 
     bot.send_message(
         chat_id,
@@ -1076,13 +1069,6 @@ def handle_payment_approved(payment_id):
 
     # User bought a full protocol, reset their preview quota too!
     database.reset_previews(uid, 5)
-
-    # Add bundle credits if applicable
-    session = get_session(uid)
-    bundle_credits = session.get("data", {}).get("bundle_credits", 0)
-    if bundle_credits > 0:
-        database.add_credits(uid, bundle_credits)
-        bot.send_message(uid, f"🎫 <b>{bundle_credits} ተጨማሪ PDF ክሬዲት ተጨምሯል!</b>\n📊 ቀሪ: {database.get_credits(uid)}", parse_mode="HTML")
 
     data = {
         "book_title": order["book_title"],

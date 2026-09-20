@@ -343,8 +343,8 @@ def get_analytics():
 
 # Run setup
 setup_database()
- 
- 
+
+
 def get_preview_quota(user_id):
     conn = get_connection()
     c = conn.cursor()

@@ -405,7 +405,10 @@ def handle_callback(call):
                 markup.row(buttons[i])
         bot.send_message(
             chat_id,
-            "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል ትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
+            "🧭 <b>በጣም ጥሩ!</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "ዛሬ በየትኛው የህይወት ክፍል ትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n"
+            "👇 ከታች ይምረጡ",
             parse_mode="HTML", reply_markup=markup,
         )
         return
@@ -673,7 +676,12 @@ def ask_age(chat_id):
     markup = InlineKeyboardMarkup(row_width=3)
     buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=aid) for aid, emoji, label in AGE_RANGES]
     markup.add(*buttons)
-    bot.send_message(chat_id, "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>", parse_mode="HTML", reply_markup=markup)
+    bot.send_message(
+        chat_id, 
+        "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 
+        parse_mode="HTML", reply_markup=markup
+    )
 
 def ask_goal(chat_id):
     markup = InlineKeyboardMarkup()
@@ -684,7 +692,12 @@ def ask_goal(chat_id):
         else:
             markup.row(buttons[i])
     markup.add(InlineKeyboardButton("✏️ ሌላ ግብ አለኝ", callback_data="goal_custom"))
-    bot.send_message(chat_id, "🎯 <b>ማሳካት የሚፈልጉት ትልቁ ግብ?</b>", parse_mode="HTML", reply_markup=markup)
+    bot.send_message(
+        chat_id, 
+        "🎯 <b>ማሳካት የሚፈልጉት ትልቁ ግብ?</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 
+        parse_mode="HTML", reply_markup=markup
+    )
 
 def ask_language(chat_id):
     markup = InlineKeyboardMarkup(row_width=2)

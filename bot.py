@@ -310,7 +310,7 @@ def cmd_admin(message):
     )
 
 def enforce_preview_quota(uid, chat_id, call_id=None):
-    if str(uid) in config.ADMIN_IDS:
+    if uid == get_admin_id():
         return True
     previews_left, timer_start = database.get_preview_quota(uid)
     if previews_left > 0:
@@ -704,7 +704,7 @@ def ask_language(chat_id):
 def generate_and_show_preview(chat_id, uid, data):
     """Generate Part 1 (free hook) and show it."""
     # Enforce quota one last time just in case
-    if str(uid) not in config.ADMIN_IDS:
+    if uid != get_admin_id():
         previews_left, _ = database.get_preview_quota(uid)
         if previews_left <= 0:
             enforce_preview_quota(uid, chat_id)
@@ -727,7 +727,7 @@ def generate_and_show_preview(chat_id, uid, data):
         return
 
     # Consume a preview quota
-    if str(uid) not in config.ADMIN_IDS:
+    if uid != get_admin_id():
         database.consume_preview(uid)
 
     # Save order
@@ -1045,7 +1045,7 @@ def handle_messages(message):
         return
 
     if state == "AWAITING_FEEDBACK" and message.text:
-        admin_id = config.ADMIN_IDS[0] if config.ADMIN_IDS else None
+        admin_id = get_admin_id()
         if admin_id:
             bot.send_message(admin_id, f"💬 <b>አዲስ አስተያየት:</b>\n👤 {message.from_user.first_name} (@{message.from_user.username})\n\n{html.escape(message.text)}", parse_mode="HTML")
         bot.send_message(chat_id, "✅ አስተያየትዎ ደርሶናል! ከልብ እናመሰግናለን።")

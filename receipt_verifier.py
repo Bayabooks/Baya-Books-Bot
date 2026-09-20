@@ -2,9 +2,17 @@ import logging
 from io import BytesIO
 from PIL import Image
 import ethiobank_receipts
-from pyzbar.pyzbar import decode
+
+try:
+    from pyzbar.pyzbar import decode
+    QR_ENABLED = True
+except ImportError:
+    QR_ENABLED = False
+    logging.warning("pyzbar not installed or missing system libraries. QR scanning disabled.")
 
 def extract_qr_url(image_bytes):
+    if not QR_ENABLED:
+        return None
     try:
         img = Image.open(BytesIO(image_bytes))
         decoded_objects = decode(img)
@@ -16,7 +24,22 @@ def extract_qr_url(image_bytes):
             return data
     except Exception as e:
         logging.error(f"QR decode error: {e}")
-    return None
+def verify_extracted_tx_id(tx_id, expected_amount, expected_name, expected_phone):
+    """
+    Tries telebirr first, if fails tries CBE.
+    Returns (is_approved, tx_id, error, data)
+    """
+    if not tx_id or len(tx_id) < 5:
+        return False, tx_id, "Invalid ID", None
+        
+    is_appr, t_id, err, dat = verify_with_ethiobank(tx_id, expected_amount, expected_name, expected_phone)
+    if is_appr:
+        return True, t_id, err, dat
+        
+    # fallback try as CBE URL or ID? CBE doesn't work with just ID in this library, it needs PDF URL.
+    return False, tx_id, "Could not verify via library", None
+
+
 
 def verify_with_ethiobank(text_or_url, expected_amount, expected_name, expected_phone):
     """

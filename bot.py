@@ -6,6 +6,9 @@ if os.environ.get("DEV_MODE"):
 
 import logging
 import uuid
+import chapa
+import json
+from urllib.parse import urlparse, parse_qs
 import threading
 import tempfile
 import html
@@ -470,7 +473,7 @@ def handle_callback(call):
     # ── Buy Previews Top-Up ──────────────────
     if data == "buy_previews":
         bot.answer_callback_query(call.id)
-        show_payment_instructions(chat_id, 100)
+        show_payment_instructions(chat_id, 100, uid)
         set_state(uid, "AWAITING_RECEIPT_TOPUP")
         return
 
@@ -682,7 +685,7 @@ def handle_callback(call):
     if data == "pay_single":
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
-        show_payment_instructions(chat_id, config.PRICE_SINGLE)
+        show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
         return
 
     if data == "use_credit":
@@ -955,21 +958,25 @@ def show_pricing(chat_id, uid):
     else:
         # Bypass directly to payment instructions
         set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
-        show_payment_instructions(chat_id, config.PRICE_SINGLE)
+        show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
 
-def show_payment_instructions(chat_id, amount):
-    cbe_acc = getattr(config, 'CBE_ACCOUNT', '1000123456789')
-    cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
+def show_payment_instructions(chat_id, amount, uid):
+    checkout_url, tx_ref = chapa.generate_chapa_link(amount, uid)
+    if not checkout_url:
+        bot.send_message(chat_id, "❌ የክፍያ ሊንክ ማመንጨት አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።")
+        return
+        
+    markup = InlineKeyboardMarkup()
+    from telebot.types import WebAppInfo
+    markup.add(InlineKeyboardButton("💳 Pay Now / አሁን ይክፈሉ", web_app=WebAppInfo(url=checkout_url)))
+    
     bot.send_message(
         chat_id,
         f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"ከታች ወዳሉት አማራጮች <b>{amount} ብር</b> ይላኩ፦\n\n"
-        f"📱 <b>Telebirr:</b> <code>{config.TELEBIRR_PHONE}</code>\n"
-        f"👤 ስም: <b>{config.TELEBIRR_NAME}</b>\n\n"
-        f"🏦 <b>CBE (ንግድ ባንክ):</b> <code>{cbe_acc}</code>\n"
-        f"👤 ስም: <b>{cbe_name}</b>\n\n"
-        f"ክፍያውን ሲያጠናቅቁ፣ የክፍያውን <b>Screenshot ፎቶ</b> ወይም <b>Transaction ID</b> እዚህ ይላኩ።",
-        parse_mode="HTML"
+        f"እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\n"
+        f"ክፍያዎ እንደተጠናቀቀ ፕሮቶኮልዎ በራስ-ሰር ይላክልዎታል!",
+        parse_mode="HTML",
+        reply_markup=markup
     )
 
 
@@ -1411,14 +1418,73 @@ def handle_messages(message):
             bot.send_message(admin_id, f"👤 {message.from_user.first_name} (@{message.from_user.username or 'N/A'})\n💬 ID: <code>{uid}</code>", parse_mode="HTML")
 
 # ══════════════════════════════════════════
-#  DUMMY HTTP SERVER (Render)
+#  WEBHOOK HTTP SERVER (Render & Chapa)
 # ══════════════════════════════════════════
+
+def process_chapa_success(tx_ref):
+    if database.is_tx_ref_used(tx_ref):
+        return
+    parts = tx_ref.split("-")
+    if len(parts) >= 2:
+        try:
+            uid = int(parts[1])
+        except ValueError:
+            return
+    else:
+        return
+        
+    payment_amount = config.PRICE_SINGLE
+    session = get_session(uid)
+    d = session.get("data", {})
+    order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
+    
+    database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+    chat_id = uid 
+    
+    bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 ፕሮቶኮልዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
+    generate_and_deliver_pdf(chat_id, uid, d)
+
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"Baya Books Bot is running!")
+        if self.path.startswith('/auto-verify/'):
+            tx_ref = self.path.split('/')[-1]
+            success, _ = chapa.verify_chapa_payment(tx_ref)
+            if success:
+                process_chapa_success(tx_ref)
+            
+            # Redirect user back to bot
+            bot_username = bot.get_me().username
+            self.send_response(302)
+            self.send_header('Location', f'https://t.me/{bot_username}')
+            self.end_headers()
+        else:
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Baya Books Bot is running!")
+            
+    def do_POST(self):
+        if self.path == '/chapa-webhook':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            
+            self.send_response(200)
+            self.end_headers()
+            
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                tx_ref = data.get('tx_ref')
+                if tx_ref:
+                    # Double check via API to prevent spoofing
+                    success, _ = chapa.verify_chapa_payment(tx_ref)
+                    if success:
+                        process_chapa_success(tx_ref)
+            except Exception as e:
+                logging.error(f"Webhook error: {e}")
+        else:
+            self.send_response(404)
+            self.end_headers()
+            
     def log_message(self, format, *args):
         pass
 

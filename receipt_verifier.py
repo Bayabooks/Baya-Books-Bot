@@ -10,6 +10,14 @@ except ImportError:
     QR_ENABLED = False
     logging.warning("pyzbar not installed or missing system libraries. QR scanning disabled.")
 
+# Monkey-patch requests to add a default timeout so Render doesn't freeze!
+import requests
+_original_request = requests.Session.request
+def _timeout_request(self, method, url, **kwargs):
+    kwargs.setdefault('timeout', 5.0)
+    return _original_request(self, method, url, **kwargs)
+requests.Session.request = _timeout_request
+
 def extract_qr_url(image_bytes):
     if not QR_ENABLED:
         return None

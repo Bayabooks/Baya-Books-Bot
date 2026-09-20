@@ -530,10 +530,12 @@ def handle_callback(call):
         set_state(uid, "AWAITING_BOOK_PICK")
         
         sub_name_en = ""
-        for cat_subs in SUBCATEGORIES.values():
+        sub_name_am = ""
+        for cat_id, cat_subs in SUBCATEGORIES.items():
             for sid, sam, sen in cat_subs:
                 if sid == data:
                     sub_name_en = sen
+                    sub_name_am = sam
                     break
             if sub_name_en:
                 break
@@ -557,7 +559,7 @@ def handle_callback(call):
         session = get_session(uid)
         session["data"]["recommended_books"] = books
 
-        text = f"📚 <b>ለ{cat[1]} {cat_name_am} 3 ምርጥ መጽሐፍት</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        text = f"📚 <b>ለ {sub_name_am} ምርጥ 5 መጽሐፍት</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
         markup = InlineKeyboardMarkup()
         for i, b in enumerate(books):
             text += f"{i+1}️⃣ 📕 <b>{b['title']}</b>\n   ↳ <i>{b['description']}</i>\n\n"

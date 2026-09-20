@@ -396,9 +396,13 @@ def handle_callback(call):
         if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
         set_state(uid, "AWAITING_CATEGORY")
-        markup = InlineKeyboardMarkup(row_width=2)
+        markup = InlineKeyboardMarkup()
         buttons = [InlineKeyboardButton(f"{emoji} {am}", callback_data=cid) for cid, emoji, am, en in CATEGORIES]
-        markup.add(*buttons)
+        for i in range(0, len(buttons), 2):
+            if i + 1 < len(buttons):
+                markup.row(buttons[i], buttons[i+1])
+            else:
+                markup.row(buttons[i])
         bot.send_message(
             chat_id,
             "🧭 <b>በጣም ጥሩ!</b>\n\nዛሬ በየትኛው የህይወት ክፍል\nትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
@@ -672,9 +676,13 @@ def ask_age(chat_id):
     bot.send_message(chat_id, "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>", parse_mode="HTML", reply_markup=markup)
 
 def ask_goal(chat_id):
-    markup = InlineKeyboardMarkup(row_width=2)
+    markup = InlineKeyboardMarkup()
     buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=gid) for gid, emoji, label in GOALS]
-    markup.add(*buttons)
+    for i in range(0, len(buttons), 2):
+        if i + 1 < len(buttons):
+            markup.row(buttons[i], buttons[i+1])
+        else:
+            markup.row(buttons[i])
     markup.add(InlineKeyboardButton("✏️ ሌላ ግብ አለኝ", callback_data="goal_custom"))
     bot.send_message(chat_id, "🎯 <b>ማሳካት የሚፈልጉት ትልቁ ግብ?</b>", parse_mode="HTML", reply_markup=markup)
 

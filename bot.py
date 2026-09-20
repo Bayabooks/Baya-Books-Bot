@@ -280,7 +280,7 @@ def cmd_help(message):
         "1️⃣ መጽሐፍ ይምረጡ ወይም እኛ እንምረጥልዎ\n"
         "2️⃣ ጥቂት ጥያቄዎችን ይመልሱ\n"
         "3️⃣ ነጻ ማሳያ ያንብቡ\n"
-        "4️⃣ ሙሉ PDF ይዘዙ (200 ብር)\n"
+        f"4️⃣ ሙሉ PDF ይዘዙ ({config.PRICE_SINGLE} ብር)\n"
         "5️⃣ ግላዊ ፕሮቶኮልዎን ያውርዱ!\n\n"
         "📚 /mylibrary — ያዘዙዋቸው PDFs\n"
         "🔗 /referral — ጓደኞችን ይጋብዙ\n"
@@ -921,7 +921,7 @@ def generate_and_show_preview(chat_id, uid, data):
 
     # CTA
     strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-    btn_text = f"🎁 የመጀመሪያዎን ሙሉ ፕሮቶኮል በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ ፕሮቶኮል 200 ብር ({strikethrough_300})"
+    btn_text = f"🎁 የመጀመሪያዎን ሙሉ ፕሮቶኮል በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ ፕሮቶኮል {config.PRICE_SINGLE} ብር ({strikethrough_300})"
     
     bot.send_message(
         chat_id,
@@ -1342,7 +1342,25 @@ def handle_messages(message):
                 config.TELEBIRR_NAME, config.TELEBIRR_PHONE,
             )
 
-            tx_id = result.get("transaction_id", uuid.uuid4().hex[:12])
+            tx_id = result.get("transaction_id", "")
+            if tx_id:
+                # Hybrid check: use Gemini extracted TX ID to check the bank API!
+                cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
+                is_appr, t_id, err, dat = receipt_verifier.verify_extracted_tx_id(
+                    tx_id, expected_amount, config.TELEBIRR_NAME, config.TELEBIRR_PHONE
+                )
+                if is_appr:
+                    # Verified officially by the bank!
+                    if database.is_tx_ref_used(tx_id):
+                        bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
+                        return
+                    payment_id = database.record_payment(uid, order_id, expected_amount, tx_id, file_id)
+                    bot.send_message(chat_id, "✅ <b>ክፍያዎ በስኬት ተረጋግጧል!</b>", parse_mode="HTML")
+                    if payment_id:
+                        handle_payment_approved(payment_id)
+                    return
+
+            tx_id = tx_id or uuid.uuid4().hex[:12]
             if tx_id and database.is_tx_ref_used(tx_id):
                 bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
                 return

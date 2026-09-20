@@ -161,7 +161,8 @@ Analyze this screenshot carefully and extract:
 
 Expected payment details:
 - Expected Amount: {expected_amount} Birr
-- Expected Recipient: {expected_recipient} or {expected_phone}
+- Expected Recipient (Telebirr): {telebirr_name} or {telebirr_phone}
+- Expected Recipient (CBE): {cbe_name} or {cbe_account}
 
 Respond in this exact JSON format only, no other text:
 {{
@@ -178,7 +179,7 @@ Respond in this exact JSON format only, no other text:
 Rules:
 - Set amount, recipient, date, transaction_id to the extracted values, or null if unreadable
 - amount_matches: true ONLY if amount equals exactly {expected_amount}
-- recipient_matches: true ONLY if recipient contains "{expected_recipient}" or "{expected_phone}"
+- recipient_matches: true ONLY if the extracted recipient contains ANY of these: "{telebirr_name}", "{telebirr_phone}", "{cbe_name}", or "{cbe_account}".
 - is_valid_receipt: true ONLY if it looks like a genuine payment receipt/confirmation
 - confidence: "high" if image is clear, "medium" if partially readable, "low" if blurry/unclear"""
 
@@ -315,12 +316,14 @@ def verify_book_title(query):
         return {"title": "", "author": "", "found": False}
 
 
-def verify_receipt(image_bytes, expected_amount, expected_recipient, expected_phone):
+def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, cbe_name, cbe_account):
     """Verify a payment screenshot using Gemini Vision."""
     prompt = RECEIPT_VERIFY_PROMPT.format(
         expected_amount=expected_amount,
-        expected_recipient=expected_recipient,
-        expected_phone=expected_phone,
+        telebirr_name=telebirr_name,
+        telebirr_phone=telebirr_phone,
+        cbe_name=cbe_name,
+        cbe_account=cbe_account,
     )
     
     try:

@@ -11,3 +11,6 @@ CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "baya_books")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "bayabooks").lower()
 PRICE_SINGLE = 10 # Forced to 10 for testing
 DB_PATH = os.getenv("DB_PATH", "baya_books.db")
+
+CBE_ACCOUNT = os.getenv("CBE_ACCOUNT", "1000326477878")
+CBE_NAME = os.getenv("CBE_NAME", "Behailu Getachew")

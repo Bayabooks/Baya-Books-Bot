@@ -1341,6 +1341,8 @@ def handle_messages(message):
             result = ai_engine.verify_receipt(
                 file_bytes, expected_amount,
                 config.TELEBIRR_NAME, config.TELEBIRR_PHONE,
+                getattr(config, 'CBE_NAME', 'Baya Books'),
+                getattr(config, 'CBE_ACCOUNT', '1000123456789')
             )
 
             tx_id = result.get("transaction_id", "")

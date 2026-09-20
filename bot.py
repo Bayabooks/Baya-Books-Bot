@@ -608,46 +608,23 @@ def handle_callback(call):
     if data.startswith("age_"):
         age_item = next((a for a in AGE_RANGES if a[0] == data), None)
         if age_item:
-            set_state(uid, "AWAITING_GOAL", age_range=age_item[2])
+            set_state(uid, "AWAITING_LIVING", age_range=age_item[2])
             bot.answer_callback_query(call.id)
-            ask_goal(chat_id)
-        return
-
-    # ── Goal ─────────────────────────────────
-    if data.startswith("goal_") and data != "goal_custom":
-        goal_item = next((g for g in GOALS if g[0] == data), None)
-        if goal_item:
-            set_state(uid, "AWAITING_LOCATION", goal=goal_item[2])
-            bot.answer_callback_query(call.id)
-            ask_location(chat_id)
-        return
-
-    if data == "goal_custom":
-        set_state(uid, "AWAITING_CUSTOM_GOAL")
-        bot.answer_callback_query(call.id)
-        bot.send_message(chat_id, "🎯 ግብዎን ይፃፉ:")
-        return
-
-    # ── Location ─────────────────────────────
-    if data.startswith("loc_"):
-        loc = "Ethiopia" if data == "loc_ethiopia" else "Abroad"
-        set_state(uid, "AWAITING_LIVING", location=loc)
-        bot.answer_callback_query(call.id)
-        ask_living_situation(chat_id)
+            ask_living_situation(chat_id)
         return
 
     # ── Living Situation ─────────────────────
     if data.startswith("liv_"):
         liv = "Alone" if data == "liv_alone" else "With Family"
-        set_state(uid, "AWAITING_EMPLOYMENT", living_situation=liv)
+        set_state(uid, "AWAITING_LOCATION", living_situation=liv)
         bot.answer_callback_query(call.id)
-        ask_employment(chat_id)
+        ask_location(chat_id)
         return
 
-    # ── Employment ───────────────────────────
-    if data.startswith("emp_"):
-        emp = "Working" if data == "emp_working" else "Not Working"
-        set_state(uid, "AWAITING_SPECIFIC_CHANGE", employment=emp)
+    # ── Location ─────────────────────────────
+    if data.startswith("loc_"):
+        loc = "Ethiopia" if data == "loc_ethiopia" else "Abroad"
+        set_state(uid, "AWAITING_SPECIFIC_CHANGE", location=loc)
         bot.answer_callback_query(call.id)
         ask_specific_change(chat_id)
         return
@@ -799,22 +776,6 @@ def ask_age(chat_id):
         parse_mode="HTML", reply_markup=markup
     )
 
-def ask_goal(chat_id):
-    markup = InlineKeyboardMarkup()
-    buttons = [InlineKeyboardButton(f"{emoji} {label}", callback_data=gid) for gid, emoji, label in GOALS]
-    for i in range(0, len(buttons), 2):
-        if i + 1 < len(buttons):
-            markup.row(buttons[i], buttons[i+1])
-        else:
-            markup.row(buttons[i])
-    markup.add(InlineKeyboardButton("✏️ ሌላ ግብ አለኝ", callback_data="goal_custom"))
-    bot.send_message(
-        chat_id, 
-        "🎯 <b>ማሳካት የሚፈልጉት ትልቁ ግብ?</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 
-        parse_mode="HTML", reply_markup=markup
-    )
-
 def ask_location(chat_id):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -837,19 +798,6 @@ def ask_living_situation(chat_id):
     bot.send_message(
         chat_id,
         "🏠 <b>የአኗኗር ሁኔታዎ ምን ይመስላል?</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        parse_mode="HTML", reply_markup=markup
-    )
-
-def ask_employment(chat_id):
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("💼 ስራ አለኝ", callback_data="emp_working"),
-        InlineKeyboardButton("🚫 ስራ የለኝም", callback_data="emp_not_working")
-    )
-    bot.send_message(
-        chat_id,
-        "💼 <b>የስራ ሁኔታዎ?</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML", reply_markup=markup
     )
@@ -1303,13 +1251,6 @@ def handle_messages(message):
             else:
                 bot.send_message(chat_id, "⚠️ እንዲህ ዓይነት መጽሐፍ ማግኘት አልቻልኩም። እባክዎ የመጽሐፉን ትክክለኛ ስም እና የጸሐፊውን ስም አብረው ይጻፉ።")
             return
-
-    # ── Custom Goal Input ────────────────────
-    if state == "AWAITING_CUSTOM_GOAL":
-        if message.text:
-            set_state(uid, "AWAITING_LOCATION", goal=message.text.strip())
-            ask_location(chat_id)
-        return
 
     # ── Specific Change Input ────────────────
     if state == "AWAITING_SPECIFIC_CHANGE":

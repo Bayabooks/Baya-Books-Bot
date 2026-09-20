@@ -925,7 +925,7 @@ def generate_and_show_preview(chat_id, uid, data):
         bot.send_message(chat_id, clean_header + clean_preview)
 
     # CTA
-    strikethrough_300 = "3\u03360\u03360\u0336 ብር"
+    strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
     btn_text = f"🎁 የመጀመሪያዎን ሙሉ ፕሮቶኮል በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ ፕሮቶኮል 200 ብር ({strikethrough_300})"
     
     bot.send_message(
@@ -950,7 +950,7 @@ def show_pricing(chat_id, uid):
     if credits > 0:
         markup.add(InlineKeyboardButton(f"🎫 ክሬዲት ተጠቀም ({credits} ቀሪ)", callback_data="use_credit"))
 
-    strikethrough_300 = "3\u03360\u03360\u0336 ብር"
+    strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
     markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
     markup.add(InlineKeyboardButton(f"3️⃣ 3 ፕሮቶኮሎች — {config.PRICE_BUNDLE} ብር (17% ቅናሽ!)", callback_data="pay_bundle"))
 

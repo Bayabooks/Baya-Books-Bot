@@ -940,21 +940,22 @@ def generate_and_show_preview(chat_id, uid, data):
 
 def show_pricing(chat_id, uid):
     credits = database.get_credits(uid)
-    markup = InlineKeyboardMarkup(row_width=1)
-
+    
     if credits > 0:
+        markup = InlineKeyboardMarkup(row_width=1)
         markup.add(InlineKeyboardButton(f"🎫 ክሬዲት ተጠቀም ({credits} ቀሪ)", callback_data="use_credit"))
-
-    strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-    markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
-
-    bot.send_message(
-        chat_id,
-        "💳 <b>የዋጋ አማራጮች</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        "ከታች የሚስማማዎትን ይምረጡ 👇",
-        parse_mode="HTML", reply_markup=markup,
-    )
-
+        strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
+        markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
+        bot.send_message(
+            chat_id,
+            "💳 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+            "ከታች የሚስማማዎትን ይምረጡ 👇",
+            parse_mode="HTML", reply_markup=markup,
+        )
+    else:
+        # Bypass directly to payment instructions
+        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
+        show_payment_instructions(chat_id, config.PRICE_SINGLE)
 
 def show_payment_instructions(chat_id, amount):
     cbe_acc = getattr(config, 'CBE_ACCOUNT', '1000123456789')

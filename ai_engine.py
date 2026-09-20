@@ -338,13 +338,20 @@ def verify_receipt(image_bytes, expected_amount, expected_recipient, expected_ph
         else:
             text = "{}"
         result = json.loads(text)
+        logging.info(f"Gemini receipt verification result: {result}")
         
+        # Helper to handle string booleans safely
+        def is_true(val):
+            if isinstance(val, bool): return val
+            if isinstance(val, str): return val.lower() == 'true'
+            return False
+
         # Final verdict
         is_approved = (
-            result.get("is_valid_receipt") and
-            result.get("amount_matches") and
-            result.get("recipient_matches") and
-            result.get("confidence") in ("high", "medium")
+            is_true(result.get("is_valid_receipt")) and
+            is_true(result.get("amount_matches")) and
+            is_true(result.get("recipient_matches")) and
+            result.get("confidence", "low").lower() in ("high", "medium")
         )
         result["auto_approved"] = is_approved
         return result

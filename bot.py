@@ -63,6 +63,59 @@ CATEGORIES = [
     ("cat_10", "🚀", "ቢዝነስ እና ስራ ፈጠራ", "Business & Entrepreneurship"),
 ]
 
+SUBCATEGORIES = {
+    "cat_1": [
+        ("sub_1_1", "መጥፎ ልማድን ማቋረጥ", "Breaking Bad Habits"),
+        ("sub_1_2", "የዕለት ተዕለት ሩቲን መገንባት", "Building Daily Routines"),
+        ("sub_1_3", "ዲሲፕሊን እና ቁርጠኝነት", "Developing Willpower")
+    ],
+    "cat_2": [
+        ("sub_2_1", "ገንዘብ ማጠራቀም እና ማስተዳደር", "Saving & Budgeting"),
+        ("sub_2_2", "ኢንቨስትመንት እና ሀብት ማፍራት", "Investing & Wealth Creation"),
+        ("sub_2_3", "የገንዘብ ስነ-ልቦና", "Financial Mindset")
+    ],
+    "cat_3": [
+        ("sub_3_1", "ትክክለኛ አጋር ማግኘት", "Finding the Right Partner"),
+        ("sub_3_2", "ትዳር እና ግንኙነትን ማጠናከር", "Strengthening Relationships"),
+        ("sub_3_3", "ማህበራዊ ክህሎት እና ጓደኝነት", "Social Skills & Friendship")
+    ],
+    "cat_4": [
+        ("sub_4_1", "የህይወት ትርጉምን ማግኘት", "Finding Meaning in Life"),
+        ("sub_4_2", "ጭንቀት እና ሀሳብን ማሸነፍ", "Overcoming Anxiety & Stress"),
+        ("sub_4_3", "ውስጣዊ ሰላም እና መንፈሳዊነት", "Inner Peace & Mindfulness")
+    ],
+    "cat_5": [
+        ("sub_5_1", "የጊዜ አጠቃቀም", "Time Management"),
+        ("sub_5_2", "ጥልቅ ትኩረት (Deep Work)", "Deep Work & Focus"),
+        ("sub_5_3", "ማንዛዛትን ማቆም (Procrastination)", "Overcoming Procrastination")
+    ],
+    "cat_6": [
+        ("sub_6_1", "የበታችነት ስሜትን ማሸነፍ", "Overcoming Self-Doubt"),
+        ("sub_6_2", "በሰው ፊት መናገር እና ድፍረት", "Public Speaking & Social Confidence"),
+        ("sub_6_3", "የአሸናፊነት አስተሳሰብ", "Resilient Mindset")
+    ],
+    "cat_7": [
+        ("sub_7_1", "ሰዎችን መምራት እና ማስተዳደር", "Managing Teams"),
+        ("sub_7_2", "ማሳመን እና ድርድር", "Persuasion & Negotiation"),
+        ("sub_7_3", "ተፅዕኖ ፈጣሪነት እና ካሪዝማ", "Charisma & Influence")
+    ],
+    "cat_8": [
+        ("sub_8_1", "ከትልቅ ህመም (Trauma) ማገገም", "Overcoming Trauma"),
+        ("sub_8_2", "ይቅርታ እና ያለፈውን መተው", "Forgiveness & Moving On"),
+        ("sub_8_3", "ሀዘንን እና መለያየትን ማለፍ", "Dealing with Grief & Loss")
+    ],
+    "cat_9": [
+        ("sub_9_1", "አካላዊ ብቃት እና ስፖርት", "Fitness & Exercise"),
+        ("sub_9_2", "አመጋገብ እና ጤና", "Diet & Nutrition"),
+        ("sub_9_3", "እረፍት እና ከፍተኛ ሀይል", "Sleep & High Energy")
+    ],
+    "cat_10": [
+        ("sub_10_1", "አዲስ ቢዝነስ መጀመር", "Starting a Startup"),
+        ("sub_10_2", "ማርኬቲንግ እና ሽያጭ", "Marketing & Sales"),
+        ("sub_10_3", "ቢዝነስን ማሳደግ (Scaling)", "Scaling & Strategy")
+    ]
+}
+
 GOALS = [
     ("goal_1", "🚀", "ቢዝነስ መጀመር"),
     ("goal_2", "💰", "ገንዘብ ማጠራቀም"),
@@ -445,15 +498,52 @@ def handle_callback(call):
     # ── Category Selected ────────────────────
     if data.startswith("cat_"):
         bot.answer_callback_query(call.id)
-        loading_msg = bot.send_message(chat_id, "⏳ <b>መጽሐፍት በመፈለግ ላይ...</b>", parse_mode="HTML")
-        set_state(uid, "AWAITING_BOOK_PICK")
         cat = next((c for c in CATEGORIES if c[0] == data), None)
         if not cat:
             return
-        cat_name_en = cat[3]
+            
+        emoji = cat[1]
         cat_name_am = cat[2]
+        
+        subs = SUBCATEGORIES.get(data, [])
+        if not subs:
+            return
+            
+        set_state(uid, "AWAITING_SUBCATEGORY")
+        markup = InlineKeyboardMarkup(row_width=1)
+        for sub_id, sub_am, sub_en in subs:
+            markup.add(InlineKeyboardButton(sub_am, callback_data=sub_id))
+            
+        bot.send_message(
+            chat_id,
+            f"{emoji} <b>{cat_name_am}</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "በዚህ ክፍል ውስጥ በተለይ የትኛው ላይ ትኩረት ማድረግ ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
+            parse_mode="HTML", reply_markup=markup
+        )
+        return
 
-        books = ai_engine.recommend_books(cat_name_en)
+    # ── Subcategory Selected ─────────────────
+    if data.startswith("sub_"):
+        bot.answer_callback_query(call.id)
+        loading_msg = bot.send_message(chat_id, "⏳ <b>መጽሐፍት በመፈለግ ላይ...</b>", parse_mode="HTML")
+        set_state(uid, "AWAITING_BOOK_PICK")
+        
+        sub_name_en = ""
+        for cat_subs in SUBCATEGORIES.values():
+            for sid, sam, sen in cat_subs:
+                if sid == data:
+                    sub_name_en = sen
+                    break
+            if sub_name_en:
+                break
+                
+        if not sub_name_en:
+            bot.delete_message(chat_id, loading_msg.message_id)
+            return
+
+        # Pass subcategory name directly as the "category" topic to the AI, and request 5 books
+        books = ai_engine.recommend_books(sub_name_en, count=5)
         bot.delete_message(chat_id, loading_msg.message_id)
         
         if isinstance(books, dict) and "error" in books:
@@ -525,15 +615,39 @@ def handle_callback(call):
     if data.startswith("goal_") and data != "goal_custom":
         goal_item = next((g for g in GOALS if g[0] == data), None)
         if goal_item:
-            set_state(uid, "AWAITING_LANGUAGE", goal=goal_item[2])
+            set_state(uid, "AWAITING_LOCATION", goal=goal_item[2])
             bot.answer_callback_query(call.id)
-            ask_language(chat_id)
+            ask_location(chat_id)
         return
 
     if data == "goal_custom":
         set_state(uid, "AWAITING_CUSTOM_GOAL")
         bot.answer_callback_query(call.id)
         bot.send_message(chat_id, "🎯 ግብዎን ይፃፉ:")
+        return
+
+    # ── Location ─────────────────────────────
+    if data.startswith("loc_"):
+        loc = "Ethiopia" if data == "loc_ethiopia" else "Abroad"
+        set_state(uid, "AWAITING_LIVING", location=loc)
+        bot.answer_callback_query(call.id)
+        ask_living_situation(chat_id)
+        return
+
+    # ── Living Situation ─────────────────────
+    if data.startswith("liv_"):
+        liv = "Alone" if data == "liv_alone" else "With Family"
+        set_state(uid, "AWAITING_EMPLOYMENT", living_situation=liv)
+        bot.answer_callback_query(call.id)
+        ask_employment(chat_id)
+        return
+
+    # ── Employment ───────────────────────────
+    if data.startswith("emp_"):
+        emp = "Working" if data == "emp_working" else "Not Working"
+        set_state(uid, "AWAITING_SPECIFIC_CHANGE", employment=emp)
+        bot.answer_callback_query(call.id)
+        ask_specific_change(chat_id)
         return
 
     # ── Language ──────────────────────────────
@@ -699,6 +813,54 @@ def ask_goal(chat_id):
         parse_mode="HTML", reply_markup=markup
     )
 
+def ask_location(chat_id):
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("🇪🇹 ኢትዮጵያ ውስጥ", callback_data="loc_ethiopia"),
+        InlineKeyboardButton("🌍 ከኢትዮጵያ ውጪ", callback_data="loc_abroad")
+    )
+    bot.send_message(
+        chat_id,
+        "📍 <b>የት ነው የሚኖሩት?</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        parse_mode="HTML", reply_markup=markup
+    )
+
+def ask_living_situation(chat_id):
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("👤 ብቻዬን", callback_data="liv_alone"),
+        InlineKeyboardButton("👨‍👩‍👧‍👦 ከቤተሰብ ጋር", callback_data="liv_family")
+    )
+    bot.send_message(
+        chat_id,
+        "🏠 <b>የአኗኗር ሁኔታዎ ምን ይመስላል?</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        parse_mode="HTML", reply_markup=markup
+    )
+
+def ask_employment(chat_id):
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("💼 ስራ አለኝ", callback_data="emp_working"),
+        InlineKeyboardButton("🚫 ስራ የለኝም", callback_data="emp_not_working")
+    )
+    bot.send_message(
+        chat_id,
+        "💼 <b>የስራ ሁኔታዎ?</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        parse_mode="HTML", reply_markup=markup
+    )
+
+def ask_specific_change(chat_id):
+    bot.send_message(
+        chat_id,
+        "✍️ <b>በመጨረሻም...</b>\n\n"
+        "አንድ ማግኘት፣ መቀየር ወይም ማስወገድ የሚፈልጉት ነገር ምንድን ነው?\n\n"
+        "<i>(እባክዎ በአጭሩ ይፃፉልን)</i>",
+        parse_mode="HTML"
+    )
+
 def ask_language(chat_id):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -730,6 +892,10 @@ def generate_and_show_preview(chat_id, uid, data):
         data.get("gender", "male"),
         data.get("age_range", "20-24"),
         data.get("goal", ""),
+        data.get("location", "Ethiopia"),
+        data.get("living_situation", "Alone"),
+        data.get("employment", "Working"),
+        data.get("specific_change", ""),
         data.get("language", "am"),
     )
 
@@ -745,8 +911,16 @@ def generate_and_show_preview(chat_id, uid, data):
 
     # Save order
     order_id = database.create_order(
-        uid, data.get("book_title"), data.get("gender"),
-        data.get("age_range"), data.get("goal"), data.get("language", "am"),
+        uid, 
+        data.get("book_title"), 
+        data.get("gender"),
+        data.get("age_range"), 
+        data.get("goal"), 
+        data.get("location"),
+        data.get("living_situation"),
+        data.get("employment"),
+        data.get("specific_change"),
+        data.get("language", "am"),
     )
     database.update_order_preview(order_id, preview)
     set_state(uid, "PREVIEW_SHOWN", order_id=order_id)
@@ -827,6 +1001,10 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         data.get("gender", "male"),
         data.get("age_range", "20-24"),
         data.get("goal", ""),
+        data.get("location", "Ethiopia"),
+        data.get("living_situation", "Alone"),
+        data.get("employment", "Working"),
+        data.get("specific_change", ""),
         data.get("language", "am"),
     )
 
@@ -926,6 +1104,10 @@ def handle_payment_approved(payment_id):
         "gender": order["gender"],
         "age_range": order["age_range"],
         "goal": order["goal"],
+        "location": order.get("location", ""),
+        "living_situation": order.get("living_situation", ""),
+        "employment": order.get("employment", ""),
+        "specific_change": order.get("specific_change", ""),
         "language": order["language"],
         "order_id": order_id,
     }
@@ -1123,7 +1305,14 @@ def handle_messages(message):
     # ── Custom Goal Input ────────────────────
     if state == "AWAITING_CUSTOM_GOAL":
         if message.text:
-            set_state(uid, "AWAITING_LANGUAGE", goal=message.text.strip())
+            set_state(uid, "AWAITING_LOCATION", goal=message.text.strip())
+            ask_location(chat_id)
+        return
+
+    # ── Specific Change Input ────────────────
+    if state == "AWAITING_SPECIFIC_CHANGE":
+        if message.text:
+            set_state(uid, "AWAITING_LANGUAGE", specific_change=message.text.strip())
             ask_language(chat_id)
         return
 

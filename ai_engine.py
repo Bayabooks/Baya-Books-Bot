@@ -19,13 +19,17 @@ You must deliver profound depth. Do not give shallow, generic advice. Every sent
 - Book Title: {book_title}
 - Age: {age_range}
 - Gender: {gender_display}
+- Location: {location}
+- Living Situation: {living_situation}
+- Employment: {employment}
 - Main Goal: {goal}
+- Specific Change Requested: {specific_change}
 - Output Language: {language_display}
 
 ### CORE DIRECTIVES (STRICTLY ENFORCED):
-1. THE ABSOLUTE LANGUAGE RULE: The entire output MUST be 100% in the requested Output Language. NEVER mix languages. For example, if Afaan Oromoo is requested, you must NEVER include Amharic words, titles, or characters. Ensure perfect grammar, spelling, and natural sentence flow.
-2. THE LATERAL BRIDGE (NO REJECTIONS): If the book is fiction, history, or totally unrelated to the goal, extract abstract themes (e.g., resilience, resource management) and map them flawlessly to the user's goal.
-3. DEMOGRAPHIC PSYCHOANALYSIS: Deeply empathize with their exact Age and Gender in the Ethiopian context.
+1. THE ABSOLUTE LANGUAGE RULE: The entire output MUST be 100% in the requested Output Language. NEVER mix languages. Ensure perfect grammar, spelling, and natural sentence flow.
+2. THE LATERAL BRIDGE: If the book is fiction or unrelated, extract abstract themes and map them flawlessly to the user's goal.
+3. HYPER-PERSONALIZED PSYCHOANALYSIS: Deeply empathize with their exact Age, Gender, Location ({location}), Living Situation ({living_situation}), and Employment ({employment}). Address their Specific Change ({specific_change}) directly as the focal point of the protocol.
 4. FORMATTING & EMOJIS (CRITICAL): 
    - Make the formatting extremely clean, spaced out, and visually beautiful.
    - ALWAYS use double line breaks (`\n\n`) to separate paragraphs and list items. NEVER clump text together. Each new idea or bullet point MUST start on a completely new line.
@@ -95,7 +99,11 @@ ALWAYS use double line breaks (\n\n) to separate thoughts. NEVER use inline bull
 Book: {book_title}
 Age: {age_range}
 Gender: {gender_display}
+Location: {location}
+Living Situation: {living_situation}
+Employment: {employment}
 Goal: {goal}
+Specific Change: {specific_change}
 Language: {language_display}
 
 Output in {language_display} ONLY. Do not wrap in code blocks.
@@ -112,15 +120,14 @@ Make every sentence carry weight. Be specific to Ethiopian culture, society, and
 
 
 BOOK_RECOMMEND_PROMPT = """You are a book recommendation expert for Ethiopian readers. 
-Category: {category}
+Category/Topic: {category}
 
-Recommend exactly 3 transformative books for this category. For each book, write exactly 1 sentence in Amharic explaining how it changes the reader's life.
+Recommend exactly {count} transformative books for this topic. For each book, write exactly 1 sentence in Amharic explaining how it changes the reader's life.
 
 Respond in this exact JSON format only, no other text:
 [
   {{"title": "Book Title in English", "description": "One sentence in Amharic"}},
-  {{"title": "Book Title in English", "description": "One sentence in Amharic"}},
-  {{"title": "Book Title in English", "description": "One sentence in Amharic"}}
+  ... (exactly {count} objects)
 ]"""
 
 
@@ -192,7 +199,7 @@ GENDER_MAP = {
 
 # ─── AI Functions ──────────────────────────
 
-def generate_preview(book_title, gender, age_range, goal, language="am"):
+def generate_preview(book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language="am"):
     """Generate only Part 1 (the free hook)."""
     gender_display = GENDER_MAP.get(gender, {}).get("am", gender)
     language_display = LANG_MAP.get(language, "Amharic")
@@ -202,6 +209,10 @@ def generate_preview(book_title, gender, age_range, goal, language="am"):
         age_range=age_range,
         gender_display=gender_display,
         goal=goal,
+        location=location,
+        living_situation=living_situation,
+        employment=employment,
+        specific_change=specific_change,
         language_display=language_display,
     )
     
@@ -214,7 +225,7 @@ def generate_preview(book_title, gender, age_range, goal, language="am"):
         return None
 
 
-def generate_full_protocol(book_title, gender, age_range, goal, language="am"):
+def generate_full_protocol(book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language="am"):
     """Generate the complete transformation protocol."""
     gender_display = GENDER_MAP.get(gender, {}).get("am", gender)
     language_display = LANG_MAP.get(language, "Amharic")
@@ -224,6 +235,10 @@ def generate_full_protocol(book_title, gender, age_range, goal, language="am"):
         age_range=age_range,
         gender_display=gender_display,
         goal=goal,
+        location=location,
+        living_situation=living_situation,
+        employment=employment,
+        specific_change=specific_change,
         language_display=language_display,
     )
     
@@ -236,9 +251,9 @@ def generate_full_protocol(book_title, gender, age_range, goal, language="am"):
         return None
 
 
-def recommend_books(category):
-    """Get 3 book recommendations for a category."""
-    prompt = BOOK_RECOMMEND_PROMPT.format(category=category)
+def recommend_books(category, count=3):
+    """Get book recommendations for a category."""
+    prompt = BOOK_RECOMMEND_PROMPT.format(category=category, count=count)
     
     try:
         model = genai.GenerativeModel(MODEL_TEXT)

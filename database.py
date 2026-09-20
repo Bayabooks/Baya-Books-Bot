@@ -45,6 +45,14 @@ def setup_database():
         created_date TEXT,
         delivered_date TEXT
     )''')
+    try: c.execute("ALTER TABLE orders ADD COLUMN location TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE orders ADD COLUMN living_situation TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE orders ADD COLUMN employment TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE orders ADD COLUMN specific_change TEXT")
+    except: pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS payments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,12 +195,12 @@ def get_uncredited_referral_count(user_id):
 
 # ─── Order Functions ───────────────────────
 
-def create_order(user_id, book_title, gender, age_range, goal, language):
+def create_order(user_id, book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language):
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''INSERT INTO orders (user_id, book_title, gender, age_range, goal, language, status, created_date)
-        VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
-    ''', (user_id, book_title, gender, age_range, goal, language, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    c.execute('''INSERT INTO orders (user_id, book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language, status, created_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)
+    ''', (user_id, book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     order_id = c.lastrowid
     conn.commit()
     conn.close()

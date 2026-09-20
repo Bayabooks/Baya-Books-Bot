@@ -6,3 +6,6 @@ requests
 Pillow
 telegraph
 markdown
+
+ethiobank-receipts
+pyzbar

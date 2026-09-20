@@ -19,6 +19,7 @@ import config
 import database
 import ai_engine
 import telegraph_generator
+import receipt_verifier
 
 logging.basicConfig(level=logging.INFO)
 
@@ -956,15 +957,18 @@ def show_pricing(chat_id, uid):
 
 
 def show_payment_instructions(chat_id, amount):
+    cbe_acc = getattr(config, 'CBE_ACCOUNT', '1000123456789')
+    cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
     bot.send_message(
         chat_id,
-        f"📱 <b>Telebirr ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"ከታች ወዳለው ቁጥር <b>{amount} ብር</b> ይላኩ፦\n\n"
-        f"📱 Telebirr: <code>{config.TELEBIRR_PHONE}</code>\n"
+        f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"ከታች ወዳሉት አማራጮች <b>{amount} ብር</b> ይላኩ፦\n\n"
+        f"📱 <b>Telebirr:</b> <code>{config.TELEBIRR_PHONE}</code>\n"
         f"👤 ስም: <b>{config.TELEBIRR_NAME}</b>\n\n"
-        f"✅ ከላኩ በኋላ የክፍያ ማረጋገጫ\n"
-        f"<b>ስክሪን ሾት ፎቶ</b> አንስተው ወደዚህ ቻት ይላኩ።",
-        parse_mode="HTML",
+        f"🏦 <b>CBE (ንግድ ባንክ):</b> <code>{cbe_acc}</code>\n"
+        f"👤 ስም: <b>{cbe_name}</b>\n\n"
+        f"ክፍያውን ሲያጠናቅቁ፣ የክፍያውን <b>Screenshot ፎቶ</b> ወይም <b>Transaction ID</b> እዚህ ይላኩ።",
+        parse_mode="HTML"
     )
 
 
@@ -1280,18 +1284,59 @@ def handle_messages(message):
             ask_language(chat_id)
         return
 
-    # ── Receipt Photo ────────────────────────
+    # ── Receipt Photo or Text ────────────────────────
     if state in ["AWAITING_RECEIPT", "AWAITING_RECEIPT_TOPUP"]:
-        if message.photo:
+        expected_amount = session["data"].get("payment_amount", config.PRICE_SINGLE)
+        if state == "AWAITING_RECEIPT_TOPUP":
+            expected_amount = 100
+        order_id = session["data"].get("order_id", -1) if state == "AWAITING_RECEIPT" else -1
+
+        text_to_verify = None
+        file_bytes = None
+        file_id = None
+
+        if message.text:
+            text_to_verify = message.text.strip()
+        elif message.photo:
             bot.send_message(chat_id, "⏳ <b>ክፍያዎን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
             file_id = message.photo[-1].file_id
             file_info = bot.get_file(file_id)
             file_bytes = bot.download_file(file_info.file_path)
+            
+            # Try to extract QR URL
+            qr_url = receipt_verifier.extract_qr_url(file_bytes)
+            if qr_url:
+                text_to_verify = qr_url
 
-            expected_amount = session["data"].get("payment_amount", config.PRICE_SINGLE)
-            if state == "AWAITING_RECEIPT_TOPUP":
-                expected_amount = 100
+        if text_to_verify:
+            if not file_bytes:
+                bot.send_message(chat_id, "⏳ <b>ክፍያዎን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
+            
+            # Try automated verification via ethiobank_receipts
+            cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
+            expected_name = config.TELEBIRR_NAME if 'cbe' not in text_to_verify.lower() else cbe_name
 
+            is_approved, tx_id, error_msg, ethio_data = receipt_verifier.verify_with_ethiobank(
+                text_to_verify, expected_amount, expected_name, config.TELEBIRR_PHONE
+            )
+
+            if tx_id and database.is_tx_ref_used(tx_id):
+                bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
+                return
+
+            if is_approved:
+                payment_id = database.record_payment(uid, order_id, expected_amount, tx_id, file_id)
+                bot.send_message(chat_id, "✅ <b>ክፍያዎ በስኬት ተረጋግጧል!</b>", parse_mode="HTML")
+                if payment_id:
+                    handle_payment_approved(payment_id)
+                return
+            elif message.text:
+                bot.send_message(chat_id, f"❌ ማረጋገጥ አልተቻለም! ({error_msg})\nእባክዎ ትክክለኛ Transaction ID ወይም Screenshot ይላኩ።")
+                return
+            # If it's a photo and QR code failed, fall through to Gemini vision
+
+        # Fallback to Gemini Vision
+        if file_bytes:
             result = ai_engine.verify_receipt(
                 file_bytes, expected_amount,
                 config.TELEBIRR_NAME, config.TELEBIRR_PHONE,
@@ -1302,7 +1347,6 @@ def handle_messages(message):
                 bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
                 return
 
-            order_id = session["data"].get("order_id", -1) if state == "AWAITING_RECEIPT" else -1
             payment_id = database.record_payment(uid, order_id, expected_amount, tx_id or uuid.uuid4().hex, file_id)
 
             if result.get("auto_approved"):
@@ -1332,7 +1376,7 @@ def handle_messages(message):
                         f"📝 TX ID: {tx_id}",
                         parse_mode="HTML", reply_markup=markup,
                     )
-            return
+        return
 
         bot.send_message(chat_id, "📸 እባክዎ የክፍያ ስክሪን ሾት <b>ፎቶ</b> ይላኩ።", parse_mode="HTML")
         return

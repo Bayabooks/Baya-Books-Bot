@@ -439,11 +439,16 @@ def get_user_drafts(user_id):
 def is_vip(user_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('''
-        SELECT vip_expiry FROM users WHERE id = ?
-    ''', (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        cursor.execute('''
+            SELECT vip_expiry FROM users WHERE user_id = ?
+        ''', (user_id,))
+        row = cursor.fetchone()
+    except Exception as e:
+        row = None
+    finally:
+        conn.close()
+
     if row and row[0]:
         from datetime import datetime
         try:
@@ -459,7 +464,7 @@ def set_vip(user_id, days=30):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        UPDATE users SET vip_expiry = ? WHERE id = ?
+        UPDATE users SET vip_expiry = ? WHERE user_id = ?
     ''', (expiry, user_id))
     conn.commit()
     conn.close()

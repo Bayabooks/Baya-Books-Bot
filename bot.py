@@ -227,7 +227,7 @@ def cmd_start(message):
     send_welcome(message.chat.id, user.first_name)
 
 def send_welcome(chat_id, first_name):
-    bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
 
     bottom_markup.add(
         KeyboardButton("➕ አዲስ ፕሮቶኮል"),

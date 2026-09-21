@@ -229,15 +229,19 @@ def cmd_start(message):
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 
+    from telebot.types import WebAppInfo
     bottom_markup.add(
         KeyboardButton("➕ አዲስ ፕሮቶኮል"),
-        KeyboardButton("📚 የኔ ፕሮቶኮሎች")
+        KeyboardButton("📚 የኔ ፕሮቶኮሎች", web_app=WebAppInfo(url=f"{config.BASE_URL}/library?uid={chat_id}"))
     )
     bottom_markup.add(
-        KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
-        KeyboardButton("☕ ቡድኑን ያበረታቱ")
+        KeyboardButton("🆓 ነፃ ፕሮቶኮሎች", web_app=WebAppInfo(url=f"{config.BASE_URL}/library?uid={chat_id}")),
+        KeyboardButton("🎁 ጓደኛ ይጋብዙ")
     )
-    bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"))
+    bottom_markup.add(
+        KeyboardButton("☕ ቡድኑን ያበረታቱ"),
+        KeyboardButton("💬 አስተያየት ይስጡን")
+    )
     
     bot.send_message(
         chat_id, 
@@ -1405,16 +1409,63 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(stats).encode('utf-8'))
             return
 
-        if self.path == '/app':
+        if self.path.startswith('/library'):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
             try:
-                with open('webapp.html', 'rb') as f:
+                with open('library.html', 'rb') as f:
                     self.wfile.write(f.read())
-            except Exception as e:
-                self.wfile.write(b"App UI not found.")
+            except Exception:
+                self.wfile.write(b"Library UI not found.")
             return
+
+        if self.path.startswith('/api/library'):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            
+            # Parse uid from query
+            parsed_path = urlparse(self.path)
+            query = parse_qs(parsed_path.query)
+            uid = query.get('uid', [''])[0]
+            
+            my_protocols = []
+            if uid and uid.isdigit():
+                orders = database.get_user_orders(int(uid))
+                for o in orders:
+                    # In a real app, we'd pull the actual choices from the DB if they were saved in a JSON column.
+                    # For now, we use the specific columns we DO have!
+                    my_protocols.append({
+                        "title": o['book_title'],
+                        "date": o['delivered_date'][:10] if o['delivered_date'] else 'Unknown',
+                        "url": o['pdf_file_id'], # This holds the Telegraph URL now
+                        "choices": {
+                            "Gender": o.get('gender', ''),
+                            "Age": o.get('age_range', ''),
+                            "Goal": o.get('goal', '')
+                        }
+                    })
+                    
+            # Hardcoded free examples
+            free_protocols = [
+                {
+                    "title": "Atomic Habits (James Clear)",
+                    "date": "Free Template",
+                    "url": "https://telegra.ph/Baya-Books-Protocol-09-12-19",
+                    "choices": {"Target": "University Students", "Goal": "Building Study Habits"}
+                },
+                {
+                    "title": "Rich Dad Poor Dad (Robert K.)",
+                    "date": "Free Template",
+                    "url": "https://telegra.ph/Baya-Books-Protocol-09-12-20",
+                    "choices": {"Target": "Young Adults", "Goal": "Financial Literacy"}
+                }
+            ]
+            
+            self.wfile.write(json.dumps({"my_protocols": my_protocols, "free_protocols": free_protocols}).encode('utf-8'))
+            return
+
 
         if self.path.startswith('/auto-verify/'):
             tx_ref = self.path.split('/')[-1]

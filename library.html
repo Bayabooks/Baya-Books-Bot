@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Baya Library</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: bold; }
+        .tab-inactive { color: #64748b; font-weight: 500; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-10">
+
+    <div class="sticky top-0 bg-white shadow-sm z-10">
+        <div class="flex justify-between items-center p-4">
+            <h1 class="text-xl font-bold text-indigo-600">Baya Library</h1>
+        </div>
+        <div class="flex border-b border-slate-200">
+            <button id="tab-my" class="flex-1 py-3 text-center tab-active" onclick="switchTab('my')">My Protocols</button>
+            <button id="tab-free" class="flex-1 py-3 text-center tab-inactive" onclick="switchTab('free')">Free Protocols</button>
+        </div>
+    </div>
+
+    <div class="p-4" id="content-my">
+        <div id="my-list" class="space-y-4">
+            <div class="text-center text-slate-500 py-10">Loading your protocols...</div>
+        </div>
+    </div>
+
+    <div class="p-4 hidden" id="content-free">
+        <div id="free-list" class="space-y-4">
+            <!-- Free templates -->
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        function switchTab(tab) {
+            if (tab === 'my') {
+                document.getElementById('tab-my').className = "flex-1 py-3 text-center tab-active";
+                document.getElementById('tab-free').className = "flex-1 py-3 text-center tab-inactive";
+                document.getElementById('content-my').classList.remove('hidden');
+                document.getElementById('content-free').classList.add('hidden');
+            } else {
+                document.getElementById('tab-free').className = "flex-1 py-3 text-center tab-active";
+                document.getElementById('tab-my').className = "flex-1 py-3 text-center tab-inactive";
+                document.getElementById('content-free').classList.remove('hidden');
+                document.getElementById('content-my').classList.add('hidden');
+            }
+        }
+
+        function renderCard(item) {
+            let tagsHtml = "";
+            for (const [key, val] of Object.entries(item.choices)) {
+                if (val) {
+                    tagsHtml += `<span class="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded mr-1 mb-1 border border-indigo-100">${val}</span>`;
+                }
+            }
+
+            return `
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden" onclick="tg.openLink('${item.url}')">
+                <div class="p-4">
+                    <h3 class="font-bold text-lg text-slate-800 leading-tight mb-1">${item.title}</h3>
+                    <p class="text-xs text-slate-400 mb-3">${item.date || 'Free Template'}</p>
+                    <div class="flex flex-wrap">${tagsHtml}</div>
+                </div>
+                <div class="bg-indigo-50 px-4 py-3 border-t border-indigo-100 text-center">
+                    <span class="text-indigo-600 font-bold text-sm">📖 Read Protocol</span>
+                </div>
+            </div>`;
+        }
+
+        async function loadData() {
+            // Get UID from URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const uid = urlParams.get('uid');
+
+            try {
+                const response = await fetch('/api/library?uid=' + (uid || ''));
+                const data = await response.json();
+                
+                const myList = document.getElementById('my-list');
+                if (data.my_protocols && data.my_protocols.length > 0) {
+                    myList.innerHTML = data.my_protocols.map(renderCard).join('');
+                } else {
+                    myList.innerHTML = `<div class="text-center text-slate-500 py-10 bg-white rounded-xl border border-dashed border-slate-300">You don't have any protocols yet.</div>`;
+                }
+
+                const freeList = document.getElementById('free-list');
+                if (data.free_protocols && data.free_protocols.length > 0) {
+                    freeList.innerHTML = data.free_protocols.map(renderCard).join('');
+                }
+            } catch (err) {
+                console.error("Failed to load", err);
+                document.getElementById('my-list').innerHTML = `<div class="text-red-500 p-4">Error loading protocols.</div>`;
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

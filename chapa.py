@@ -16,6 +16,9 @@ def generate_chapa_link(amount, uid):
         "amount": str(amount),
         "currency": "ETB",
         "tx_ref": tx_ref,
+        "email": f"user{uid}@bayabooks.com",
+        "first_name": "Baya",
+        "last_name": "Reader",
         "callback_url": f"{config.BASE_URL}/chapa-webhook",
         "return_url": f"{config.BASE_URL}/auto-verify/{tx_ref}",
         "customization": {

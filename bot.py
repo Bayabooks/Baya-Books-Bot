@@ -228,6 +228,10 @@ def cmd_start(message):
 
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    from telebot.types import WebAppInfo
+    bottom_markup.add(
+        KeyboardButton("📱 Open Baya Store", web_app=WebAppInfo(url=f"{config.BASE_URL}/app"))
+    )
     bottom_markup.add(
         KeyboardButton("➕ አዲስ ፕሮቶኮል"),
         KeyboardButton("📚 የኔ ፕሮቶኮሎች")
@@ -674,6 +678,12 @@ def handle_callback(call):
         if database.has_free_protocol(uid):
             bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ ፕሮቶኮል ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
             database.mark_free_protocol_used(uid)
+            session = get_session(uid)
+            generate_and_deliver_pdf(chat_id, uid, session["data"])
+            return
+            
+        if database.is_vip(uid):
+            bot.send_message(chat_id, "👑 <b>VIP አባል!</b>\nበVIP አባልነትዎ ምክንያት ክፍያ አያስፈልግም።", parse_mode="HTML")
             session = get_session(uid)
             generate_and_deliver_pdf(chat_id, uid, session["data"])
             return
@@ -1370,9 +1380,25 @@ def process_chapa_success(tx_ref):
     elif purpose == "TIP":
         database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
         bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")
+    elif purpose == "VIP":
+        payment_amount = 500
+        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK_VIP")
+        database.set_vip(uid, days=30)
+        bot.send_message(chat_id, "👑 <b>እንኳን ደስ አሎት!</b>\nየVIP አባልነትዎ ነቅቷል! አሁን ያለምንም ክፍያ ያልተገደበ ፕሮቶኮል ማዘጋጀት ይችላሉ!", parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == '/app':
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            try:
+                with open('webapp.html', 'rb') as f:
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.wfile.write(b"App UI not found.")
+            return
+
         if self.path.startswith('/auto-verify/'):
             tx_ref = self.path.split('/')[-1]
             success, _ = chapa.verify_chapa_payment(tx_ref)

@@ -1433,7 +1433,8 @@ class DummyHandler(BaseHTTPRequestHandler):
             my_protocols = []
             if uid and uid.isdigit():
                 orders = database.get_user_orders(int(uid))
-                for o in orders:
+                for row in orders:
+                    o = dict(row)
                     # In a real app, we'd pull the actual choices from the DB if they were saved in a JSON column.
                     # For now, we use the specific columns we DO have!
                     my_protocols.append({

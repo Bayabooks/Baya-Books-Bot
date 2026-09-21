@@ -961,9 +961,9 @@ def show_pricing(chat_id, uid):
         show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
 
 def show_payment_instructions(chat_id, amount, uid):
-    checkout_url, tx_ref = chapa.generate_chapa_link(amount, uid)
+    checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid)
     if not checkout_url:
-        bot.send_message(chat_id, "❌ የክፍያ ሊንክ ማመንጨት አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።")
+        bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
         return
         
     markup = InlineKeyboardMarkup()

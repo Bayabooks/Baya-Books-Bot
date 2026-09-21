@@ -31,13 +31,14 @@ def generate_chapa_link(amount, uid):
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         data = response.json()
         if data.get("status") == "success":
-            return data["data"]["checkout_url"], tx_ref
+            return data["data"]["checkout_url"], tx_ref, None
         else:
-            logging.error(f"Chapa Init Error: {data}")
-            return None, None
+            err_msg = data.get('message') or str(data)
+            logging.error(f"Chapa Init Error: {err_msg}")
+            return None, None, f"Chapa API Error: {err_msg}"
     except Exception as e:
         logging.error(f"Chapa Request Error: {e}")
-        return None, None
+        return None, None, f"Network Error: {str(e)}"
 
 def verify_chapa_payment(tx_ref):
     url = f"https://api.chapa.co/v1/transaction/verify/{tx_ref}"

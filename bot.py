@@ -709,7 +709,7 @@ def handle_callback(call):
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
         
-        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid)
+        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, "TIP")
         if not checkout_url:
             bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
             return
@@ -1078,12 +1078,12 @@ def generate_and_deliver_pdf(chat_id, uid, data):
 def show_tip_cta(chat_id):
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton("☕ 50 ብር", callback_data="tip_50"),
-        InlineKeyboardButton("☕ 100 ብር", callback_data="tip_100")
+        InlineKeyboardButton("☕ 100 ብር", callback_data="tip_100"),
+        InlineKeyboardButton("🎁 1,000 ብር", callback_data="tip_1000")
     )
     markup.add(
-        InlineKeyboardButton("☕ 200 ብር", callback_data="tip_200"),
-        InlineKeyboardButton("☕ 500 ብር", callback_data="tip_500")
+        InlineKeyboardButton("🏅 5,000 ብር", callback_data="tip_5000"),
+        InlineKeyboardButton("💎 10,000 ብር", callback_data="tip_10000")
     )
     bot.send_message(
         chat_id,

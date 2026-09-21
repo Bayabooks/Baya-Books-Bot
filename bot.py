@@ -228,10 +228,7 @@ def cmd_start(message):
 
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    from telebot.types import WebAppInfo
-    bottom_markup.add(
-        KeyboardButton("📱 Open Baya Store", web_app=WebAppInfo(url=f"{config.BASE_URL}/app"))
-    )
+
     bottom_markup.add(
         KeyboardButton("➕ አዲስ ፕሮቶኮል"),
         KeyboardButton("📚 የኔ ፕሮቶኮሎች")

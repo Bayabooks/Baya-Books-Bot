@@ -352,8 +352,9 @@ def cmd_admin(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ የ Admin መብት የለዎትም!"); return
     markup = InlineKeyboardMarkup(row_width=2)
+    from telebot.types import WebAppInfo
     markup.add(
-        InlineKeyboardButton("📊 Analytics", callback_data="admin_stats"),
+        InlineKeyboardButton("📊 Visual Dashboard", web_app=WebAppInfo(url=f"{config.BASE_URL}/admin_dashboard")),
         InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast"),
     )
     markup.add(
@@ -1385,6 +1386,25 @@ def process_chapa_success(tx_ref):
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == '/admin_dashboard':
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            try:
+                with open('admin_dashboard.html', 'rb') as f:
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.wfile.write(b"Admin Dashboard not found.")
+            return
+
+        if self.path == '/admin/data':
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            stats = database.get_analytics()
+            self.wfile.write(json.dumps(stats).encode('utf-8'))
+            return
+
         if self.path == '/app':
             self.send_response(200)
             self.send_header("Content-type", "text/html")

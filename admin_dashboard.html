@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Admin Dashboard</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-10">
+    <div class="bg-indigo-600 text-white p-5 shadow-md">
+        <h1 class="text-2xl font-bold">Baya Books Admin</h1>
+        <p class="text-indigo-200 text-sm">Real-time Analytics Dashboard</p>
+    </div>
+
+    <div class="p-4 space-y-6">
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Revenue</p>
+                <p class="text-2xl font-bold text-indigo-600 mt-1" id="val-total-rev">--</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Today's Revenue</p>
+                <p class="text-2xl font-bold text-emerald-500 mt-1" id="val-today-rev">--</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Users</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1" id="val-users">--</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">PDFs Generated</p>
+                <p class="text-2xl font-bold text-amber-500 mt-1" id="val-pdfs">--</p>
+            </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold mb-4">Revenue (Last 7 Days)</h2>
+            <canvas id="revenueChart" height="200"></canvas>
+        </div>
+
+        <!-- Top Books Chart -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold mb-4">Top Performing Books</h2>
+            <canvas id="booksChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        async function loadData() {
+            try {
+                // Fetch JSON data from our Python backend
+                const response = await fetch('/admin/data');
+                const data = await response.json();
+                
+                // Update Cards
+                document.getElementById('val-total-rev').innerText = data.total_revenue.toLocaleString() + ' ETB';
+                document.getElementById('val-today-rev').innerText = data.today_revenue.toLocaleString() + ' ETB';
+                document.getElementById('val-users').innerText = data.total_users.toLocaleString();
+                document.getElementById('val-pdfs').innerText = data.total_pdfs.toLocaleString();
+
+                // Build Top Books Chart (Pie)
+                const bookNames = data.top_books.map(b => b[0].substring(0, 15) + "...");
+                const bookCounts = data.top_books.map(b => b[1]);
+
+                new Chart(document.getElementById('booksChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: bookNames,
+                        datasets: [{
+                            data: bookCounts,
+                            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                // Build Weekly Revenue Chart (Line)
+                // For simplicity, we are mocking the exact days in the frontend, but using the weekly total.
+                // In a perfect world, the backend returns a daily breakdown.
+                new Chart(document.getElementById('revenueChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+                        datasets: [{
+                            label: 'Revenue (ETB)',
+                            data: [0, 0, 0, 0, 0, data.weekly_revenue - data.today_revenue, data.today_revenue],
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+
+            } catch (err) {
+                console.error("Failed to load dashboard data", err);
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

@@ -22,8 +22,8 @@ def generate_chapa_link(amount, uid):
         "callback_url": f"{config.BASE_URL}/chapa-webhook",
         "return_url": f"{config.BASE_URL}/auto-verify/{tx_ref}",
         "customization": {
-            "title": "Baya Books Protocol",
-            "description": "Payment for Full Protocol PDF"
+            "title": "Baya Books",
+            "description": "Protocol PDF"
         }
     }
     

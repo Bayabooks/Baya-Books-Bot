@@ -3,8 +3,8 @@ import config
 import logging
 import uuid
 
-def generate_chapa_link(amount, uid):
-    tx_ref = f"BAYA-{uid}-{uuid.uuid4().hex[:8]}"
+def generate_chapa_link(amount, uid, purpose="PROTOCOL"):
+    tx_ref = f"BAYA-{uid}-{purpose}-{uuid.uuid4().hex[:8]}"
     url = "https://api.chapa.co/v1/transaction/initialize"
     
     headers = {

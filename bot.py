@@ -473,8 +473,7 @@ def handle_callback(call):
     # ── Buy Previews Top-Up ──────────────────
     if data == "buy_previews":
         bot.answer_callback_query(call.id)
-        show_payment_instructions(chat_id, 100, uid)
-        set_state(uid, "AWAITING_RECEIPT_TOPUP")
+        show_payment_instructions(chat_id, 100, uid, "TOPUP")
         return
 
     # ── Show Drafts ──────────────────────────
@@ -696,6 +695,27 @@ def handle_callback(call):
             generate_and_deliver_pdf(chat_id, uid, d)
         else:
             bot.answer_callback_query(call.id, "❌ ክሬዲት የለዎትም!", show_alert=True)
+        return
+
+    if data.startswith("tip_"):
+        amount = int(data.split("_")[1])
+        bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
+        
+        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid)
+        if not checkout_url:
+            bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
+            return
+            
+        markup = InlineKeyboardMarkup()
+        from telebot.types import WebAppInfo
+        markup.add(InlineKeyboardButton(f"💳 {amount} ብር ይሸልሙ", web_app=WebAppInfo(url=checkout_url)))
+        
+        bot.send_message(
+            chat_id,
+            f"☕ <b>{amount} ብር ስጦታ</b>\nእባክዎ ከታች ያለውን ቁልፍ ተጭነው ስጦታዎን ይላኩ። ከልብ እናመሰግናለን!",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
         return
 
     # ── Admin: Stats ─────────────────────────
@@ -960,8 +980,8 @@ def show_pricing(chat_id, uid):
         set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
         show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
 
-def show_payment_instructions(chat_id, amount, uid):
-    checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid)
+def show_payment_instructions(chat_id, amount, uid, purpose="PROTOCOL"):
+    checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, purpose)
     if not checkout_url:
         bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
         return
@@ -1048,14 +1068,22 @@ def generate_and_deliver_pdf(chat_id, uid, data):
 
 
 def show_tip_cta(chat_id):
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("☕ 50 ብር", callback_data="tip_50"),
+        InlineKeyboardButton("☕ 100 ብር", callback_data="tip_100")
+    )
+    markup.add(
+        InlineKeyboardButton("☕ 200 ብር", callback_data="tip_200"),
+        InlineKeyboardButton("☕ 500 ብር", callback_data="tip_500")
+    )
     bot.send_message(
         chat_id,
         "☕ <b>ስራችንን ከወደዱት ሊደግፉን ይችላሉ!</b>\n\n"
-        "ይህን ፕሮቶኮል ጠቃሚ ሆኖ ካገኙት፣ ከታች ባለው አካውንት የፈለጉትን ያህል ስጦታ በመላክ ቡድናችንን ማበረታታት ይችላሉ፦\n\n"
-        f"📱 Telebirr: <code>{config.TELEBIRR_PHONE}</code>\n"
-        f"👤 ስም: <b>{config.TELEBIRR_NAME}</b>\n\n"
+        "ይህን ፕሮቶኮል ጠቃሚ ሆኖ ካገኙት፣ ከታች ካሉት አማራጮች በመምረጥ የቡድናችንን የቡና ወጪ በመሸፈን ማበረታታት ይችላሉ፦\n\n"
         "🙏 ከልብ እናመሰግናለን!",
         parse_mode="HTML",
+        reply_markup=markup
     )
 
 # ══════════════════════════════════════════
@@ -1294,119 +1322,9 @@ def handle_messages(message):
 
     # ── Receipt Photo or Text ────────────────────────
     if state in ["AWAITING_RECEIPT", "AWAITING_RECEIPT_TOPUP"]:
-        expected_amount = session["data"].get("payment_amount", config.PRICE_SINGLE)
-        if state == "AWAITING_RECEIPT_TOPUP":
-            expected_amount = 100
-        order_id = session["data"].get("order_id", -1) if state == "AWAITING_RECEIPT" else -1
-
-        text_to_verify = None
-        file_bytes = None
-        file_id = None
-
-        if message.text:
-            text_to_verify = message.text.strip()
-        elif message.photo:
-            bot.send_message(chat_id, "⏳ <b>ክፍያዎን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
-            file_id = message.photo[-1].file_id
-            file_info = bot.get_file(file_id)
-            file_bytes = bot.download_file(file_info.file_path)
-            
-            # Try to extract QR URL
-            qr_url = receipt_verifier.extract_qr_url(file_bytes)
-            if qr_url:
-                text_to_verify = qr_url
-
-        if text_to_verify:
-            if not file_bytes:
-                bot.send_message(chat_id, "⏳ <b>ክፍያዎን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
-            
-            # Try automated verification via ethiobank_receipts
-            cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
-            expected_name = config.TELEBIRR_NAME if 'cbe' not in text_to_verify.lower() else cbe_name
-
-            is_approved, tx_id, error_msg, ethio_data = receipt_verifier.verify_with_ethiobank(
-                text_to_verify, expected_amount, expected_name, config.TELEBIRR_PHONE
-            )
-
-            if tx_id and database.is_tx_ref_used(tx_id):
-                bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
-                return
-
-            if is_approved:
-                payment_id = database.record_payment(uid, order_id, expected_amount, tx_id, file_id)
-                bot.send_message(chat_id, "✅ <b>ክፍያዎ በስኬት ተረጋግጧል!</b>", parse_mode="HTML")
-                if payment_id:
-                    handle_payment_approved(payment_id)
-                return
-            elif message.text:
-                bot.send_message(chat_id, f"❌ ማረጋገጥ አልተቻለም! ({error_msg})\nእባክዎ ትክክለኛ Transaction ID ወይም Screenshot ይላኩ።")
-                return
-            # If it's a photo and QR code failed, fall through to Gemini vision
-
-        # Fallback to Gemini Vision
-        if file_bytes:
-            result = ai_engine.verify_receipt(
-                file_bytes, expected_amount,
-                config.TELEBIRR_NAME, config.TELEBIRR_PHONE,
-                getattr(config, 'CBE_NAME', 'Baya Books'),
-                getattr(config, 'CBE_ACCOUNT', '1000123456789')
-            )
-
-            tx_id = result.get("transaction_id", "")
-            if tx_id:
-                # Hybrid check: use Gemini extracted TX ID to check the bank API!
-                cbe_name = getattr(config, 'CBE_NAME', 'Baya Books')
-                is_appr, t_id, err, dat = receipt_verifier.verify_extracted_tx_id(
-                    tx_id, expected_amount, config.TELEBIRR_NAME, config.TELEBIRR_PHONE
-                )
-                if is_appr:
-                    # Verified officially by the bank!
-                    if database.is_tx_ref_used(tx_id):
-                        bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
-                        return
-                    payment_id = database.record_payment(uid, order_id, expected_amount, tx_id, file_id)
-                    bot.send_message(chat_id, "✅ <b>ክፍያዎ በስኬት ተረጋግጧል!</b>", parse_mode="HTML")
-                    if payment_id:
-                        handle_payment_approved(payment_id)
-                    return
-
-            tx_id = tx_id or uuid.uuid4().hex[:12]
-            if tx_id and database.is_tx_ref_used(tx_id):
-                bot.send_message(chat_id, "❌ ይህ ደረሰኝ ከዚህ ቀደም ጥቅም ላይ ውሏል!")
-                return
-
-            payment_id = database.record_payment(uid, order_id, expected_amount, tx_id or uuid.uuid4().hex, file_id)
-
-            if result.get("auto_approved"):
-                bot.send_message(chat_id, "✅ <b>ክፍያዎ ተረጋግጧል!</b>", parse_mode="HTML")
-                if payment_id:
-                    handle_payment_approved(payment_id)
-            else:
-                bot.send_message(chat_id, "⏳ <b>ክፍያዎ ለማረጋገጥ ወደ ቡድናችን ተልኳል።</b>\nበጥቂት ደቂቃዎች ውስጥ ይረጋገጣል!", parse_mode="HTML")
-                # Forward to admin
-                admin_id = get_admin_id()
-                if admin_id:
-                    bot.forward_message(admin_id, chat_id, message.message_id)
-                    markup = InlineKeyboardMarkup()
-                    markup.add(
-                        InlineKeyboardButton("✅ Approve", callback_data=f"approve_{payment_id}"),
-                        InlineKeyboardButton("❌ Reject", callback_data=f"reject_{payment_id}"),
-                    )
-                    confidence = result.get("confidence", "low")
-                    amount_found = result.get("amount", "?")
-                    bot.send_message(
-                        admin_id,
-                        f"💳 <b>Payment Verification</b>\n"
-                        f"👤 User: {message.from_user.first_name} (ID: {uid})\n"
-                        f"💰 Expected: {expected_amount} ብር\n"
-                        f"📊 AI Found: {amount_found} ብር\n"
-                        f"🔍 Confidence: {confidence}\n"
-                        f"📝 TX ID: {tx_id}",
-                        parse_mode="HTML", reply_markup=markup,
-                    )
-        return
-
-        bot.send_message(chat_id, "📸 እባክዎ የክፍያ ስክሪን ሾት <b>ፎቶ</b> ይላኩ።", parse_mode="HTML")
+        bot.send_message(chat_id, "❌ የክፍያ ስርአታችን ተቀይሯል። እባክዎ እንደገና ይሞክሩ።", reply_markup=ReplyKeyboardRemove())
+        clear_state(uid)
+        send_welcome(chat_id, message.from_user.first_name)
         return
 
     # ── Catch-all: Forward to admin ──────────
@@ -1425,24 +1343,33 @@ def process_chapa_success(tx_ref):
     if database.is_tx_ref_used(tx_ref):
         return
     parts = tx_ref.split("-")
-    if len(parts) >= 2:
+    if len(parts) >= 3:
         try:
             uid = int(parts[1])
+            purpose = parts[2]
         except ValueError:
             return
     else:
         return
         
-    payment_amount = config.PRICE_SINGLE
-    session = get_session(uid)
-    d = session.get("data", {})
+    chat_id = uid
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
     
-    database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
-    chat_id = uid 
-    
-    bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 ፕሮቶኮልዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
-    generate_and_deliver_pdf(chat_id, uid, d)
+    if purpose == "PROTOCOL":
+        payment_amount = config.PRICE_SINGLE
+        session = get_session(uid)
+        d = session.get("data", {})
+        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+        bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 ፕሮቶኮልዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
+        generate_and_deliver_pdf(chat_id, uid, d)
+    elif purpose == "TOPUP":
+        payment_amount = 100
+        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+        database.add_credit(uid, 5)
+        bot.send_message(chat_id, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n5 ነጻ ምርመራዎች ወደ አካውንትዎ ገብተዋል።", parse_mode="HTML")
+    elif purpose == "TIP":
+        database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
+        bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):

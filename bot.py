@@ -148,7 +148,7 @@ AGE_RANGES = [
 
 def safe_delete_message(chat_id, message_id):
     try:
-        safe_delete_message(chat_id, message_id)
+        bot.delete_message(chat_id, message_id)
     except:
         pass
 

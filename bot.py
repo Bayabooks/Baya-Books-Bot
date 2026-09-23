@@ -145,6 +145,13 @@ AGE_RANGES = [
 # ══════════════════════════════════════════
 #  HELPERS
 # ══════════════════════════════════════════
+
+def safe_delete_message(chat_id, message_id):
+    try:
+        safe_delete_message(chat_id, message_id)
+    except:
+        pass
+
 def is_admin(user):
     return bool(user.username and user.username.lower() == config.ADMIN_USERNAME)
 
@@ -453,7 +460,7 @@ def handle_callback(call):
     if data == "check_joined":
         if check_channel_member(uid):
             bot.answer_callback_query(call.id, "✅ ተቀላቅለዋል!")
-            bot.delete_message(chat_id, call.message.message_id)
+            safe_delete_message(chat_id, call.message.message_id)
             send_welcome(chat_id, call.from_user.first_name)
         else:
             bot.answer_callback_query(call.id, "❌ ገና አልተቀላቀሉም!", show_alert=True)
@@ -598,12 +605,12 @@ def handle_callback(call):
                 break
                 
         if not sub_name_en:
-            bot.delete_message(chat_id, loading_msg.message_id)
+            safe_delete_message(chat_id, loading_msg.message_id)
             return
 
         # Pass subcategory name directly as the "category" topic to the AI, and request 5 books
         books = ai_engine.recommend_books(sub_name_en, count=5)
-        bot.delete_message(chat_id, loading_msg.message_id)
+        safe_delete_message(chat_id, loading_msg.message_id)
         
         if isinstance(books, dict) and "error" in books:
             bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር: {html.escape(books['error'])}")
@@ -934,7 +941,7 @@ def generate_and_show_preview(chat_id, uid, data):
         data.get("language", "am"),
     )
 
-    bot.delete_message(chat_id, loading.message_id)
+    safe_delete_message(chat_id, loading.message_id)
 
     if not preview:
         bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። እባክዎ /new ይጫኑ እንደገና ለመሞከር።")
@@ -1057,7 +1064,7 @@ def generate_and_deliver_pdf(chat_id, uid, data):
     )
 
     if not full_text:
-        bot.delete_message(chat_id, loading.message_id)
+        safe_delete_message(chat_id, loading.message_id)
         bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።")
         return
 
@@ -1067,7 +1074,7 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         full_text
     )
 
-    bot.delete_message(chat_id, loading.message_id)
+    safe_delete_message(chat_id, loading.message_id)
 
     if not page_url or page_url.startswith("ERROR:"):
         bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር ተፈጥሯል: {page_url}")
@@ -1344,7 +1351,10 @@ def handle_messages(message):
             loading = bot.send_message(chat_id, "⏳ <b>መጽሐፉን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
             
             result = ai_engine.verify_book_title(book_title)
-            bot.delete_message(chat_id, loading.message_id)
+            try:
+                safe_delete_message(chat_id, loading.message_id)
+            except:
+                pass
             
             if result and result.get("found"):
                 title = result.get("title", book_title)

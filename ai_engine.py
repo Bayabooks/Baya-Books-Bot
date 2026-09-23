@@ -99,14 +99,16 @@ If you cannot identify the book, respond:
 {{"title": "", "author": "", "found": false}}"""
 
 
-BOOK_VERIFY_PROMPT = """Check if the following user input corresponds to a real, known published book (can be English, Amharic, or any language).
+BOOK_VERIFY_PROMPT = """You are analyzing user input. The user was asked to provide a book title.
 User Input: "{query}"
 
-If it is a real book, respond with its official title and author.
-Respond in this exact JSON format only:
-{{"title": "Official Book Title", "author": "Author Name", "found": true}}
+If the input looks like a plausible book title, a known published book, or even a specific topic they want a guide on, ACCEPT IT.
+Only reject it (found: false) if it is absolute gibberish, keyboard mashing, or completely nonsensical text.
 
-If it is NOT a real book, or just random text, respond:
+Respond in this exact JSON format only:
+{{"title": "Cleaned Title", "author": "Author (if known, else empty)", "found": true}}
+
+If it is absolute gibberish, respond:
 {{"title": "", "author": "", "found": false}}"""
 
 

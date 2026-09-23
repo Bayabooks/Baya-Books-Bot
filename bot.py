@@ -1063,9 +1063,10 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         data.get("language", "am"),
     )
 
-    if not full_text:
+    if not full_text or full_text.startswith("ERROR:"):
         safe_delete_message(chat_id, loading.message_id)
-        bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።")
+        err = full_text if full_text else "No output returned"
+        bot.send_message(chat_id, f"⚠️ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።\n\nDEBUG: {err}")
         return
 
     # Generate Telegraph URL

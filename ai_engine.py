@@ -161,6 +161,7 @@ GENDER_MAP = {
 
 # ─── AI Functions ──────────────────────────
 
+# PREVIEW
 def generate_preview(book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language="am"):
     """Generate only Part 1 (the free hook)."""
     gender_display = GENDER_MAP.get(gender, {}).get("am", gender)
@@ -180,13 +181,14 @@ def generate_preview(book_title, gender, age_range, goal, location, living_situa
     
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
-        response = model.generate_content(prompt, request_options={"timeout": 20})
+        response = model.generate_content(prompt, request_options={"timeout": 60})
         return response.text
     except Exception as e:
         logging.error(f"Preview generation error: {e}")
         return None
 
 
+# FULL
 def generate_full_protocol(book_title, gender, age_range, goal, location, living_situation, employment, specific_change, language="am"):
     """Generate the complete transformation protocol."""
     gender_display = GENDER_MAP.get(gender, {}).get("am", gender)
@@ -206,11 +208,11 @@ def generate_full_protocol(book_title, gender, age_range, goal, location, living
     
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
-        response = model.generate_content(prompt, request_options={"timeout": 20})
+        response = model.generate_content(prompt, request_options={"timeout": 120})
         return response.text
     except Exception as e:
         logging.error(f"Full protocol generation error: {e}")
-        return None
+        return f"ERROR: {str(e)}"
 
 
 def recommend_books(category, count=3):
@@ -219,7 +221,7 @@ def recommend_books(category, count=3):
     
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
-        response = model.generate_content(prompt, request_options={"timeout": 20})
+        response = model.generate_content(prompt, request_options={"timeout": 45})
         text = response.text.strip()
         # Extract JSON array robustly
         start_idx = text.find('[')
@@ -242,7 +244,7 @@ def identify_book_cover(image_bytes):
         response = model.generate_content([
             BOOK_IDENTIFY_PROMPT,
             {"mime_type": "image/jpeg", "data": image_bytes}
-        ], request_options={"timeout": 20})
+        ], request_options={"timeout": 45})
         text = response.text.strip()
         # Extract JSON object robustly
         start_idx = text.find('{')
@@ -261,7 +263,7 @@ def verify_book_title(query):
     prompt = BOOK_VERIFY_PROMPT.format(query=query)
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
-        response = model.generate_content(prompt, request_options={"timeout": 20})
+        response = model.generate_content(prompt, request_options={"timeout": 30})
         text = response.text.strip()
         
         start_idx = text.find('{')
@@ -293,7 +295,7 @@ def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, 
         response = model.generate_content([
             prompt,
             {"mime_type": "image/jpeg", "data": image_bytes}
-        ], request_options={"timeout": 20})
+        ], request_options={"timeout": 45})
         text = response.text.strip()
         # Extract JSON object robustly
         start_idx = text.find('{')

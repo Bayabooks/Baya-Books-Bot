@@ -481,6 +481,7 @@ def handle_callback(call):
     if data == "has_book":
         if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
+        get_session(uid)["data"] = {}  # Clear previous choices
         set_state(uid, "AWAITING_BOOK_INPUT")
         bot.send_message(
             chat_id,
@@ -493,6 +494,7 @@ def handle_callback(call):
     if data == "choose_for_me":
         if not enforce_preview_quota(uid, chat_id, call.id): return
         bot.answer_callback_query(call.id)
+        get_session(uid)["data"] = {}  # Clear previous choices
         set_state(uid, "AWAITING_CATEGORY")
         markup = InlineKeyboardMarkup()
         buttons = [InlineKeyboardButton(f"{emoji} {am}", callback_data=cid) for cid, emoji, am, en in CATEGORIES]

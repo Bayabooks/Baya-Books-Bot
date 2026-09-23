@@ -1260,7 +1260,6 @@ def handle_messages(message):
 
     
     if message.text == "🌐 ቋንቋ / Language":
-        from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
         markup = InlineKeyboardMarkup()
         markup.add(
             InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),

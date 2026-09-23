@@ -239,13 +239,10 @@ def send_welcome(chat_id, first_name):
     )
     bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"), KeyboardButton("🌐 ቋንቋ / Language"))
     
-    has_free_full = database.has_free_protocol(chat_id)
-    free_package_text = "\n\n🎁 <b>እንኳን ደስ አለዎት! 1 ሙሉ ነጻ መመሪያ (1 Free Full Package) በስጦታ ተዘጋጅቶልዎታል!</b>" if has_free_full else ""
-
     intro_text = (
         f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n\n"
         f"እኛ የምትፈልጉትን የትኛውንም መጽሐፍ ሀሳብ ከእርስዎ እድሜ፣ ጾታ እና የግል ግብ ጋር በማዋሃድ... "
-        f"ህይወትዎን የሚቀይር <b>ልዩ የህይወት መመሪያ (Life Guide)</b> እናዘጋጅልዎታለን።{free_package_text}"
+        f"ህይወትዎን የሚቀይር <b>ልዩ የህይወት መመሪያ (Life Guide)</b> እናዘጋጅልዎታለን።"
     )
 
     bot.send_message(
@@ -264,8 +261,20 @@ def send_welcome(chat_id, first_name):
     credits = database.get_credits(chat_id)
     credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} መመሪያ</b>\n" if credits > 0 else ""
 
+    has_free_full = database.has_free_protocol(chat_id)
     previews_left, _ = database.get_preview_quota(chat_id)
-    preview_line = f"🎁 <b>{previews_left} ነጻ የሙከራ ምርመራዎች (Free Trials) አልዎት!</b>\n" if previews_left > 0 else "🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n"
+    
+    gifts = []
+    if previews_left > 0:
+        gifts.append(f"{previews_left} ነጻ የሙከራ መመሪያዎች (Trials)")
+    if has_free_full:
+        gifts.append("1 ሙሉ ነጻ መመሪያ (Full Package)")
+        
+    if gifts:
+        gifts_text = " እና ".join(gifts)
+        preview_line = f"🎁 <b>ያልዎት ስጦታ፡ {gifts_text}</b>\n"
+    else:
+        preview_line = "🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n"
 
     bot.send_message(
         chat_id,

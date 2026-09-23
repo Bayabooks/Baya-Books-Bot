@@ -1357,8 +1357,8 @@ def handle_messages(message):
                 pass
             
             if result and result.get("found"):
-                title = result.get("title", book_title)
-                author = result.get("author", "")
+                title = str(result.get("title") or book_title)
+                author = str(result.get("author") or "")
                 
                 set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
                 markup = InlineKeyboardMarkup()

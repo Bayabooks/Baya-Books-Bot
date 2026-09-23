@@ -920,6 +920,10 @@ def ask_language(chat_id):
 # ══════════════════════════════════════════
 def generate_and_show_preview(chat_id, uid, data):
     """Generate Part 1 (free hook) and show it."""
+    if not data.get("book_title") or not data.get("age_range"):
+        bot.send_message(chat_id, "⚠️ የሲስተም እድሳት ስለተደረገ መረጃዎ ጠፍቷል። እባክዎ /start በመጫን እንደገና ይጀምሩ። (Session expired)")
+        return
+        
     # Enforce quota one last time just in case
     if uid != get_admin_id():
         previews_left, _ = database.get_preview_quota(uid)
@@ -1049,6 +1053,10 @@ def show_payment_instructions(chat_id, amount, uid, purpose="PROTOCOL"):
 
 def generate_and_deliver_pdf(chat_id, uid, data):
     """Generate full protocol and deliver it."""
+    if not data.get("book_title") or not data.get("age_range"):
+        bot.send_message(chat_id, "⚠️ የሲስተም እድሳት ስለተደረገ መረጃዎ ጠፍቷል። እባክዎ /start በመጫን እንደገና ይጀምሩ። (Session expired)")
+        return
+        
     loading = bot.send_message(chat_id, "⏳ <b>ግላዊ መመሪያዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
 
     full_text = ai_engine.generate_full_protocol(

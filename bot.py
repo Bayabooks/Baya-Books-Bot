@@ -1347,34 +1347,40 @@ def handle_messages(message):
             return
 
         if message.text:
-            book_title = message.text.strip()
-            loading = bot.send_message(chat_id, "⏳ <b>መጽሐፉን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
-            
-            result = ai_engine.verify_book_title(book_title)
             try:
-                safe_delete_message(chat_id, loading.message_id)
-            except:
-                pass
-            
-            if result and result.get("found"):
-                title = str(result.get("title") or book_title)
-                author = str(result.get("author") or "")
+                book_title = message.text.strip()
+                loading = bot.send_message(chat_id, "⏳ <b>መጽሐፉን በማረጋገጥ ላይ...</b>", parse_mode="HTML")
                 
-                set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
-                markup = InlineKeyboardMarkup()
-                markup.add(
-                    InlineKeyboardButton("✅ አዎ", callback_data="confirm_book"),
-                    InlineKeyboardButton("✏️ ልቀይር", callback_data="retry_book"),
-                )
-                bot.send_message(
-                    chat_id,
-                    f"📖 <b>{html.escape(title)}</b>{' (' + html.escape(author) + ')' if author else ''}\n\n"
-                    f"ያሰቡት ይህንን መጽሐፍ ነው?",
-                    parse_mode="HTML", reply_markup=markup,
-                )
-            else:
-                bot.send_message(chat_id, "⚠️ እንዲህ ዓይነት መጽሐፍ ማግኘት አልቻልኩም። እባክዎ የመጽሐፉን ትክክለኛ ስም እና የጸሐፊውን ስም አብረው ይጻፉ።")
-            return
+                result = ai_engine.verify_book_title(book_title)
+                try:
+                    safe_delete_message(chat_id, loading.message_id)
+                except:
+                    pass
+                
+                if result and result.get("found"):
+                    title = str(result.get("title") or book_title)
+                    author = str(result.get("author") or "")
+                    
+                    set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
+                    markup = InlineKeyboardMarkup()
+                    markup.add(
+                        InlineKeyboardButton("✅ አዎ", callback_data="confirm_book"),
+                        InlineKeyboardButton("✏️ ልቀይር", callback_data="retry_book"),
+                    )
+                    bot.send_message(
+                        chat_id,
+                        f"📖 <b>{html.escape(title)}</b>{' (' + html.escape(author) + ')' if author else ''}\n\n"
+                        f"ያሰቡት ይህንን መጽሐፍ ነው?",
+                        parse_mode="HTML", reply_markup=markup,
+                    )
+                else:
+                    error_debug = result.get("error_msg", "No exception, just returned false.") if result else "Result is None"
+                    bot.send_message(chat_id, f"⚠️ እንዲህ ዓይነት መጽሐፍ ማግኘት አልቻልኩም።\n\nDEBUG: {error_debug}")
+                return
+            except Exception as e:
+                import traceback
+                bot.send_message(chat_id, f"🛑 CRITICAL ERROR:\n{e}\n\nTraceback:\n{traceback.format_exc()[-500:]}")
+                return
 
     # ── Specific Change Input ────────────────
     if state == "AWAITING_SPECIFIC_CHANGE":

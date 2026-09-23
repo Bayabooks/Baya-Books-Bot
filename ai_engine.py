@@ -273,8 +273,9 @@ def verify_book_title(query):
             
         return json.loads(text)
     except Exception as e:
+        import traceback
         logging.error(f"Book verification error: {e}")
-        return {"title": "", "author": "", "found": False}
+        return {"title": "", "author": "", "found": False, "error_msg": str(e) + " " + traceback.format_exc()[-200:]}
 
 
 def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, cbe_name, cbe_account):

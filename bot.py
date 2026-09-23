@@ -215,7 +215,7 @@ def cmd_start(message):
             database.add_credits(referred_by, 1)
             database.mark_n_referrals_credited(referred_by, 5)
             try:
-                bot.send_message(referred_by, "🎉 <b>እንኳን ደስ አሎት!</b>\n\n5 ጓደኞችዎ ስለተቀላቀሉ 1 ነጻ የፕሮቶኮል ክሬዲት አግኝተዋል!\n\n/new ይጫኑ እና ፕሮቶኮልዎን ያዘጋጁ!", parse_mode="HTML")
+                bot.send_message(referred_by, "🎉 <b>እንኳን ደስ አሎት!</b>\n\n5 ጓደኞችዎ ስለተቀላቀሉ 1 ነጻ የመመሪያ ክሬዲት አግኝተዋል!\n\n/new ይጫኑ እና መመሪያዎን ያዘጋጁ!", parse_mode="HTML")
             except Exception:
                 pass
 
@@ -230,18 +230,18 @@ def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
 
     bottom_markup.add(
-        KeyboardButton("➕ አዲስ ፕሮቶኮል"),
-        KeyboardButton("📚 የኔ ፕሮቶኮሎች")
+        KeyboardButton("➕ አዲስ መመሪያ"),
+        KeyboardButton("📚 የኔ መመሪያዎች")
     )
     bottom_markup.add(
         KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
         KeyboardButton("☕ ቡድኑን ያበረታቱ")
     )
-    bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"))
+    bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"), KeyboardButton("🌐 ቋንቋ / Language"))
     
     bot.send_message(
         chat_id, 
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b>\nእንኳን ወደ Baya Books በደህና መጡ።", 
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b>\nእኛ Baya Books ነን። አንድ መጽሐፍ እንወስድና ከእርስዎ ህይወት፣ እድሜ፣ ጾታ እና እቅድ ጋር አዋህደን **ልዩ የህይወት መመሪያ (Guide)** እናዘጋጅልዎታለን።", 
         parse_mode="HTML", 
         reply_markup=bottom_markup
     )
@@ -253,14 +253,14 @@ def send_welcome(chat_id, first_name):
     )
 
     credits = database.get_credits(chat_id)
-    credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} ፕሮቶኮል</b>\n" if credits > 0 else ""
+    credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} መመሪያ</b>\n" if credits > 0 else ""
 
     previews_left, _ = database.get_preview_quota(chat_id)
     preview_line = f"🎁 <b>{previews_left} ነጻ የሙከራ ምርመራዎች (Free Trials) አልዎት!</b>\n" if previews_left > 0 else "🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n"
 
     bot.send_message(
         chat_id,
-        f"🕊️ <b>እንኳን ወደ Baya Books በደህና መጡ!</b>\n"
+        f"✨ <b>ህይወትዎን የሚቀይረውን መጽሐፍ ይምረጡ...</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{preview_line}{credit_line}\n"
         f"የአለማችን ምርጥ መጽሐፍት ጥበብ ለእርስዎ\n"
@@ -285,7 +285,7 @@ def cmd_help(message):
         "2️⃣ ጥቂት ጥያቄዎችን ይመልሱ\n"
         "3️⃣ ነጻ ማሳያ ያንብቡ\n"
         f"4️⃣ ሙሉ PDF ይዘዙ ({config.PRICE_SINGLE} ብር)\n"
-        "5️⃣ ግላዊ ፕሮቶኮልዎን ያውርዱ!\n\n"
+        "5️⃣ ግላዊ መመሪያዎን ያውርዱ!\n\n"
         "📚 /mylibrary — ያዘዙዋቸው PDFs\n"
         "🔗 /referral — ጓደኞችን ይጋብዙ\n"
         "🆕 /new — አዲስ PDF ይጀምሩ\n\n"
@@ -328,10 +328,10 @@ def cmd_referral(message):
 
     bot.send_message(
         message.chat.id,
-        f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ ፕሮቶኮል ያግኙ!</b>\n"
+        f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ መመሪያ ያግኙ!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"👥 5 ጓደኞችዎን ይህን ሊንክ ተጠቅመው\n"
-        f"ቦቱን ሲቀላቀሉ — እርስዎ ነጻ 1 ፕሮቶኮል ያገኛሉ!\n\n"
+        f"ቦቱን ሲቀላቀሉ — እርስዎ ነጻ 1 መመሪያ ያገኛሉ!\n\n"
         f"🔗 <b>የእርስዎ ሊንክ:</b>\n<code>{link}</code>\n\n"
         f"📊 ያጋበዙት: <b>{ref_count}</b>/5\n",
         parse_mode="HTML"
@@ -394,7 +394,7 @@ def enforce_preview_quota(uid, chat_id, call_id=None):
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("💳 100 ብር - 5 ነጻ ምርመራ ይግዙ", callback_data="buy_previews"),
-        InlineKeyboardButton("📖 የጀመሩትን ፕሮቶኮል ይግዙ", callback_data="show_drafts")
+        InlineKeyboardButton("📖 የጀመሩትን መመሪያ ይግዙ", callback_data="show_drafts")
     )
     
     bot.send_message(
@@ -403,7 +403,7 @@ def enforce_preview_quota(uid, chat_id, call_id=None):
         f"⏳ በድጋሚ 5 ነጻ ምርመራ ለማግኘት: <b>{hours} ሰዓት ከ {minutes} ደቂቃ</b> ይጠብቁ።\n\n"
         f"<b>ወይም አሁኑኑ ይክፈቱ፡</b>\n"
         f"1️⃣ 100 ብር በመክፈል 5 ተጨማሪ ምርመራዎችን ያግኙ\n"
-        f"2️⃣ <b>የጀመሩትን ሙሉ ፕሮቶኮል ይግዙ!</b>\n(ሙሉውን ሲገዙ ተጨማሪ 5 ምርመራ በቦነስ ያገኛሉ!)\n",
+        f"2️⃣ <b>የጀመሩትን ሙሉ መመሪያ ይግዙ!</b>\n(ሙሉውን ሲገዙ ተጨማሪ 5 ምርመራ በቦነስ ያገኛሉ!)\n",
         parse_mode="HTML", reply_markup=markup
     )
     return False
@@ -418,6 +418,20 @@ def handle_callback(call):
     chat_id = call.message.chat.id
 
     # ── Channel Join Check ───────────────────
+
+    if data.startswith("setlang_"):
+        lang_code = data.split("_")[1]
+        database.set_bot_language(uid, lang_code)
+        
+        msg = "✅ Language saved!"
+        if lang_code == "am": msg = "✅ ቋንቋው ወደ አማርኛ ተቀይሯል!"
+        elif lang_code == "om": msg = "✅ Afaan Oromoo filatameera!"
+        elif lang_code == "ti": msg = "✅ ናብ ትግርኛ ተቐይሩ እዩ!"
+        
+        bot.answer_callback_query(call.id, msg)
+        bot.edit_message_text(msg + "\n(Note: Full bot translation coming soon!)", chat_id, call.message.message_id)
+        return
+
     if data == "check_joined":
         if check_channel_member(uid):
             bot.answer_callback_query(call.id, "✅ ተቀላቅለዋል!")
@@ -483,12 +497,12 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         drafts = database.get_user_drafts(uid)
         if not drafts:
-            bot.send_message(chat_id, "ምንም የተጀመረ ፕሮቶኮል የለዎትም።")
+            bot.send_message(chat_id, "ምንም የተጀመረ መመሪያ የለዎትም።")
             return
         markup = InlineKeyboardMarkup(row_width=1)
         for d in drafts:
             markup.add(InlineKeyboardButton(f"📖 {d['book_title'][:30]}", callback_data=f"buy_draft_{d['id']}"))
-        bot.send_message(chat_id, "💳 <b>ለመግዛት የሚፈልጉትን ፕሮቶኮል ይምረጡ:</b>", parse_mode="HTML", reply_markup=markup)
+        bot.send_message(chat_id, "💳 <b>ለመግዛት የሚፈልጉትን መመሪያ ይምረጡ:</b>", parse_mode="HTML", reply_markup=markup)
         return
 
     # ── Buy Draft ────────────────────────────
@@ -499,7 +513,7 @@ def handle_callback(call):
         session["data"] = {"order_id": order_id}
         
         if database.has_free_protocol(uid):
-            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ ፕሮቶኮል ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
+            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ መመሪያ ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
             database.mark_free_protocol_used(uid)
             # Reconstruct data from order
             order = database.get_order(order_id)
@@ -674,7 +688,7 @@ def handle_callback(call):
             return
             
         if database.has_free_protocol(uid):
-            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ ፕሮቶኮል ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
+            bot.send_message(chat_id, "🎁 <b>እንኳን ደስ አለዎት!</b>\n\nይህ የመጀመሪያዎ ሙሉ መመሪያ ስለሆነ፣ በ <b>Baya Books</b> ስፖንሰርነት <b>በነጻ</b> ተዘጋጅቶልዎታል!", parse_mode="HTML")
             database.mark_free_protocol_used(uid)
             session = get_session(uid)
             generate_and_deliver_pdf(chat_id, uid, session["data"])
@@ -931,7 +945,7 @@ def generate_and_show_preview(chat_id, uid, data):
     # Send preview
     header = (
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📖 <b>{html.escape(data.get('book_title', ''))}</b> ፕሮቶኮል\n"
+        f"📖 <b>{html.escape(data.get('book_title', ''))}</b> መመሪያ\n"
         f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
         f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
         f"🎯 {html.escape(data.get('specific_change', ''))}\n"
@@ -952,14 +966,14 @@ def generate_and_show_preview(chat_id, uid, data):
 
     # CTA
     strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-    btn_text = f"🎁 የመጀመሪያዎን ሙሉ ፕሮቶኮል በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ ፕሮቶኮል {config.PRICE_SINGLE} ብር ({strikethrough_300})"
+    btn_text = f"🎁 የመጀመሪያዎን ሙሉ መመሪያ በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ መመሪያ {config.PRICE_SINGLE} ብር ({strikethrough_300})"
     
     bot.send_message(
         chat_id,
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "⬆️ <b>ይህ የመነሻ ምርመራ ብቻ ነው!</b>\n\n"
         "ሙሉው የ90-ቀን ስትራቴጂ፣ ዕለታዊ ልምምድ፣\n"
-        "የሳምንታዊ ግምገማ፣ እና ሙሉ ግላዊ ፕሮቶኮል\n"
+        "የሳምንታዊ ግምገማ፣ እና ሙሉ ግላዊ መመሪያ\n"
         "ለማግኘት ከታች ይዘዙ 👇\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML",
@@ -976,7 +990,7 @@ def show_pricing(chat_id, uid):
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(InlineKeyboardButton(f"🎫 ክሬዲት ተጠቀም ({credits} ቀሪ)", callback_data="use_credit"))
         strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-        markup.add(InlineKeyboardButton(f"1️⃣ 1 ፕሮቶኮል — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
+        markup.add(InlineKeyboardButton(f"1️⃣ 1 መመሪያ — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
         bot.send_message(
             chat_id,
             "💳 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -1002,7 +1016,7 @@ def show_payment_instructions(chat_id, amount, uid, purpose="PROTOCOL"):
         chat_id,
         f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
         f"እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\n"
-        f"ክፍያዎ እንደተጠናቀቀ ፕሮቶኮልዎ በራስ-ሰር ይላክልዎታል!",
+        f"ክፍያዎ እንደተጠናቀቀ መመሪያዎ በራስ-ሰር ይላክልዎታል!",
         parse_mode="HTML",
         reply_markup=markup
     )
@@ -1010,7 +1024,7 @@ def show_payment_instructions(chat_id, amount, uid, purpose="PROTOCOL"):
 
 def generate_and_deliver_pdf(chat_id, uid, data):
     """Generate full protocol and deliver it."""
-    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ ፕሮቶኮልዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
+    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ መመሪያዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
 
     full_text = ai_engine.generate_full_protocol(
         data.get("book_title", ""),
@@ -1043,7 +1057,7 @@ def generate_and_deliver_pdf(chat_id, uid, data):
 
     # Send Link
     msg_text = (
-        f"🎉 <b>ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!</b>\n\n"
+        f"🎉 <b>ግላዊ መመሪያዎ ዝግጁ ነው!</b>\n\n"
         f"📖 <b>{html.escape(data.get('book_title', ''))}</b>\n"
         f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
         f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
@@ -1053,13 +1067,13 @@ def generate_and_deliver_pdf(chat_id, uid, data):
     )
     
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📖 ፕሮቶኮልዎን ያንብቡ", url=page_url))
+    markup.add(InlineKeyboardButton("📖 መመሪያዎን ያንብቡ", url=page_url))
     
     try:
         sent_msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
     except Exception as e:
         logging.error(f"Failed to send Telegraph link: {e}")
-        sent_msg = bot.send_message(chat_id, f"ግላዊ ፕሮቶኮልዎ ዝግጁ ነው!\n{page_url}")
+        sent_msg = bot.send_message(chat_id, f"ግላዊ መመሪያዎ ዝግጁ ነው!\n{page_url}")
 
     # Save to database
     order_id = data.get("order_id")
@@ -1088,7 +1102,7 @@ def show_tip_cta(chat_id):
     bot.send_message(
         chat_id,
         "☕ <b>ስራችንን ከወደዱት ሊደግፉን ይችላሉ!</b>\n\n"
-        "ይህን ፕሮቶኮል ጠቃሚ ሆኖ ካገኙት፣ ከታች ካሉት አማራጮች በመምረጥ የቡድናችንን የቡና ወጪ በመሸፈን ማበረታታት ይችላሉ፦\n\n"
+        "ይህን መመሪያ ጠቃሚ ሆኖ ካገኙት፣ ከታች ካሉት አማራጮች በመምረጥ የቡድናችንን የቡና ወጪ በመሸፈን ማበረታታት ይችላሉ፦\n\n"
         "🙏 ከልብ እናመሰግናለን!",
         parse_mode="HTML",
         reply_markup=markup
@@ -1215,16 +1229,29 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text == "➕ አዲስ ፕሮቶኮል":
+    if message.text == "➕ አዲስ መመሪያ":
         send_welcome(chat_id, message.from_user.first_name)
         return
 
-    if message.text == "📚 የኔ ፕሮቶኮሎች":
+    
+    if message.text == "🌐 ቋንቋ / Language":
+        from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),
+            InlineKeyboardButton("🇪🇹 Oromiffa", callback_data="setlang_om"),
+            InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="setlang_ti")
+        )
+        markup.add(InlineKeyboardButton("🇬🇧 English", callback_data="setlang_en"))
+        bot.send_message(chat_id, "የቦቱን ቋንቋ ይምረጡ / Choose Bot Language:", reply_markup=markup)
+        return
+
+    if message.text == "📚 የኔ መመሪያዎች":
         orders = database.get_user_orders(uid)
         if not orders:
-            bot.send_message(chat_id, "በአሁኑ ሰዓት የተዘጋጀ ፕሮቶኮል የለዎትም። አዲስ ለመጀመር '➕ አዲስ ፕሮቶኮል' ይጫኑ።")
+            bot.send_message(chat_id, "በአሁኑ ሰዓት የተዘጋጀ መመሪያ የለዎትም። አዲስ ለመጀመር '➕ አዲስ መመሪያ' ይጫኑ።")
         else:
-            bot.send_message(chat_id, "📚 <b>የእርስዎ ፕሮቶኮሎች</b>\n━━━━━━━━━━━━━━━━━━━━", parse_mode="HTML")
+            bot.send_message(chat_id, "📚 <b>የእርስዎ መመሪያዎች</b>\n━━━━━━━━━━━━━━━━━━━━", parse_mode="HTML")
             for order in orders:
                 bot.send_message(
                     chat_id,
@@ -1241,8 +1268,8 @@ def handle_messages(message):
         count = database.get_uncredited_referral_count(uid)
         bot.send_message(
             chat_id,
-            f"🎁 <b>ጓደኛዎን ይጋብዙ፣ ነጻ ፕሮቶኮል ያግኙ!</b>\n\n"
-            f"5 ጓደኞችዎን ሲጋብዙ 1 ነጻ ፕሮቶኮል ያገኛሉ!\n\n"
+            f"🎁 <b>ጓደኛዎን ይጋብዙ፣ ነጻ መመሪያ ያግኙ!</b>\n\n"
+            f"5 ጓደኞችዎን ሲጋብዙ 1 ነጻ መመሪያ ያገኛሉ!\n\n"
             f"📊 ያጋበዙት: <b>{count}</b>/5\n\n"
             f"🔗 የእርስዎ መጋበዣ ሊንክ:\n<code>{link}</code>",
             parse_mode="HTML"
@@ -1368,7 +1395,7 @@ def process_chapa_success(tx_ref):
         session = get_session(uid)
         d = session.get("data", {})
         database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
-        bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 ፕሮቶኮልዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
+        bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 መመሪያዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
         generate_and_deliver_pdf(chat_id, uid, d)
     elif purpose == "TOPUP":
         payment_amount = 100
@@ -1382,7 +1409,7 @@ def process_chapa_success(tx_ref):
         payment_amount = 500
         database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK_VIP")
         database.set_vip(uid, days=30)
-        bot.send_message(chat_id, "👑 <b>እንኳን ደስ አሎት!</b>\nየVIP አባልነትዎ ነቅቷል! አሁን ያለምንም ክፍያ ያልተገደበ ፕሮቶኮል ማዘጋጀት ይችላሉ!", parse_mode="HTML")
+        bot.send_message(chat_id, "👑 <b>እንኳን ደስ አሎት!</b>\nየVIP አባልነትዎ ነቅቷል! አሁን ያለምንም ክፍያ ያልተገደበ መመሪያ ማዘጋጀት ይችላሉ!", parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):

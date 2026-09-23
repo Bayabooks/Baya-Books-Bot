@@ -468,3 +468,21 @@ def set_vip(user_id, days=30):
     ''', (expiry, user_id))
     conn.commit()
     conn.close()
+
+
+def get_bot_language(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT bot_language FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if row and row["bot_language"]:
+        return row["bot_language"]
+    return "am"
+
+def set_bot_language(user_id, lang_code):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET bot_language = ? WHERE user_id = ?", (lang_code, user_id))
+    conn.commit()
+    conn.close()

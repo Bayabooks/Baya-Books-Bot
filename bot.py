@@ -239,9 +239,18 @@ def send_welcome(chat_id, first_name):
     )
     bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"), KeyboardButton("🌐 ቋንቋ / Language"))
     
+    has_free_full = database.has_free_protocol(chat_id)
+    free_package_text = "\n\n🎁 <b>እንኳን ደስ አለዎት! 1 ሙሉ ነጻ መመሪያ (1 Free Full Package) በስጦታ ተዘጋጅቶልዎታል!</b>" if has_free_full else ""
+
+    intro_text = (
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n\n"
+        f"እኛ የምትፈልጉትን የትኛውንም መጽሐፍ ሀሳብ ከእርስዎ እድሜ፣ ጾታ እና የግል ግብ ጋር በማዋሃድ... "
+        f"ህይወትዎን የሚቀይር <b>ልዩ የህይወት መመሪያ (Life Guide)</b> እናዘጋጅልዎታለን።{free_package_text}"
+    )
+
     bot.send_message(
         chat_id, 
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b>\nእኛ Baya Books ነን። አንድ መጽሐፍ እንወስድና ከእርስዎ ህይወት፣ እድሜ፣ ጾታ እና እቅድ ጋር አዋህደን **ልዩ የህይወት መመሪያ (Guide)** እናዘጋጅልዎታለን።", 
+        intro_text, 
         parse_mode="HTML", 
         reply_markup=bottom_markup
     )

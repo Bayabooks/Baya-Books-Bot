@@ -359,6 +359,12 @@ def get_analytics():
     c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND gender = 'female'")
     female_count = c.fetchone()[0]
 
+    c.execute("SELECT COUNT(*) FROM orders WHERE created_date LIKE ?", (today + "%",))
+    today_trials = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND delivered_date LIKE ?", (today + "%",))
+    today_full = c.fetchone()[0]
+
     conn.close()
     return {
         "total_users": total_users,
@@ -371,6 +377,8 @@ def get_analytics():
         "top_goals": top_goals,
         "male_count": male_count,
         "female_count": female_count,
+        "today_trials": today_trials,
+        "today_full": today_full,
     }
 
 # Run setup

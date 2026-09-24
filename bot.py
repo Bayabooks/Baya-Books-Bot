@@ -382,9 +382,9 @@ def cmd_new(message):
     send_welcome(message.chat.id, message.from_user.first_name)
 
 # ══════════════════════════════════════════
-#  /admin COMMAND
+#  /bayacontrol COMMAND
 # ══════════════════════════════════════════
-@bot.message_handler(commands=["admin"])
+@bot.message_handler(commands=["bayacontrol"])
 def cmd_admin(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ የ Admin መብት የለዎትም!"); return
@@ -1030,7 +1030,7 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "👮 Sub-Admin added!")
         bot.send_message(chat_id, f"👮 User <code>{target_id}</code> is now a <b>Sub-Admin</b>.", parse_mode="HTML")
         try:
-            bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /admin to access the admin panel.", parse_mode="HTML")
+            bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /bayacontrol to access the admin panel.", parse_mode="HTML")
         except: pass
         return
     
@@ -1505,7 +1505,7 @@ def handle_messages(message):
             database.add_sub_admin(target_id)
             bot.send_message(chat_id, f"👮 <b>{target['first_name']}</b> (<code>{target_id}</code>) is now a <b>Sub-Admin</b>.", parse_mode="HTML")
             try:
-                bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /admin to access the admin panel.", parse_mode="HTML")
+                bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /bayacontrol to access the admin panel.", parse_mode="HTML")
             except: pass
             clear_state(uid)
         except ValueError:

@@ -359,9 +359,6 @@ def get_analytics():
     c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND gender = 'female'")
     female_count = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM payments WHERE status = 'pending'")
-    pending_payments = c.fetchone()[0]
-
     conn.close()
     return {
         "total_users": total_users,
@@ -374,7 +371,6 @@ def get_analytics():
         "top_goals": top_goals,
         "male_count": male_count,
         "female_count": female_count,
-        "pending_payments": pending_payments,
     }
 
 # Run setup

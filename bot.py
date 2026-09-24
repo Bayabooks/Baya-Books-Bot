@@ -409,7 +409,6 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("📋 Recent Orders", callback_data="adm_recent_orders"),
     )
     markup.add(
-        InlineKeyboardButton("💰 Pending Payments", callback_data="adm_pending_payments"),
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
     )
     
@@ -856,8 +855,7 @@ def handle_callback(call):
             f"  💵 Total: <b>{stats['total_revenue']:,} ETB</b>\n\n"
             f"━━ 🔥 Top 5 Books ━━━━━━━━━\n{top_books}\n\n"
             f"━━ 👥 Gender Split ━━━━━━━━━\n"
-            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}\n\n"
-            f"⏳ Pending Payments: <b>{stats['pending_payments']}</b>",
+            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}",
             parse_mode="HTML", reply_markup=markup,
         )
         return
@@ -956,7 +954,7 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "🚫 User banned!")
         bot.send_message(chat_id, f"🚫 User <code>{target_id}</code> has been <b>BANNED</b>.", parse_mode="HTML")
         try:
-            bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+            bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
         except: pass
         return
     
@@ -1065,37 +1063,7 @@ def handle_callback(call):
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return
     
-    # ── Admin: Pending Payments ───────────────
-    if data == "adm_pending_payments":
-        if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id, "💰 Loading...")
-        conn = database.get_connection()
-        c = conn.cursor()
-        c.execute("""
-            SELECT p.id, p.user_id, p.amount, p.payment_date, p.tx_ref, u.first_name
-            FROM payments p LEFT JOIN users u ON p.user_id = u.user_id
-            WHERE p.status = 'pending' ORDER BY p.id DESC LIMIT 10
-        """)
-        pending = c.fetchall()
-        conn.close()
-        
-        text = "💰 <b>Pending Payments</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        markup = InlineKeyboardMarkup()
-        if pending:
-            for p in pending:
-                text += f"💳 #{p['id']} — <b>{p['amount']} ETB</b>\n"
-                text += f"   👤 {p['first_name'] or 'N/A'} (<code>{p['user_id']}</code>)\n"
-                text += f"   📅 {p['payment_date'][:10] if p['payment_date'] else 'N/A'}\n\n"
-                markup.add(
-                    InlineKeyboardButton(f"✅ Approve #{p['id']}", callback_data=f"approve_{p['id']}"),
-                    InlineKeyboardButton(f"❌ Reject #{p['id']}", callback_data=f"reject_{p['id']}")
-                )
-        else:
-            text += "No pending payments.\n"
-        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
-        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
-        return
-    
+
     # ── Admin: VIP Manager ───────────────────
     if data == "adm_vip_menu":
         if not is_admin(call.from_user): return
@@ -1128,26 +1096,7 @@ def handle_callback(call):
         bot.send_message(chat_id, "📤 <b>PDF ላክ</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
         return
 
-    # ── Admin: Approve/Reject Payment ────────
-    if data.startswith("approve_"):
-        if not is_admin(call.from_user): return
-        payment_id = int(data.replace("approve_", ""))
-        bot.answer_callback_query(call.id, "✅ Approved!")
-        handle_payment_approved(payment_id)
-        bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=None)
-        bot.send_message(chat_id, f"✅ Payment #{payment_id} approved. PDF being generated...")
-        return
 
-    if data.startswith("reject_"):
-        if not is_admin(call.from_user): return
-        payment_id = int(data.replace("reject_", ""))
-        database.reject_payment(payment_id)
-        payment = database.get_payment(payment_id)
-        if payment:
-            bot.send_message(payment["user_id"], "❌ ክፍያዎ አልተረጋገጠም። እባክዎ እንደገና ይሞክሩ ወይም @Bayabooks ያናግሩን።")
-        bot.answer_callback_query(call.id, "❌ Rejected")
-        bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=None)
-        return
 
 # ══════════════════════════════════════════
 #  INTERVIEW FLOW HELPERS
@@ -1503,7 +1452,7 @@ def handle_messages(message):
 
     # Ban check
     if database.is_banned(uid):
-        bot.reply_to(message, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+        bot.reply_to(message, "🚫 ይህ አካውንት ታግዷል።")
         return
 
     # ── Admin States ─────────────────────────
@@ -1537,7 +1486,7 @@ def handle_messages(message):
             database.ban_user(target_id)
             bot.send_message(chat_id, f"🚫 <b>{target['first_name']}</b> (<code>{target_id}</code>) has been <b>BANNED</b>.", parse_mode="HTML")
             try:
-                bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+                bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
             except: pass
             clear_state(uid)
         except ValueError:

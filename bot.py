@@ -37,19 +37,23 @@ bot = TeleBot(config.BOT_TOKEN)
 #  CONVERSATION STATE MANAGER
 # ══════════════════════════════════════════
 user_sessions = {}  # {user_id: {state, data...}}
+session_lock = threading.RLock()
 
 def get_session(user_id):
-    if user_id not in user_sessions:
-        user_sessions[user_id] = {"state": "IDLE", "data": {}}
-    return user_sessions[user_id]
+    with session_lock:
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {"state": "IDLE", "data": {}}
+        return user_sessions[user_id]
 
 def set_state(user_id, state, **kwargs):
-    s = get_session(user_id)
-    s["state"] = state
-    s["data"].update(kwargs)
+    with session_lock:
+        s = get_session(user_id)
+        s["state"] = state
+        s["data"].update(kwargs)
 
 def clear_state(user_id):
-    user_sessions[user_id] = {"state": "IDLE", "data": {}}
+    with session_lock:
+        user_sessions[user_id] = {"state": "IDLE", "data": {}}
 
 # ══════════════════════════════════════════
 #  CATEGORIES & GOALS (Amharic)
@@ -141,6 +145,12 @@ AGE_RANGES = [
     ("age_5", "👑", "40-49"),
     ("age_6", "🕊️", "50+"),
 ]
+
+
+# Display value translations for user-facing messages
+GENDER_DISPLAY = {"male": "ወንድ", "female": "ሴት"}
+LIVING_DISPLAY = {"Alone": "ብቻ", "With Family": "ከቤተሰብ ጋር"}
+LOCATION_DISPLAY = {"Ethiopia": "ኢትዮጵያ", "Abroad": "ውጭ ሀገር"}
 
 # ══════════════════════════════════════════
 #  HELPERS
@@ -248,8 +258,10 @@ def send_welcome(chat_id, first_name):
     
     intro_text = (
         f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n\n"
-        f"እኛ የምትፈልጉትን የትኛውንም መጽሐፍ ሀሳብ ከእርስዎ እድሜ፣ ጾታ እና የግል ግብ ጋር በማዋሃድ... "
-        f"ህይወትዎን የሚቀይር <b>ልዩ የህይወት መመሪያ (Life Guide)</b> እናዘጋጅልዎታለን።"
+        f"📚 ከዓለም ምርጥ መጽሐፍት ጥበብ በመውሰድ ለእርስዎ ህይወት ብቻ "
+        f"የተዘጋጀ <b>ግላዊ የህይወት መመሪያ</b> እንሰራልዎታለን።\n\n"
+        f"✨ መጽሐፉን ይምረጡ፣ ጥቂት ጥያቄዎችን ይመልሱ፣ "
+        f"ህይወትዎን የሚቀይር መመሪያ ይቀበሉ!"
     )
 
     bot.send_message(
@@ -273,27 +285,21 @@ def send_welcome(chat_id, first_name):
     
     gifts = []
     if previews_left > 0:
-        gifts.append(f"{previews_left} ነጻ የሙከራ መመሪያዎች (Trials)")
+        gifts.append(f"{previews_left} ነጻ የሙከራ መመሪያዎች")
     if has_free_full:
-        gifts.append("1 ሙሉ ነጻ መመሪያ (Full Package)")
+        gifts.append("1 ሙሉ ነጻ መመሪያ")
         
     if gifts:
         gifts_text = " እና ".join(gifts)
         preview_line = f"🎁 <b>ያልዎት ስጦታ፡ {gifts_text}</b>\n"
     else:
-        preview_line = "🚫 <b>የነጻ ምርመራ ኮታዎ አልቋል!</b>\n"
+        preview_line = ""
 
     bot.send_message(
         chat_id,
-        f"✨ <b>ህይወትዎን የሚቀይረውን መጽሐፍ ይምረጡ...</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
         f"{preview_line}{credit_line}\n"
-        f"የአለማችን ምርጥ መጽሐፍት ጥበብ ለእርስዎ\n"
-        f"ህይወት ብቻ የተዘጋጀ ግላዊ የለውጥ መመሪያ\n"
-        f"እናዘጋጃለን።\n\n"
-        f"📖 መጽሐፍ ይምረጡ → ጥያቄዎችን ይመልሱ →\n"
-        f"🔥 ህይወትዎን የሚቀይር መመሪያ ያግኙ!\n\n"
-        f"👇 ከታች ያለውን በመጫን ይጀምሩ:",
+        f"👇 ከታች ያለውን በመጫን ይጀምሩ",
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -305,7 +311,7 @@ def cmd_help(message):
     bot.send_message(
         message.chat.id,
         "📖 <b>Baya Books እንዴት እንጠቀማለን?</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
         "1️⃣ መጽሐፍ ይምረጡ ወይም እኛ እንምረጥልዎ\n"
         "2️⃣ ጥቂት ጥያቄዎችን ይመልሱ\n"
         "3️⃣ ነጻ ማሳያ ያንብቡ\n"
@@ -354,7 +360,7 @@ def cmd_referral(message):
     bot.send_message(
         message.chat.id,
         f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ መመሪያ ያግኙ!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"👥 5 ጓደኞችዎን ይህን ሊንክ ተጠቅመው\n"
         f"ቦቱን ሲቀላቀሉ — እርስዎ ነጻ 1 መመሪያ ያገኛሉ!\n\n"
         f"🔗 <b>የእርስዎ ሊንክ:</b>\n<code>{link}</code>\n\n"
@@ -454,7 +460,7 @@ def handle_callback(call):
         elif lang_code == "ti": msg = "✅ ናብ ትግርኛ ተቐይሩ እዩ!"
         
         bot.answer_callback_query(call.id, msg)
-        bot.edit_message_text(msg + "\n(Note: Full bot translation coming soon!)", chat_id, call.message.message_id)
+        bot.edit_message_text(msg, chat_id, call.message.message_id)
         return
 
     if data == "check_joined":
@@ -506,7 +512,7 @@ def handle_callback(call):
         bot.send_message(
             chat_id,
             "🧭 <b>በጣም ጥሩ!</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
             "ዛሬ በየትኛው የህይወት ክፍል ትልቅ ለውጥ ማምጣት ይፈልጋሉ?\n\n"
             "👇 ከታች ይምረጡ",
             parse_mode="HTML", reply_markup=markup,
@@ -549,8 +555,10 @@ def handle_callback(call):
                     "book_title": order["book_title"],
                     "gender": order["gender"],
                     "age_range": order["age_range"],
+                    "goal": order.get("goal", ""),
                     "location": order.get("location", ""),
                     "living_situation": order.get("living_situation", ""),
+                    "employment": order.get("employment", "Working"),
                     "specific_change": order.get("specific_change", ""),
                     "language": order["language"],
                     "order_id": order_id,
@@ -583,7 +591,7 @@ def handle_callback(call):
         bot.send_message(
             chat_id,
             f"{emoji} <b>{cat_name_am}</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
             "በዚህ ክፍል ውስጥ በተለይ የትኛው ላይ ትኩረት ማድረግ ይፈልጋሉ?\n\n👇 ከታች ይምረጡ",
             parse_mode="HTML", reply_markup=markup
         )
@@ -615,7 +623,7 @@ def handle_callback(call):
         safe_delete_message(chat_id, loading_msg.message_id)
         
         if isinstance(books, dict) and "error" in books:
-            bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር: {html.escape(books['error'])}")
+            bot.send_message(chat_id, f"⚠️ ይቅርታ፣ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።")
             return
             
         if not books or len(books) < 3:
@@ -651,7 +659,7 @@ def handle_callback(call):
     if data == "confirm_book":
         session = get_session(uid)
         book_title = session["data"].get("book_title", "")
-        set_state(uid, "AWAITING_GENDER")
+        set_state(uid, "AWAITING_GENDER", book_title=book_title)
         bot.answer_callback_query(call.id)
         ask_gender(chat_id, book_title)
         return
@@ -665,6 +673,30 @@ def handle_callback(call):
     # ── Gender ───────────────────────────────
     if data in ("gen_m", "gen_f"):
         gender = "male" if data == "gen_m" else "female"
+        
+        # Check if admin is in push flow
+        session = get_session(uid)
+        if session["state"] == "ADMIN_PUSH_GENDER" and is_admin(call.from_user):
+            target_id = session["data"].get("target_id")
+            push_book = session["data"].get("push_book", "")
+            set_state(uid, "IDLE")
+            bot.answer_callback_query(call.id, "⏳ Generating...")
+            d = {
+                "book_title": push_book,
+                "gender": gender,
+                "age_range": "25-29",
+                "goal": "",
+                "location": "Ethiopia",
+                "living_situation": "Alone",
+                "employment": "Working",
+                "specific_change": "",
+                "language": "am",
+            }
+            generate_and_deliver_pdf(target_id, target_id, d)
+            bot.send_message(chat_id, f"✅ PDF ለ {target_id} ተልኳል!")
+            clear_state(uid)
+            return
+        
         set_state(uid, "AWAITING_AGE", gender=gender)
         bot.answer_callback_query(call.id)
         ask_age(chat_id)
@@ -732,7 +764,6 @@ def handle_callback(call):
 
     if data == "pay_single":
         bot.answer_callback_query(call.id)
-        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
         show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
         return
 
@@ -779,7 +810,7 @@ def handle_callback(call):
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
         bot.send_message(chat_id,
-            f"👑 <b>BAYA BOOKS ADMIN DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"👑 <b>BAYA BOOKS ADMIN DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
             f"👥 ጠቅላላ ተጠቃሚዎች: <b>{stats['total_users']}</b>\n"
             f"🟢 ዛሬ የተጨመሩ: <b>{stats['new_today']}</b>\n"
             f"📄 የተዘጋጁ PDFs: <b>{stats['total_pdfs']}</b>\n\n"
@@ -853,8 +884,9 @@ def ask_gender(chat_id, book_title):
     bot.send_message(
         chat_id,
         f"✨ <b>ድንቅ ምርጫ!</b>\n\n"
-        f"📖 <i>{book_title}</i> — ለእርስዎ ህይወት ብቻ\n"
-        f"ልዩ አድርጌ ላዘጋጅልዎ ጥቂት ጥያቄዎችን ልጠይቅዎት።\n\n"
+        f"📖 <i>{html.escape(book_title)}</i>\n\n"
+        f"ለእርስዎ ብቻ የተዘጋጀ መመሪያ ለመስራት "
+        f"ጥቂት ጥያቄዎች ልጠይቅዎ።\n\n"
         f"👤 <b>ጾታዎ?</b>",
         parse_mode="HTML", reply_markup=markup,
     )
@@ -866,7 +898,7 @@ def ask_age(chat_id):
     bot.send_message(
         chat_id, 
         "🎂 <b>የዕድሜ ክልልዎን ይምረጡ</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 
+        "━━━━━━━━━━━━━━━━━━━━", 
         parse_mode="HTML", reply_markup=markup
     )
 
@@ -879,7 +911,7 @@ def ask_location(chat_id):
     bot.send_message(
         chat_id,
         "📍 <b>የት ነው የሚኖሩት?</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML", reply_markup=markup
     )
 
@@ -892,7 +924,7 @@ def ask_living_situation(chat_id):
     bot.send_message(
         chat_id,
         "🏠 <b>የአኗኗር ሁኔታዎ ምን ይመስላል?</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML", reply_markup=markup
     )
 
@@ -975,12 +1007,12 @@ def generate_and_show_preview(chat_id, uid, data):
 
     # Send preview
     header = (
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
         f"📖 <b>{html.escape(data.get('book_title', ''))}</b> መመሪያ\n"
-        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
-        f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
+        f"👤 {data.get('age_range', '')} | {GENDER_DISPLAY.get(data.get('gender', ''), data.get('gender', ''))}\n"
+        f"🏠 {LIVING_DISPLAY.get(data.get('living_situation', ''), data.get('living_situation', ''))} | 📍 {LOCATION_DISPLAY.get(data.get('location', ''), data.get('location', ''))}\n"
         f"🎯 {html.escape(data.get('specific_change', ''))}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
     )
     # Truncate preview if too long for Telegram (4096 chars max)
     max_len = 4096 - len(header) - 200
@@ -1001,12 +1033,12 @@ def generate_and_show_preview(chat_id, uid, data):
     
     bot.send_message(
         chat_id,
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
         "⬆️ <b>ይህ የመነሻ ምርመራ ብቻ ነው!</b>\n\n"
         "ሙሉው የ90-ቀን ስትራቴጂ፣ ዕለታዊ ልምምድ፣\n"
         "የሳምንታዊ ግምገማ፣ እና ሙሉ ግላዊ መመሪያ\n"
         "ለማግኘት ከታች ይዘዙ 👇\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup().add(
             InlineKeyboardButton(btn_text, callback_data="buy_now")
@@ -1073,10 +1105,9 @@ def generate_and_deliver_pdf(chat_id, uid, data):
         data.get("language", "am"),
     )
 
-    if not full_text or full_text.startswith("ERROR:"):
+    if not full_text:
         safe_delete_message(chat_id, loading.message_id)
-        err = full_text if full_text else "No output returned"
-        bot.send_message(chat_id, f"⚠️ ችግር ተፈጥሯል። @Bayabooks ያናግሩን።\n\nDEBUG: {err}")
+        bot.send_message(chat_id, "⚠️ ይቅርታ፣ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ ወይም @Bayabooks ያናግሩን።")
         return
 
     # Generate Telegraph URL
@@ -1095,8 +1126,8 @@ def generate_and_deliver_pdf(chat_id, uid, data):
     msg_text = (
         f"🎉 <b>ግላዊ መመሪያዎ ዝግጁ ነው!</b>\n\n"
         f"📖 <b>{html.escape(data.get('book_title', ''))}</b>\n"
-        f"👤 {html.escape(data.get('age_range', ''))} | {html.escape(data.get('gender', ''))}\n"
-        f"🏠 {html.escape(data.get('living_situation', ''))} | 📍 {html.escape(data.get('location', ''))}\n"
+        f"👤 {data.get('age_range', '')} | {GENDER_DISPLAY.get(data.get('gender', ''), data.get('gender', ''))}\n"
+        f"🏠 {LIVING_DISPLAY.get(data.get('living_situation', ''), data.get('living_situation', ''))} | 📍 {LOCATION_DISPLAY.get(data.get('location', ''), data.get('location', ''))}\n"
         f"🎯 {html.escape(data.get('specific_change', ''))}\n\n"
         f"👇 <b>ከታች ያለውን ሊንክ ተጭነው ያንብቡ:</b>\n"
         f"{page_url}"
@@ -1138,7 +1169,7 @@ def show_tip_cta(chat_id):
     bot.send_message(
         chat_id,
         "💎 <b>የ Baya Books ራዕይን ይደግፉ!</b>\n\n"
-        "ይህን መመሪያ ጠቃሚ ሆኖ ካገኙት እና የ Baya Books ቴክኖሎጂ ለብዙዎች እንዲደርስ ከተመኙ፣ ከታች ካሉት አማራጮች በመምረጥ የፕሮጀክታችን ስፖንሰር/ደጋፊ መሆን ይችላሉ፦\n\n"
+        "ይህን መመሪያ ጠቃሚ ሆኖ ካገኙት እና የ Baya Books ቴክኖሎጂ ለብዙዎች እንዲደርስ ከተመኙ፣ ከታች ካሉት አማራጮች በመምረጥ የፕሮጀክታችን ደጋፊ መሆን ይችላሉ።\n\n"
         "🙏 ከልብ እናመሰግናለን!",
         parse_mode="HTML",
         reply_markup=markup
@@ -1384,12 +1415,12 @@ def handle_messages(message):
                         parse_mode="HTML", reply_markup=markup,
                     )
                 else:
-                    error_debug = result.get("error_msg", "No exception, just returned false.") if result else "Result is None"
-                    bot.send_message(chat_id, f"⚠️ እንዲህ ዓይነት መጽሐፍ ማግኘት አልቻልኩም።\n\nDEBUG: {error_debug}")
+                    bot.send_message(chat_id, "⚠️ ይቅርታ፣ ይህን መጽሐፍ ማግኘት አልቻልኩም። እባክዎ የመጽሐፉን ትክክለኛ ስም ይፃፉ።")
                 return
             except Exception as e:
                 import traceback
-                bot.send_message(chat_id, f"🛑 CRITICAL ERROR:\n{e}\n\nTraceback:\n{traceback.format_exc()[-500:]}")
+                logging.error(f"CRITICAL ERROR in book verify: {e}\n{traceback.format_exc()}")
+                bot.send_message(chat_id, "⚠️ ይቅርታ፣ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ ወይም /start ይጫኑ።")
                 return
 
     # ── Specific Change Input ────────────────
@@ -1404,6 +1435,12 @@ def handle_messages(message):
         bot.send_message(chat_id, "❌ የክፍያ ስርአታችን ተቀይሯል። እባክዎ እንደገና ይሞክሩ።", reply_markup=ReplyKeyboardRemove())
         clear_state(uid)
         send_welcome(chat_id, message.from_user.first_name)
+        return
+
+    # ── Inline-button states: nudge user ─────
+    BUTTON_STATES = {"AWAITING_GENDER", "AWAITING_AGE", "AWAITING_LIVING", "AWAITING_LOCATION", "AWAITING_LANGUAGE", "AWAITING_CATEGORY", "AWAITING_SUBCATEGORY", "AWAITING_BOOK_PICK", "PREVIEW_SHOWN", "GENERATING_PREVIEW"}
+    if state in BUTTON_STATES:
+        bot.reply_to(message, "👆 እባክዎ ከላይ ካሉት አማራጮች ውስጥ ይምረጡ።")
         return
 
     # ── Catch-all: Forward to admin ──────────

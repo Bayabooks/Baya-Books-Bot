@@ -212,7 +212,7 @@ def generate_full_protocol(book_title, gender, age_range, goal, location, living
         return response.text
     except Exception as e:
         logging.error(f"Full protocol generation error: {e}")
-        return f"ERROR: {str(e)}"
+        return None
 
 
 def recommend_books(category, count=3):

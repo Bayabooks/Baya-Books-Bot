@@ -19,20 +19,23 @@ def setup_database():
         first_name TEXT,
         joined_date TEXT,
         referred_by INTEGER,
-        credits INTEGER DEFAULT 0
+        credits INTEGER DEFAULT 0,
+        previews_left INTEGER DEFAULT 5,
+        preview_timer_start TEXT,
+        free_protocol_used INTEGER DEFAULT 0,
+        vip_expiry TEXT,
+        bot_language TEXT DEFAULT 'am'
     )''')
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN previews_left INTEGER DEFAULT 5")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN preview_timer_start TEXT")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN free_protocol_used INTEGER DEFAULT 0")
-    except:
-        pass
+    # Migrations for existing databases
+    for col_sql in [
+        "ALTER TABLE users ADD COLUMN previews_left INTEGER DEFAULT 5",
+        "ALTER TABLE users ADD COLUMN preview_timer_start TEXT",
+        "ALTER TABLE users ADD COLUMN free_protocol_used INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN vip_expiry TEXT",
+        "ALTER TABLE users ADD COLUMN bot_language TEXT DEFAULT 'am'",
+    ]:
+        try: c.execute(col_sql)
+        except: pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

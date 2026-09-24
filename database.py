@@ -24,7 +24,9 @@ def setup_database():
         preview_timer_start TEXT,
         free_protocol_used INTEGER DEFAULT 0,
         vip_expiry TEXT,
-        bot_language TEXT DEFAULT 'am'
+        bot_language TEXT DEFAULT 'am',
+        is_banned INTEGER DEFAULT 0,
+        is_sub_admin INTEGER DEFAULT 0
     )''')
     # Migrations for existing databases
     for col_sql in [
@@ -33,6 +35,8 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN free_protocol_used INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN vip_expiry TEXT",
         "ALTER TABLE users ADD COLUMN bot_language TEXT DEFAULT 'am'",
+        "ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN is_sub_admin INTEGER DEFAULT 0",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -489,3 +493,137 @@ def set_bot_language(user_id, lang_code):
     c.execute("UPDATE users SET bot_language = ? WHERE user_id = ?", (lang_code, user_id))
     conn.commit()
     conn.close()
+
+# ─── Ban Functions ─────────────────────────
+
+def ban_user(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def unban_user(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def is_banned(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT IFNULL(is_banned, 0) as is_banned FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return bool(row and row['is_banned'])
+
+# ─── Sub-Admin Functions ──────────────────
+
+def add_sub_admin(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_sub_admin = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def remove_sub_admin(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_sub_admin = 0 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def is_sub_admin(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT IFNULL(is_sub_admin, 0) as is_sub_admin FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return bool(row and row['is_sub_admin'])
+
+def get_all_sub_admins():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT user_id, username, first_name FROM users WHERE is_sub_admin = 1")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+# ─── User Lookup & Search ─────────────────
+
+def search_users(query):
+    """Search users by ID, username, or first_name."""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        uid = int(query)
+        c.execute("SELECT * FROM users WHERE user_id = ?", (uid,))
+    except ValueError:
+        c.execute("SELECT * FROM users WHERE username LIKE ? OR first_name LIKE ? LIMIT 10", (f"%{query}%", f"%{query}%"))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_user_details(user_id):
+    """Get comprehensive user info including order count and payment total."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+    user = c.fetchone()
+    if not user:
+        conn.close()
+        return None
+    
+    c.execute("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status = 'delivered'", (user_id,))
+    order_count = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status IN ('draft', 'preview_sent')", (user_id,))
+    draft_count = c.fetchone()[0]
+    
+    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE user_id = ? AND status = 'approved'", (user_id,))
+    total_paid = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ?", (user_id,))
+    referral_count = c.fetchone()[0]
+    
+    c.execute("SELECT book_title, status, created_date FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 5", (user_id,))
+    recent_orders = c.fetchall()
+    
+    conn.close()
+    return {
+        "user": user,
+        "order_count": order_count,
+        "draft_count": draft_count,
+        "total_paid": total_paid,
+        "referral_count": referral_count,
+        "recent_orders": recent_orders,
+    }
+
+def get_recent_orders(limit=10):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT o.id, o.user_id, o.book_title, o.status, o.created_date, u.first_name, u.username
+        FROM orders o LEFT JOIN users u ON o.user_id = u.user_id
+        ORDER BY o.id DESC LIMIT ?
+    """, (limit,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_total_user_count():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM users")
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
+def get_banned_users():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT user_id, username, first_name FROM users WHERE is_banned = 1")
+    rows = c.fetchall()
+    conn.close()
+    return rows

@@ -163,6 +163,11 @@ def safe_delete_message(chat_id, message_id):
         pass
 
 def is_admin(user):
+    if user.username and user.username.lower() == config.ADMIN_USERNAME:
+        return True
+    return database.is_sub_admin(user.id)
+
+def is_owner(user):
     return bool(user.username and user.username.lower() == config.ADMIN_USERNAME)
 
 def get_admin_id():
@@ -257,7 +262,8 @@ def send_welcome(chat_id, first_name):
     bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"), KeyboardButton("🌐 ቋንቋ / Language"))
     
     intro_text = (
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n\n"
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n"
+        f"🆔 የእርስዎ ID: <code>{chat_id}</code>\n\n"
         f"📚 ከዓለም ምርጥ መጽሐፍት ጥበብ በመውሰድ ለእርስዎ ህይወት ብቻ "
         f"የተዘጋጀ <b>ግላዊ የህይወት መመሪያ</b> እንሰራልዎታለን።\n\n"
         f"✨ መጽሐፉን ይምረጡ፣ ጥቂት ጥያቄዎችን ይመልሱ፣ "
@@ -382,21 +388,40 @@ def cmd_new(message):
 def cmd_admin(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ የ Admin መብት የለዎትም!"); return
+    show_admin_menu(message.chat.id, message.from_user)
+
+def show_admin_menu(chat_id, user):
     markup = InlineKeyboardMarkup(row_width=2)
-    from telebot.types import WebAppInfo
     markup.add(
-        InlineKeyboardButton("📊 Analytics", callback_data="admin_stats"),
+        InlineKeyboardButton("📊 Dashboard", callback_data="adm_dashboard"),
+        InlineKeyboardButton("🔍 User Lookup", callback_data="adm_search"),
+    )
+    markup.add(
         InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast"),
+        InlineKeyboardButton("📤 Push PDF", callback_data="admin_push_pdf"),
     )
     markup.add(
-        InlineKeyboardButton("💳 ክሬዲት ጨምር", callback_data="admin_credit"),
-        InlineKeyboardButton("📤 PDF ላክ", callback_data="admin_push_pdf"),
+        InlineKeyboardButton("💳 Add Credit", callback_data="admin_credit"),
+        InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
     )
+    markup.add(
+        InlineKeyboardButton("👑 Sub-Admins", callback_data="adm_subadmin_menu"),
+        InlineKeyboardButton("📋 Recent Orders", callback_data="adm_recent_orders"),
+    )
+    markup.add(
+        InlineKeyboardButton("💰 Pending Payments", callback_data="adm_pending_payments"),
+        InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
+    )
+    
+    total_users = database.get_total_user_count()
     bot.send_message(
-        message.chat.id,
-        f"👑 <b>Baya Books Admin</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-        f"👋 {message.from_user.first_name}!\nምን ማድረግ ይፈልጋሉ?",
-        reply_markup=markup, parse_mode="HTML",
+        chat_id,
+        f"👑 <b>Baya Books Admin Panel</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"👥 Total Users: <b>{total_users}</b>\n"
+        f"{'🛡️ Owner' if is_owner(user) else '👮 Sub-Admin'}\n\n"
+        f"Select an action:",
+        parse_mode="HTML", reply_markup=markup,
     )
 
 def enforce_preview_quota(uid, chat_id, call_id=None):
@@ -447,6 +472,11 @@ def handle_callback(call):
     uid = call.from_user.id
     data = call.data
     chat_id = call.message.chat.id
+
+    # Ban check
+    if database.is_banned(uid):
+        bot.answer_callback_query(call.id, "🚫 ይህ አካውንት ታግዷል።", show_alert=True)
+        return
 
     # ── Channel Join Check ───────────────────
 
@@ -798,33 +828,280 @@ def handle_callback(call):
         )
         return
 
-    # ── Admin: Stats ─────────────────────────
-    if data == "admin_stats":
+    # ══════════════════════════════════════════
+    #  ADMIN DASHBOARD CALLBACKS
+    # ══════════════════════════════════════════
+    
+    if data == "adm_dashboard":
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "📊 Loading...")
         stats = database.get_analytics()
-        top_books = "\n".join([f"  {i+1}. 📕 {b[0]} ({b[1]}x)" for i, b in enumerate(stats["top_books"])]) or "  — ምንም"
-        top_goals = "\n".join([f"  {i+1}. 🎯 {g[0]} ({g[1]}x)" for i, g in enumerate(stats["top_goals"])]) or "  — ምንም"
+        top_books = "\n".join([f"  {i+1}. 📕 {b[0]} ({b[1]}x)" for i, b in enumerate(stats["top_books"])]) or "  — None"
+        top_goals = "\n".join([f"  {i+1}. 🎯 {g[0]} ({g[1]}x)" for i, g in enumerate(stats["top_goals"])]) or "  — None"
         total = stats["male_count"] + stats["female_count"]
         m_pct = f"{stats['male_count']/total*100:.0f}%" if total > 0 else "0%"
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        
         bot.send_message(chat_id,
-            f"👑 <b>BAYA BOOKS ADMIN DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"👥 ጠቅላላ ተጠቃሚዎች: <b>{stats['total_users']}</b>\n"
-            f"🟢 ዛሬ የተጨመሩ: <b>{stats['new_today']}</b>\n"
-            f"📄 የተዘጋጁ PDFs: <b>{stats['total_pdfs']}</b>\n\n"
-            f"━━ 💰 ገቢ ━━━━━━━━━━━━━━━━━━━━\n"
-            f"  📅 ዛሬ: <b>{stats['today_revenue']:,} ብር</b>\n"
-            f"  📆 ሳምንታዊ: <b>{stats['weekly_revenue']:,} ብር</b>\n"
-            f"  💵 ጠቅላላ: <b>{stats['total_revenue']:,} ብር</b>\n\n"
-            f"━━ 🔥 ተወዳጅ 5 መጽሐፍት ━━━━━━━━━\n{top_books}\n\n"
-            f"━━ 🎯 ተወዳጅ 5 ግቦች ━━━━━━━━━━━━\n{top_goals}\n\n"
-            f"━━ 👥 ስብጥር ━━━━━━━━━━━━━━━━━━\n"
-            f"  👨 ወንድ: {m_pct} | 👩 ሴት: {f_pct}\n\n"
-            f"⏳ በመጠባበቅ: <b>{stats['pending_payments']}</b> ክፍያዎች",
-            parse_mode="HTML",
+            f"📊 <b>DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"👥 Total Users: <b>{stats['total_users']}</b>\n"
+            f"🟢 New Today: <b>{stats['new_today']}</b>\n"
+            f"📄 Delivered PDFs: <b>{stats['total_pdfs']}</b>\n\n"
+            f"━━ 💰 Revenue ━━━━━━━━━━━━\n"
+            f"  📅 Today: <b>{stats['today_revenue']:,} ETB</b>\n"
+            f"  📆 Weekly: <b>{stats['weekly_revenue']:,} ETB</b>\n"
+            f"  💵 Total: <b>{stats['total_revenue']:,} ETB</b>\n\n"
+            f"━━ 🔥 Top 5 Books ━━━━━━━━━\n{top_books}\n\n"
+            f"━━ 👥 Gender Split ━━━━━━━━━\n"
+            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}\n\n"
+            f"⏳ Pending Payments: <b>{stats['pending_payments']}</b>",
+            parse_mode="HTML", reply_markup=markup,
         )
+        return
+    
+    if data == "adm_back":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        show_admin_menu(chat_id, call.from_user)
+        return
+    
+    # ── Admin: User Search ────────────────────
+    if data == "adm_search":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_SEARCH_USER")
+        bot.send_message(chat_id, "🔍 <b>User Lookup</b>\n\nEnter User ID, @username, or name:\n(/cancel to exit)", parse_mode="HTML")
+        return
+    
+    # ── Admin: User Lookup (from inline button) ─
+    if data.startswith("adm_lookup_"):
+        if not is_admin(call.from_user): return
+        target_id = int(data.replace("adm_lookup_", ""))
+        bot.answer_callback_query(call.id, "🔍 Loading...")
+        details = database.get_user_details(target_id)
+        if not details:
+            bot.send_message(chat_id, "❌ User not found.")
+            return
+        u = details["user"]
+        banned_tag = " 🚫 BANNED" if database.is_banned(target_id) else ""
+        admin_tag = " 👑" if database.is_sub_admin(target_id) else ""
+        
+        orders_text = ""
+        for o in details["recent_orders"]:
+            orders_text += f"  📕 {o['book_title'][:25]} ({o['status']})\n"
+        if not orders_text:
+            orders_text = "  — No orders\n"
+        
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("💳 Add Credit", callback_data=f"adm_credit_{target_id}"),
+            InlineKeyboardButton("📤 Push PDF", callback_data=f"adm_push_{target_id}"),
+        )
+        if database.is_banned(target_id):
+            markup.add(InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{target_id}"))
+        else:
+            markup.add(InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{target_id}"))
+        if is_owner(call.from_user):
+            if database.is_sub_admin(target_id):
+                markup.add(InlineKeyboardButton("👮 Remove Sub-Admin", callback_data=f"adm_rmsub_{target_id}"))
+            else:
+                markup.add(InlineKeyboardButton("👮 Make Sub-Admin", callback_data=f"adm_mksub_{target_id}"))
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        
+        bot.send_message(chat_id,
+            f"👤 <b>User Profile</b>{banned_tag}{admin_tag}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"🆔 ID: <code>{target_id}</code>\n"
+            f"👤 Name: <b>{u['first_name']}</b>\n"
+            f"📛 Username: @{u['username'] or 'N/A'}\n"
+            f"📅 Joined: {u['joined_date'][:10] if u['joined_date'] else 'N/A'}\n\n"
+            f"━━ Stats ━━━━━━━━━━━━━━━━━━\n"
+            f"  📄 Orders: <b>{details['order_count']}</b> delivered, <b>{details['draft_count']}</b> drafts\n"
+            f"  💰 Total Paid: <b>{details['total_paid']:,} ETB</b>\n"
+            f"  🎫 Credits: <b>{u['credits']}</b>\n"
+            f"  👥 Referrals: <b>{details['referral_count']}</b>\n"
+            f"  🔮 Previews Left: <b>{u['previews_left']}</b>\n"
+            f"  🎁 Free Protocol: {'❌ Used' if u['free_protocol_used'] else '✅ Available'}\n\n"
+            f"━━ Recent Orders ━━━━━━━━━━━\n{orders_text}",
+            parse_mode="HTML", reply_markup=markup,
+        )
+        return
+    
+    # ── Admin: Quick Credit from profile ──────
+    if data.startswith("adm_credit_"):
+        if not is_admin(call.from_user): return
+        target_id = int(data.replace("adm_credit_", ""))
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_CREDIT_AMOUNT", target_id=target_id)
+        bot.send_message(chat_id, f"💳 How many credits to add for user <code>{target_id}</code>?\n(/cancel to exit)", parse_mode="HTML")
+        return
+    
+    # ── Admin: Quick Push from profile ────────
+    if data.startswith("adm_push_") and not data.startswith("adm_push_pdf"):
+        if not is_admin(call.from_user): return
+        target_id = int(data.replace("adm_push_", ""))
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_PUSH_BOOK", target_id=target_id)
+        bot.send_message(chat_id, f"📤 <b>Push PDF</b>\n\nBook title for user <code>{target_id}</code>?\n(/cancel to exit)", parse_mode="HTML")
+        return
+    
+    # ── Admin: Ban User ──────────────────────
+    if data.startswith("adm_ban_") and data != "adm_ban_menu":
+        if not is_admin(call.from_user): return
+        target_id = int(data.replace("adm_ban_", ""))
+        database.ban_user(target_id)
+        bot.answer_callback_query(call.id, "🚫 User banned!")
+        bot.send_message(chat_id, f"🚫 User <code>{target_id}</code> has been <b>BANNED</b>.", parse_mode="HTML")
+        try:
+            bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+        except: pass
+        return
+    
+    # ── Admin: Unban User ────────────────────
+    if data.startswith("adm_unban_"):
+        if not is_admin(call.from_user): return
+        target_id = int(data.replace("adm_unban_", ""))
+        database.unban_user(target_id)
+        bot.answer_callback_query(call.id, "✅ User unbanned!")
+        bot.send_message(chat_id, f"✅ User <code>{target_id}</code> has been <b>UNBANNED</b>.", parse_mode="HTML")
+        try:
+            bot.send_message(target_id, "✅ አካውንትዎ ተከፍቷል! /start ይጫኑ ለመጀመር።")
+        except: pass
+        return
+    
+    # ── Admin: Ban Menu ──────────────────────
+    if data == "adm_ban_menu":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        banned = database.get_banned_users()
+        text = "🚫 <b>Ban Manager</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        if banned:
+            text += "<b>Currently Banned:</b>\n"
+            for b in banned:
+                text += f"  🚫 {b['first_name']} (@{b['username'] or 'N/A'}) — <code>{b['user_id']}</code>\n"
+            text += "\n"
+        else:
+            text += "No banned users.\n\n"
+        text += "To ban: Enter User ID below\nTo unban: Click the user above"
+        
+        markup = InlineKeyboardMarkup()
+        for b in (banned or []):
+            markup.add(InlineKeyboardButton(f"✅ Unban {b['first_name']}", callback_data=f"adm_unban_{b['user_id']}"))
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        
+        set_state(uid, "ADMIN_BAN_USER")
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+    
+    # ── Admin: Sub-Admin Menu ────────────────
+    if data == "adm_subadmin_menu":
+        if not is_owner(call.from_user):
+            bot.answer_callback_query(call.id, "❌ Only the owner can manage sub-admins.", show_alert=True)
+            return
+        bot.answer_callback_query(call.id)
+        subs = database.get_all_sub_admins()
+        text = "👑 <b>Sub-Admin Manager</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        if subs:
+            text += "<b>Current Sub-Admins:</b>\n"
+            for s in subs:
+                text += f"  👮 {s['first_name']} (@{s['username'] or 'N/A'}) — <code>{s['user_id']}</code>\n"
+            text += "\n"
+        else:
+            text += "No sub-admins yet.\n\n"
+        text += "Enter a User ID to add as sub-admin:\n(/cancel to exit)"
+        
+        markup = InlineKeyboardMarkup()
+        for s in (subs or []):
+            markup.add(InlineKeyboardButton(f"❌ Remove {s['first_name']}", callback_data=f"adm_rmsub_{s['user_id']}"))
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        
+        set_state(uid, "ADMIN_ADD_SUBADMIN")
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+    
+    # ── Admin: Make Sub-Admin ────────────────
+    if data.startswith("adm_mksub_"):
+        if not is_owner(call.from_user):
+            bot.answer_callback_query(call.id, "❌ Only the owner.", show_alert=True)
+            return
+        target_id = int(data.replace("adm_mksub_", ""))
+        database.add_sub_admin(target_id)
+        bot.answer_callback_query(call.id, "👮 Sub-Admin added!")
+        bot.send_message(chat_id, f"👮 User <code>{target_id}</code> is now a <b>Sub-Admin</b>.", parse_mode="HTML")
+        try:
+            bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /admin to access the admin panel.", parse_mode="HTML")
+        except: pass
+        return
+    
+    # ── Admin: Remove Sub-Admin ──────────────
+    if data.startswith("adm_rmsub_"):
+        if not is_owner(call.from_user):
+            bot.answer_callback_query(call.id, "❌ Only the owner.", show_alert=True)
+            return
+        target_id = int(data.replace("adm_rmsub_", ""))
+        database.remove_sub_admin(target_id)
+        bot.answer_callback_query(call.id, "✅ Sub-Admin removed.")
+        bot.send_message(chat_id, f"✅ User <code>{target_id}</code> is no longer a Sub-Admin.", parse_mode="HTML")
+        return
+    
+    # ── Admin: Recent Orders ─────────────────
+    if data == "adm_recent_orders":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "📋 Loading...")
+        orders = database.get_recent_orders(10)
+        text = "📋 <b>Recent 10 Orders</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        for o in orders:
+            status_icon = {"draft": "📝", "preview_sent": "👁️", "delivered": "✅", "paid": "💰"}.get(o["status"], "❓")
+            text += f"{status_icon} <b>{o['book_title'][:25]}</b>\n"
+            text += f"   👤 {o['first_name'] or 'N/A'} — <code>{o['user_id']}</code>\n"
+            text += f"   📅 {o['created_date'][:10] if o['created_date'] else 'N/A'}\n\n"
+        if not orders:
+            text += "No orders yet.\n"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+    
+    # ── Admin: Pending Payments ───────────────
+    if data == "adm_pending_payments":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "💰 Loading...")
+        conn = database.get_connection()
+        c = conn.cursor()
+        c.execute("""
+            SELECT p.id, p.user_id, p.amount, p.payment_date, p.tx_ref, u.first_name
+            FROM payments p LEFT JOIN users u ON p.user_id = u.user_id
+            WHERE p.status = 'pending' ORDER BY p.id DESC LIMIT 10
+        """)
+        pending = c.fetchall()
+        conn.close()
+        
+        text = "💰 <b>Pending Payments</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        markup = InlineKeyboardMarkup()
+        if pending:
+            for p in pending:
+                text += f"💳 #{p['id']} — <b>{p['amount']} ETB</b>\n"
+                text += f"   👤 {p['first_name'] or 'N/A'} (<code>{p['user_id']}</code>)\n"
+                text += f"   📅 {p['payment_date'][:10] if p['payment_date'] else 'N/A'}\n\n"
+                markup.add(
+                    InlineKeyboardButton(f"✅ Approve #{p['id']}", callback_data=f"approve_{p['id']}"),
+                    InlineKeyboardButton(f"❌ Reject #{p['id']}", callback_data=f"reject_{p['id']}")
+                )
+        else:
+            text += "No pending payments.\n"
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+    
+    # ── Admin: VIP Manager ───────────────────
+    if data == "adm_vip_menu":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_VIP_USER")
+        bot.send_message(chat_id, "👑 <b>VIP Manager</b>\n\nEnter User ID to grant VIP:\n(/cancel to exit)", parse_mode="HTML")
         return
 
     # ── Admin: Broadcast ─────────────────────
@@ -1224,10 +1501,90 @@ def handle_messages(message):
     state = session["state"]
     chat_id = message.chat.id
 
+    # Ban check
+    if database.is_banned(uid):
+        bot.reply_to(message, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+        return
+
     # ── Admin States ─────────────────────────
+    # ── Admin: Search User (text input) ──────
+    if state == "ADMIN_SEARCH_USER" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        results = database.search_users(message.text.strip())
+        if not results:
+            bot.send_message(chat_id, "❌ No users found. Try again or /cancel")
+            return
+        text = f"🔍 <b>Search Results ({len(results)})</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        markup = InlineKeyboardMarkup(row_width=1)
+        for u in results:
+            text += f"👤 {u['first_name']} (@{u['username'] or 'N/A'}) — <code>{u['user_id']}</code>\n"
+            markup.add(InlineKeyboardButton(f"👤 {u['first_name']} ({u['user_id']})", callback_data=f"adm_lookup_{u['user_id']}"))
+        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        clear_state(uid)
+        return
+    
+    # ── Admin: Ban User (text input) ─────────
+    if state == "ADMIN_BAN_USER" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        try:
+            target_id = int(message.text.strip())
+            target = database.get_user(target_id)
+            if not target:
+                bot.send_message(chat_id, "❌ User not found!"); return
+            database.ban_user(target_id)
+            bot.send_message(chat_id, f"🚫 <b>{target['first_name']}</b> (<code>{target_id}</code>) has been <b>BANNED</b>.", parse_mode="HTML")
+            try:
+                bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል። ለድጋፍ @Bayabooks ያናግሩን።")
+            except: pass
+            clear_state(uid)
+        except ValueError:
+            bot.send_message(chat_id, "❌ Please enter a valid User ID number.")
+        return
+    
+    # ── Admin: Add Sub-Admin (text input) ────
+    if state == "ADMIN_ADD_SUBADMIN" and is_owner(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        try:
+            target_id = int(message.text.strip())
+            target = database.get_user(target_id)
+            if not target:
+                bot.send_message(chat_id, "❌ User not found!"); return
+            database.add_sub_admin(target_id)
+            bot.send_message(chat_id, f"👮 <b>{target['first_name']}</b> (<code>{target_id}</code>) is now a <b>Sub-Admin</b>.", parse_mode="HTML")
+            try:
+                bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /admin to access the admin panel.", parse_mode="HTML")
+            except: pass
+            clear_state(uid)
+        except ValueError:
+            bot.send_message(chat_id, "❌ Please enter a valid User ID number.")
+        return
+    
+    # ── Admin: VIP Grant (text input) ────────
+    if state == "ADMIN_VIP_USER" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        try:
+            target_id = int(message.text.strip())
+            target = database.get_user(target_id)
+            if not target:
+                bot.send_message(chat_id, "❌ User not found!"); return
+            database.set_vip(target_id, days=30)
+            bot.send_message(chat_id, f"👑 <b>{target['first_name']}</b> (<code>{target_id}</code>) is now <b>VIP for 30 days</b>.", parse_mode="HTML")
+            try:
+                bot.send_message(target_id, "👑 <b>VIP Status Activated!</b>\n\nYou now have unlimited free protocols for 30 days!", parse_mode="HTML")
+            except: pass
+            clear_state(uid)
+        except ValueError:
+            bot.send_message(chat_id, "❌ Please enter a valid User ID number.")
+        return
+
     if state == "ADMIN_BROADCAST" and is_admin(message.from_user):
         if message.text == "/cancel":
-            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዟል።"); return
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
         users = database.get_all_user_ids()
         success, failed = 0, 0
         for u in users:
@@ -1235,7 +1592,7 @@ def handle_messages(message):
                 bot.copy_message(u, chat_id, message.message_id); success += 1
             except Exception:
                 failed += 1
-        bot.send_message(chat_id, f"✅ Broadcast ተጠናቋል!\n✔️ {success} | ❌ {failed}")
+        bot.send_message(chat_id, f"✅ Broadcast complete!\n✔️ {success} delivered | ❌ {failed} failed")
         clear_state(uid); return
 
     if state == "ADMIN_CREDIT_USER" and is_admin(message.from_user):
@@ -1449,7 +1806,12 @@ def handle_messages(message):
         admin_id = get_admin_id()
         if admin_id:
             bot.forward_message(admin_id, chat_id, message.message_id)
-            bot.send_message(admin_id, f"👤 {message.from_user.first_name} (@{message.from_user.username or 'N/A'})\n💬 ID: <code>{uid}</code>", parse_mode="HTML")
+            markup = InlineKeyboardMarkup()
+            markup.add(
+                InlineKeyboardButton("🔍 Lookup", callback_data=f"adm_lookup_{uid}"),
+                InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{uid}")
+            )
+            bot.send_message(admin_id, f"👤 {message.from_user.first_name} (@{message.from_user.username or 'N/A'})\n💬 ID: <code>{uid}</code>", parse_mode="HTML", reply_markup=markup)
 
 # ══════════════════════════════════════════
 #  WEBHOOK HTTP SERVER (Render & Chapa)

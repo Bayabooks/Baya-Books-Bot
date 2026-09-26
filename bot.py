@@ -25,7 +25,9 @@ import telegraph_generator
 import receipt_verifier
 
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
+
+logging.info("================ BOT STARTING ===============")
 
 if not config.BOT_TOKEN:
     print("ERROR: BOT_TOKEN missing in .env!"); exit(1)
@@ -1765,7 +1767,12 @@ def handle_messages(message):
             bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
             return
 
-        bot.send_chat_action(chat_id, 'typing')
+        try:
+            bot.send_chat_action(chat_id, 'typing')
+            bot.send_message(chat_id, "<i>(ውይይትዎን እያዘጋጀሁ ነው...)</i>", parse_mode="HTML")
+        except Exception:
+            pass
+            
         user_text = message.text.strip()
         
         def process_advice_chat():
@@ -1813,7 +1820,11 @@ def handle_messages(message):
                 except:
                     pass
                 
-        threading.Thread(target=process_advice_chat, daemon=True).start()
+        try:
+            threading.Thread(target=process_advice_chat, daemon=True).start()
+        except Exception as e:
+            logging.error(f"Failed to start thread: {e}")
+            bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር: {e}")
         return
 
     # ── Book Input (title or photo) ──────────

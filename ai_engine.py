@@ -284,8 +284,12 @@ def chat_with_mentor(user_message, history):
         chat = model.start_chat(history=history)
         response = chat.send_message(user_message)
         # Convert any markdown to HTML manually if needed
-        text = response.text.replace("**", "<b>").replace("  ", " ")
-        # Close unclosed bold tags just in case
+        import re
+        text = response.text
+        # Bold
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+        # Italic
+        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
         return text
     except Exception as e:
         logging.error(f"Chat mentor error: {e}")

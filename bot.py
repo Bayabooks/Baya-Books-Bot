@@ -1771,7 +1771,11 @@ def handle_messages(message):
             logging.error(f"Failed to save advice history: {e}")
         
         # Send response
-        bot.send_message(chat_id, ai_response, parse_mode="HTML")
+        try:
+            bot.send_message(chat_id, ai_response, parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Failed to send HTML, falling back: {e}")
+            bot.send_message(chat_id, ai_response)
         return
 
     # ── Book Input (title or photo) ──────────

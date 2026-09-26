@@ -306,6 +306,15 @@ def chat_with_mentor(user_message, history):
         # Escape < and > to prevent Telegram HTML errors like <2>
         text = text.replace("<", "&lt;").replace(">", "&gt;")
         
+        # Restore allowed Telegram HTML tags that the AI might have generated
+        allowed_tags = ['b', '/b', 'i', '/i', 'u', '/u', 's', '/s', 'code', '/code', 'pre', '/pre']
+        for tag in allowed_tags:
+            text = text.replace(f"&lt;{tag}&gt;", f"<{tag}>")
+            
+        # Also restore <a> tags
+        text = re.sub(r'&lt;a href=(.*?)&gt;', r'<a href=\1>', text)
+        text = text.replace("&lt;/a&gt;", "</a>")
+        
         # Bold (now dotall not needed for standard bold but just in case)
         text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
         # Italic

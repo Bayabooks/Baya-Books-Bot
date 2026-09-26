@@ -277,12 +277,26 @@ def chat_with_mentor(user_message, history):
     history is a list of {"role": "user"/"model", "parts": ["text"]}
     """
     try:
+        logging.info(f"chat_with_mentor called, history length={len(history)}")
         model = genai.GenerativeModel(
             model_name=MODEL_TEXT,
             system_instruction=ADVICE_SYSTEM_PROMPT
         )
-        chat = model.start_chat(history=history)
-        response = chat.send_message(user_message)
+        # Sanitize history: ensure parts are lists of strings
+        clean_history = []
+        for h in history:
+            role = h.get("role", "user")
+            parts = h.get("parts", [])
+            if isinstance(parts, str):
+                parts = [parts]
+            clean_history.append({"role": role, "parts": [str(p) for p in parts]})
+        
+        chat = model.start_chat(history=clean_history)
+        response = chat.send_message(
+            user_message,
+            request_options={"timeout": 120}
+        )
+        logging.info(f"chat_with_mentor got response, length={len(response.text)}")
         # Convert any markdown to HTML manually if needed
         import re
         text = response.text
@@ -292,7 +306,8 @@ def chat_with_mentor(user_message, history):
         text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
         return text
     except Exception as e:
-        logging.error(f"Chat mentor error: {e}")
+        import traceback
+        logging.error(f"Chat mentor error: {e}\n{traceback.format_exc()}")
         return "⚠️ ይቅርታ፣ ሲስተሙ ጊዜያዊ ችግር አጋጥሞታል። እባክዎ እንደገና ይሞክሩ።"
 
 

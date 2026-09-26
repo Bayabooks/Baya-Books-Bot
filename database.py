@@ -37,6 +37,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN bot_language TEXT DEFAULT 'am'",
         "ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN is_sub_admin INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN advice_messages_left INTEGER DEFAULT 15",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -631,3 +632,25 @@ def get_banned_users():
     rows = c.fetchall()
     conn.close()
     return rows
+
+def get_advice_messages_left(user_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT IFNULL(advice_messages_left, 15) as advice_messages_left FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row['advice_messages_left'] if row else 15
+
+def consume_advice_message(user_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE users SET advice_messages_left = advice_messages_left - 1 WHERE user_id = ? AND advice_messages_left > 0", (user_id,))
+    conn.commit()
+    conn.close()
+
+def add_advice_messages(user_id, count):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE users SET advice_messages_left = IFNULL(advice_messages_left, 15) + ? WHERE user_id = ?", (count, user_id))
+    conn.commit()
+    conn.close()

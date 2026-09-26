@@ -573,6 +573,14 @@ def handle_callback(call):
         show_payment_instructions(chat_id, 100, uid, "TOPUP")
         return
 
+    # ── Buy Advice Packages ──────────────────
+    if data.startswith("buy_advice_"):
+        bot.answer_callback_query(call.id)
+        msgs = int(data.split("_")[2])
+        amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
+        show_payment_instructions(chat_id, amount, uid, f"ADVICE_{msgs}")
+        return
+
     # ── Show Drafts ──────────────────────────
     if data == "show_drafts":
         bot.answer_callback_query(call.id)
@@ -1693,6 +1701,27 @@ def handle_messages(message):
         if message.text.startswith("/"):
             return
             
+        # Check quota
+        msgs_left = database.get_advice_messages_left(uid)
+        is_vip = database.is_vip(uid)
+        if msgs_left <= 0 and not is_vip:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (120 መልዕክቶች)", callback_data="buy_advice_120"))
+            markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (300 መልዕክቶች)", callback_data="buy_advice_300"))
+            markup.add(InlineKeyboardButton("🔹 Heavy: 700 ብር (600 መልዕክቶች)", callback_data="buy_advice_600"))
+            
+            cta_text = (
+                "⚠️ <b>ነፃ የሙከራ ጊዜዎ አልቋል።</b>\n\n"
+                "እስካሁን ጥሩ ቆይታ አድርገናል፤ ነገር ግን ትክክለኛው ለውጥ አሁን ነው የሚጀምረው። የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
+                "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
+                "🔹 <b>Starter: 200 ብር</b> (120 መልዕክቶች) - ለአንድ ሳምንት ጥልቅ ውይይት የሚበቃ።\n"
+                "🔹 <b>Pro: 400 ብር</b> (300 መልዕክቶች) - [ተመራጭ] በእጥፍ ዋጋ 2.5x መልዕክቶች።\n"
+                "🔹 <b>Heavy: 700 ብር</b> (600 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n\n"
+                "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
+            )
+            bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
+            return
+
         bot.send_chat_action(chat_id, 'typing')
         user_text = message.text.strip()
         history = session.get("data", {}).get("advice_history", [])
@@ -1700,6 +1729,10 @@ def handle_messages(message):
         # Get AI response
         ai_response = ai_engine.chat_with_mentor(user_text, history)
         
+        # Deduct quota (unless VIP)
+        if not is_vip:
+            database.consume_advice_message(uid)
+            
         # Update history (save unlimited conversation history per session)
         history.append({"role": "user", "parts": [user_text]})
         history.append({"role": "model", "parts": [ai_response]})
@@ -1842,6 +1875,12 @@ def process_chapa_success(tx_ref):
         database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
         database.add_credit(uid, 5)
         bot.send_message(chat_id, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n5 ነጻ ምርመራዎች ወደ አካውንትዎ ገብተዋል።", parse_mode="HTML")
+    elif purpose.startswith("ADVICE_"):
+        msgs = int(purpose.split("_")[1])
+        payment_amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
+        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+        database.add_advice_messages(uid, msgs)
+        bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n{msgs} መልዕክቶች ወደ አካውንትዎ ገብተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
     elif purpose == "TIP":
         database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
         bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")

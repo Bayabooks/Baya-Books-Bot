@@ -278,7 +278,10 @@ def chat_with_mentor(user_message, history):
     """
     try:
         logging.info(f"chat_with_mentor called, history length={len(history)}")
-        model = genai.GenerativeModel(model_name=MODEL_TEXT)
+        model = genai.GenerativeModel(
+            model_name=MODEL_TEXT,
+            system_instruction=ADVICE_SYSTEM_PROMPT
+        )
         
         # Sanitize history: ensure parts are lists of strings
         clean_history = []
@@ -289,12 +292,8 @@ def chat_with_mentor(user_message, history):
                 parts = [parts]
             clean_history.append({"role": role, "parts": [str(p) for p in parts]})
         
-        # Inject system prompt if this is the first message
-        if not clean_history:
-            combined_message = ADVICE_SYSTEM_PROMPT + "\n\nUser Message:\n" + str(user_message)
-            clean_history.append({"role": "user", "parts": [combined_message]})
-        else:
-            clean_history.append({"role": "user", "parts": [str(user_message)]})
+        # Append current user message to history
+        clean_history.append({"role": "user", "parts": [str(user_message)]})
         
         response = model.generate_content(
             contents=clean_history,

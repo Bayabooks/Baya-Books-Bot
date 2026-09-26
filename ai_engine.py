@@ -315,7 +315,7 @@ def chat_with_mentor(user_message, history):
     except Exception as e:
         import traceback
         logging.error(f"Chat mentor error: {e}\n{traceback.format_exc()}")
-        return "⚠️ ይቅርታ፣ ሲስተሙ ጊዜያዊ ችግር አጋጥሞታል። እባክዎ እንደገና ይሞክሩ።"
+        return f"⚠️ AI ERROR: {e}"
 
 
 def identify_book_cover(image_bytes):

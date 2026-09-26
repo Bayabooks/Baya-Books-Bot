@@ -1821,7 +1821,7 @@ def handle_messages(message):
                 import traceback
                 logging.error(traceback.format_exc())
                 try:
-                    bot.send_message(chat_id, "⚠️ ይቅርታ፣ ሲስተሙ ጊዜያዊ ችግር አጋጥሞታል። እባክዎ እንደገና ይሞክሩ።")
+                    bot.send_message(chat_id, f"⚠️ THREAD ERROR: {e}")
                 except:
                     pass
                 

@@ -91,24 +91,29 @@ Respond in this exact JSON format only, no other text:
 
 
 BOOK_IDENTIFY_PROMPT = """Look at this book cover image. Identify the book title and author.
+ONLY return 'found: true' if you can confidently read or identify a real published book cover.
+DO NOT guess or make up a book title if the image is blurry, irrelevant, or not a book cover.
 
 Respond in this exact JSON format only:
 {{"title": "The Book Title", "author": "Author Name", "found": true}}
 
-If you cannot identify the book, respond:
+If you cannot confidently identify the book, respond:
 {{"title": "", "author": "", "found": false}}"""
 
 
-BOOK_VERIFY_PROMPT = """You are analyzing user input. The user was asked to provide a book title.
+BOOK_VERIFY_PROMPT = """You are analyzing user input. The user was asked to provide a real, published book title.
 User Input: "{query}"
 
-If the input looks like a plausible book title, a known published book, or even a specific topic they want a guide on, ACCEPT IT.
-Only reject it (found: false) if it is absolute gibberish, keyboard mashing, or completely nonsensical text.
+1. Check if the input matches a real, known, published book.
+2. Account for spelling mistakes, typos, or slight misspellings (e.g. "atmic habit" -> "Atomic Habits"). 
+3. DO NOT GUESS or make up a book if you cannot confidently find a real published book matching the input.
+4. DO NOT accept general topics (e.g. "how to be rich") unless it perfectly matches a real book title.
 
+If it is a real book (even with typos):
 Respond in this exact JSON format only:
-{{"title": "Cleaned Title", "author": "Author (if known, else empty)", "found": true}}
+{{"title": "Corrected Official Book Title", "author": "Author Name", "found": true}}
 
-If it is absolute gibberish, respond:
+If it is NOT a real book, or is gibberish:
 {{"title": "", "author": "", "found": false}}"""
 
 

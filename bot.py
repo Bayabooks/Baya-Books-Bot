@@ -1677,9 +1677,10 @@ def handle_messages(message):
             file_bytes = bot.download_file(file_info.file_path)
             result = ai_engine.identify_book_cover(file_bytes)
             if result.get("found"):
-                title = result["title"]
+                title = result.get("title", "")
                 author = result.get("author", "")
-                set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
+                full_title = f"{title} by {author}" if author else title
+                set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=full_title)
                 markup = InlineKeyboardMarkup()
                 markup.add(
                     InlineKeyboardButton("✅ አዎ", callback_data="confirm_book"),
@@ -1688,8 +1689,9 @@ def handle_messages(message):
                 bot.send_message(
                     chat_id,
                     f"📷 <b>መጽሐፉን አውቄዋለሁ!</b>\n\n"
-                    f"📖 <b>{title}</b>{' — ' + author if author else ''}\n\n"
-                    f"ይህ ትክክል ነው?",
+                    f"📖 መጽሐፍ: <b>{title}</b>\n"
+                    f"✍️ ደራሲ: <b>{author if author else 'ያልታወቀ'}</b>\n\n"
+                    f"ያሰቡት ይህንን መጽሐፍ ነው?",
                     parse_mode="HTML", reply_markup=markup,
                 )
             else:
@@ -1711,7 +1713,8 @@ def handle_messages(message):
                     title = str(result.get("title") or book_title)
                     author = str(result.get("author") or "")
                     
-                    set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=title)
+                    full_title = f"{title} by {author}" if author else title
+                    set_state(uid, "AWAITING_BOOK_CONFIRM", book_title=full_title)
                     markup = InlineKeyboardMarkup()
                     markup.add(
                         InlineKeyboardButton("✅ አዎ", callback_data="confirm_book"),
@@ -1719,7 +1722,8 @@ def handle_messages(message):
                     )
                     bot.send_message(
                         chat_id,
-                        f"📖 <b>{html.escape(title)}</b>{' (' + html.escape(author) + ')' if author else ''}\n\n"
+                        f"📖 መጽሐፍ: <b>{html.escape(title)}</b>\n"
+                        f"✍️ ደራሲ: <b>{html.escape(author) if author else 'ያልታወቀ'}</b>\n\n"
                         f"ያሰቡት ይህንን መጽሐፍ ነው?",
                         parse_mode="HTML", reply_markup=markup,
                     )

@@ -281,6 +281,7 @@ def send_welcome(chat_id, first_name):
     markup.add(
         InlineKeyboardButton("📖 መጽሐፉን እኔው ራሴ እመርጣለሁ", callback_data="has_book"),
         InlineKeyboardButton("🧭 መጽሐፎቹን እናንተ አማርጡኝ", callback_data="choose_for_me"),
+        InlineKeyboardButton("💡 ጥልቅ የስነ-ልቦና ምክር ፈልጋለሁ", callback_data="get_advice"),
     )
 
     credits = database.get_credits(chat_id)
@@ -524,6 +525,24 @@ def handle_callback(call):
             parse_mode="HTML",
         )
         return
+
+    # ── Start: "Get Advice" ──────────────────
+    if data == "get_advice":
+        bot.answer_callback_query(call.id)
+        session = get_session(uid)
+        session["data"] = {"advice_history": []}
+        set_state(uid, "ADVICE_CHAT_MODE")
+        bot.send_message(
+            chat_id,
+            "💡 <b>ጥልቅ የስነ-ልቦና ምክር</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+            "እኔ ላዩን የማይዳስስ፣ ጥልቅ እና እውነተኛ የስነ-ልቦና አማካሪዎ ነኝ።\n"
+            "ስለሚያስጨንቅዎት ነገር፣ ውስጣዊ ትግልዎ፣ ወይም ስለተሰማዎት ስሜት በነፃነት ያካፍሉኝ።\n\n"
+            "<i>(ወደ ዋናው ማውጫ ለመመለስ /new ይጫኑ)</i>\n\n"
+            "<b>እስኪ እንነጋገር... አሁን ላይ ምን እያስቸገረዎት ነው?</b>",
+            parse_mode="HTML"
+        )
+        return
+
 
     # ── Start: "Choose for me" ───────────────
     if data == "choose_for_me":
@@ -1666,6 +1685,30 @@ def handle_messages(message):
             bot.send_message(admin_id, f"💬 <b>አዲስ አስተያየት:</b>\n👤 {message.from_user.first_name} (@{message.from_user.username})\n\n{html.escape(message.text)}", parse_mode="HTML")
         bot.send_message(chat_id, "✅ አስተያየትዎ ደርሶናል! ከልብ እናመሰግናለን።")
         clear_state(uid)
+        return
+
+    # ── Advice Chat Mode ─────────────────────
+    if state == "ADVICE_CHAT_MODE" and message.text:
+        # Ignore commands
+        if message.text.startswith("/"):
+            return
+            
+        bot.send_chat_action(chat_id, 'typing')
+        user_text = message.text.strip()
+        history = session.get("data", {}).get("advice_history", [])
+        
+        # Get AI response
+        ai_response = ai_engine.chat_with_mentor(user_text, history)
+        
+        # Update history (keep last 10 messages to avoid token bloat)
+        history.append({"role": "user", "parts": [user_text]})
+        history.append({"role": "model", "parts": [ai_response]})
+        if len(history) > 20:
+            history = history[-20:]
+        session["data"]["advice_history"] = history
+        
+        # Send response
+        bot.send_message(chat_id, ai_response, parse_mode="HTML")
         return
 
     # ── Book Input (title or photo) ──────────

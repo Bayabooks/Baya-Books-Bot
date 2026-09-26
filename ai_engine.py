@@ -302,10 +302,13 @@ def chat_with_mentor(user_message, history):
         # Convert any markdown to HTML manually if needed
         import re
         text = response.text
-        # Bold
-        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+        # Escape < and > to prevent Telegram HTML errors like <2>
+        text = text.replace("<", "&lt;").replace(">", "&gt;")
+        
+        # Bold (now dotall not needed for standard bold but just in case)
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
         # Italic
-        text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
+        text = re.sub(r'(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text, flags=re.DOTALL)
         return text
     except Exception as e:
         import traceback

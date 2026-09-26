@@ -1805,12 +1805,17 @@ def handle_messages(message):
                 
                 # Send response
                 try:
-                    bot.send_message(chat_id, ai_response, parse_mode="HTML")
+                    # Telegram message limit is 4096. We chunk to 4000 to be safe.
+                    chunks = [ai_response[i:i+4000] for i in range(0, len(ai_response), 4000)]
+                    for chunk in chunks:
+                        bot.send_message(chat_id, chunk, parse_mode="HTML")
                 except Exception:
-                    # Fallback: strip all HTML tags and send plain
+                    # Fallback: strip all HTML tags and send plain chunks
                     import re as re_mod
                     clean = re_mod.sub(r'<[^>]+>', '', ai_response)
-                    bot.send_message(chat_id, clean)
+                    clean_chunks = [clean[i:i+4000] for i in range(0, len(clean), 4000)]
+                    for chunk in clean_chunks:
+                        bot.send_message(chat_id, chunk)
             except Exception as e:
                 logging.error(f"ADVICE THREAD CRASH: {e}")
                 import traceback

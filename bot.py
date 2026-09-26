@@ -2065,6 +2065,31 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(stats).encode('utf-8'))
             return
 
+        if self.path.startswith('/admin/advice_history'):
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            try:
+                parsed_url = urlparse(self.path)
+                qs = parse_qs(parsed_url.query)
+                uid = int(qs.get('uid', [0])[0])
+                history_str = database.get_advice_history(uid)
+                if not history_str or history_str == '[]':
+                    self.wfile.write(b"No psychology readings found for this user.")
+                    return
+                history = json.loads(history_str)
+                html_out = "<ul>"
+                for msg in history:
+                    role = msg.get("role", "user")
+                    text = msg.get("parts", [""])[0]
+                    color = "blue" if role == "user" else "green"
+                    html_out += f"<li class='mb-2'><strong class='text-{color}-600'>{role.upper()}:</strong> {html.escape(text)}</li>"
+                html_out += "</ul>"
+                self.wfile.write(html_out.encode('utf-8'))
+            except Exception as e:
+                self.wfile.write(f"Error: {e}".encode('utf-8'))
+            return
+
         if self.path == '/app':
             self.send_response(200)
             self.send_header("Content-type", "text/html")

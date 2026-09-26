@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 1.5 Flash for speed and vision
-MODEL_TEXT = "gemini-1.5-flash"
-MODEL_VISION = "gemini-1.5-flash"
+# Use Gemini Pro for universally stable text and older SDK compat
+MODEL_TEXT = "gemini-pro"
+MODEL_VISION = "gemini-pro-vision"
 
 # ─── The Master Prompt (User's original) ──────────
 
@@ -278,10 +278,8 @@ def chat_with_mentor(user_message, history):
     """
     try:
         logging.info(f"chat_with_mentor called, history length={len(history)}")
-        model = genai.GenerativeModel(
-            model_name=MODEL_TEXT,
-            system_instruction=ADVICE_SYSTEM_PROMPT
-        )
+        model = genai.GenerativeModel(model_name=MODEL_TEXT)
+        
         # Sanitize history: ensure parts are lists of strings
         clean_history = []
         for h in history:
@@ -291,8 +289,12 @@ def chat_with_mentor(user_message, history):
                 parts = [parts]
             clean_history.append({"role": role, "parts": [str(p) for p in parts]})
         
-        # Append current user message to history
-        clean_history.append({"role": "user", "parts": [str(user_message)]})
+        # Inject system prompt if this is the first message
+        if not clean_history:
+            combined_message = ADVICE_SYSTEM_PROMPT + "\n\nUser Message:\n" + str(user_message)
+            clean_history.append({"role": "user", "parts": [combined_message]})
+        else:
+            clean_history.append({"role": "user", "parts": [str(user_message)]})
         
         response = model.generate_content(
             contents=clean_history,

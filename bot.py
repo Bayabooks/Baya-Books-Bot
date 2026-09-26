@@ -1769,13 +1769,25 @@ def handle_messages(message):
 
         try:
             bot.send_chat_action(chat_id, 'typing')
-            bot.send_message(chat_id, "<i>(ውይይትዎን እያዘጋጀሁ ነው...)</i>", parse_mode="HTML")
         except Exception:
             pass
             
         user_text = message.text.strip()
         
         def process_advice_chat():
+            import time
+            stop_typing = threading.Event()
+            def keep_typing():
+                while not stop_typing.is_set():
+                    try:
+                        bot.send_chat_action(chat_id, 'typing')
+                    except:
+                        pass
+                    stop_typing.wait(4)
+            
+            typing_thread = threading.Thread(target=keep_typing, daemon=True)
+            typing_thread.start()
+            
             try:
                 # Load history from DB for persistent conversations
                 try:
@@ -1786,6 +1798,8 @@ def handle_messages(message):
                 
                 # Get AI response
                 ai_response = ai_engine.chat_with_mentor(user_text, history)
+                
+                stop_typing.set()
                 
                 if not ai_response:
                     bot.send_message(chat_id, "⚠️ ይቅርታ፣ ምላሽ ማግኘት አልተቻለም። እባክዎ እንደገና ይሞክሩ።")
@@ -1817,6 +1831,7 @@ def handle_messages(message):
                     for chunk in clean_chunks:
                         bot.send_message(chat_id, chunk)
             except Exception as e:
+                stop_typing.set()
                 logging.error(f"ADVICE THREAD CRASH: {e}")
                 import traceback
                 logging.error(traceback.format_exc())

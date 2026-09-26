@@ -1748,34 +1748,37 @@ def handle_messages(message):
         bot.send_chat_action(chat_id, 'typing')
         user_text = message.text.strip()
         
-        # Load history from DB for persistent conversations
-        try:
-            history_str = database.get_advice_history(uid)
-            history = json.loads(history_str) if history_str else []
-        except Exception:
-            history = []
-        
-        # Get AI response
-        ai_response = ai_engine.chat_with_mentor(user_text, history)
-        
-        # Deduct quota (unless VIP or Admin)
-        if not is_vip and not is_adm:
-            database.consume_advice_message(uid)
+        def process_advice_chat():
+            # Load history from DB for persistent conversations
+            try:
+                history_str = database.get_advice_history(uid)
+                history = json.loads(history_str) if history_str else []
+            except Exception:
+                history = []
             
-        # Update history and save back to DB
-        history.append({"role": "user", "parts": [user_text]})
-        history.append({"role": "model", "parts": [ai_response]})
-        try:
-            database.save_advice_history(uid, json.dumps(history, ensure_ascii=False))
-        except Exception as e:
-            logging.error(f"Failed to save advice history: {e}")
-        
-        # Send response
-        try:
-            bot.send_message(chat_id, ai_response, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Failed to send HTML, falling back: {e}")
-            bot.send_message(chat_id, ai_response)
+            # Get AI response
+            ai_response = ai_engine.chat_with_mentor(user_text, history)
+            
+            # Deduct quota (unless VIP or Admin)
+            if not is_vip and not is_adm:
+                database.consume_advice_message(uid)
+                
+            # Update history and save back to DB
+            history.append({"role": "user", "parts": [user_text]})
+            history.append({"role": "model", "parts": [ai_response]})
+            try:
+                database.save_advice_history(uid, json.dumps(history, ensure_ascii=False))
+            except Exception as e:
+                logging.error(f"Failed to save advice history: {e}")
+            
+            # Send response
+            try:
+                bot.send_message(chat_id, ai_response, parse_mode="HTML")
+            except Exception as e:
+                logging.error(f"Failed to send HTML, falling back: {e}")
+                bot.send_message(chat_id, ai_response)
+                
+        threading.Thread(target=process_advice_chat).start()
         return
 
     # ── Book Input (title or photo) ──────────

@@ -254,6 +254,29 @@ def cmd_topup(message):
     bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
 
 # ══════════════════════════════════════════
+#  /add_advice COMMAND (Admin Only)
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["add_advice", "give_advice"])
+def cmd_add_advice(message):
+    if not is_admin(message.from_user):
+        return
+    args = message.text.split()
+    if len(args) != 3:
+        bot.reply_to(message, "Usage: /add_advice <user_id> <amount>\nExample: /add_advice 123456789 120")
+        return
+    try:
+        target_uid = int(args[1])
+        amount = int(args[2])
+        database.add_advice_messages(target_uid, amount)
+        bot.reply_to(message, f"✅ Added {amount} advice messages to user {target_uid}.")
+        try:
+            bot.send_message(target_uid, f"🎁 <b>እንኳን ደስ አለዎት!</b>\n\nከ Baya Books አስተዳዳሪ ተጨማሪ {amount} የአማካሪ (Advice) መልዕክቶች በስጦታ ተሰጥቶዎታል።", parse_mode="HTML")
+        except:
+            bot.reply_to(message, "(Note: User blocked the bot or ID is invalid, so they didn't receive the notification, but balance was updated if they exist).")
+    except Exception as e:
+        bot.reply_to(message, f"Error: {e}")
+
+# ══════════════════════════════════════════
 #  /start COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["start"])

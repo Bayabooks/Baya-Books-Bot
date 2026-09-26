@@ -24,7 +24,8 @@ import ai_engine
 import telegraph_generator
 import receipt_verifier
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 if not config.BOT_TOKEN:
     print("ERROR: BOT_TOKEN missing in .env!"); exit(1)
@@ -208,6 +209,25 @@ def notify_admin(text):
             bot.send_message(admin_id, text, parse_mode="HTML")
         except Exception:
             pass
+
+# ══════════════════════════════════════════
+#  DEBUG LOG COMMAND
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["getlogs"])
+def cmd_getlogs(message):
+    try:
+        import os
+        if not os.path.exists("app.log"):
+            # Check render stdout? We might not have app.log
+            # Just read the recent python logs if available, or tell admin
+            bot.reply_to(message, "No app.log file found.")
+            return
+        with open("app.log", "r") as f:
+            lines = f.readlines()
+            logs = "".join(lines[-40:])
+            bot.reply_to(message, f"<pre>{logs[-3500:]}</pre>", parse_mode="HTML")
+    except Exception as e:
+        bot.reply_to(message, str(e))
 
 # ══════════════════════════════════════════
 #  /start COMMAND

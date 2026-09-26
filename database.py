@@ -635,7 +635,7 @@ def get_banned_users():
     return rows
 
 def get_advice_messages_left(user_id):
-    conn = get_db()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT IFNULL(advice_messages_left, 15) as advice_messages_left FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
@@ -643,21 +643,21 @@ def get_advice_messages_left(user_id):
     return row['advice_messages_left'] if row else 15
 
 def consume_advice_message(user_id):
-    conn = get_db()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET advice_messages_left = advice_messages_left - 1 WHERE user_id = ? AND advice_messages_left > 0", (user_id,))
     conn.commit()
     conn.close()
 
 def add_advice_messages(user_id, count):
-    conn = get_db()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET advice_messages_left = IFNULL(advice_messages_left, 15) + ? WHERE user_id = ?", (count, user_id))
     conn.commit()
     conn.close()
 
 def get_advice_history(user_id):
-    conn = get_db()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT advice_history FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
@@ -665,7 +665,7 @@ def get_advice_history(user_id):
     return row['advice_history'] if row and row['advice_history'] else '[]'
 
 def save_advice_history(user_id, history_json):
-    conn = get_db()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET advice_history = ? WHERE user_id = ?", (history_json, user_id))
     conn.commit()

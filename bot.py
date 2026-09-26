@@ -382,6 +382,14 @@ def cmd_new(message):
     clear_state(message.from_user.id)
     send_welcome(message.chat.id, message.from_user.first_name)
 
+@bot.message_handler(commands=["reset_advice"])
+def cmd_reset_advice(message):
+    if is_admin(message.from_user):
+        database.save_advice_history(message.from_user.id, '[]')
+        bot.reply_to(message, "🔄 <b>Advice Chat History Reset successfully.</b>", parse_mode="HTML")
+    else:
+        bot.reply_to(message, "❌ Admin only command.")
+
 # ══════════════════════════════════════════
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
@@ -529,9 +537,12 @@ def handle_callback(call):
     # ── Start: "Get Advice" ──────────────────
     if data == "get_advice":
         bot.answer_callback_query(call.id)
-        session = get_session(uid)
-        session["data"] = {"advice_history": []}
         set_state(uid, "ADVICE_CHAT_MODE")
+        
+        markup = InlineKeyboardMarkup()
+        if is_admin(call.from_user):
+            markup.add(InlineKeyboardButton("🔄 Reset Chat (Admin)", callback_data="admin_reset_chat"))
+            
         bot.send_message(
             chat_id,
             "💡 <b>ጥልቅ የስነ-ልቦና ምክር</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -539,7 +550,7 @@ def handle_callback(call):
             "ስለሚያስጨንቅዎት ነገር፣ ውስጣዊ ትግልዎ፣ ወይም ስለተሰማዎት ስሜት በነፃነት ያካፍሉኝ።\n\n"
             "<i>(ወደ ዋናው ማውጫ ለመመለስ /new ይጫኑ)</i>\n\n"
             "<b>እስኪ እንነጋገር... አሁን ላይ ምን እያስቸገረዎት ነው?</b>",
-            parse_mode="HTML"
+            parse_mode="HTML", reply_markup=markup if is_admin(call.from_user) else None
         )
         return
 
@@ -579,6 +590,16 @@ def handle_callback(call):
         msgs = int(data.split("_")[2])
         amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
         show_payment_instructions(chat_id, amount, uid, f"ADVICE_{msgs}")
+        return
+
+    # ── Admin Reset Chat ─────────────────────
+    if data == "admin_reset_chat":
+        if is_admin(call.from_user):
+            database.save_advice_history(uid, '[]')
+            bot.answer_callback_query(call.id, "✅ Chat History Wiped!", show_alert=True)
+            bot.send_message(chat_id, "🔄 <b>Chat reset successfully.</b>", parse_mode="HTML")
+        else:
+            bot.answer_callback_query(call.id, "❌ Not allowed", show_alert=True)
         return
 
     # ── Show Drafts ──────────────────────────
@@ -1704,7 +1725,9 @@ def handle_messages(message):
         # Check quota
         msgs_left = database.get_advice_messages_left(uid)
         is_vip = database.is_vip(uid)
-        if msgs_left <= 0 and not is_vip:
+        is_adm = is_admin(message.from_user)
+        
+        if msgs_left <= 0 and not is_vip and not is_adm:
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (120 መልዕክቶች)", callback_data="buy_advice_120"))
             markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (300 መልዕክቶች)", callback_data="buy_advice_300"))
@@ -1724,19 +1747,28 @@ def handle_messages(message):
 
         bot.send_chat_action(chat_id, 'typing')
         user_text = message.text.strip()
-        history = session.get("data", {}).get("advice_history", [])
+        
+        # Load history from DB for persistent conversations
+        try:
+            history_str = database.get_advice_history(uid)
+            history = json.loads(history_str) if history_str else []
+        except Exception:
+            history = []
         
         # Get AI response
         ai_response = ai_engine.chat_with_mentor(user_text, history)
         
-        # Deduct quota (unless VIP)
-        if not is_vip:
+        # Deduct quota (unless VIP or Admin)
+        if not is_vip and not is_adm:
             database.consume_advice_message(uid)
             
-        # Update history (save unlimited conversation history per session)
+        # Update history and save back to DB
         history.append({"role": "user", "parts": [user_text]})
         history.append({"role": "model", "parts": [ai_response]})
-        session["data"]["advice_history"] = history
+        try:
+            database.save_advice_history(uid, json.dumps(history, ensure_ascii=False))
+        except Exception as e:
+            logging.error(f"Failed to save advice history: {e}")
         
         # Send response
         bot.send_message(chat_id, ai_response, parse_mode="HTML")

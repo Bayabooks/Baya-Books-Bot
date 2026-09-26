@@ -38,6 +38,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN is_sub_admin INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN advice_messages_left INTEGER DEFAULT 15",
+        "ALTER TABLE users ADD COLUMN advice_history TEXT DEFAULT '[]'",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -652,5 +653,20 @@ def add_advice_messages(user_id, count):
     conn = get_db()
     c = conn.cursor()
     c.execute("UPDATE users SET advice_messages_left = IFNULL(advice_messages_left, 15) + ? WHERE user_id = ?", (count, user_id))
+    conn.commit()
+    conn.close()
+
+def get_advice_history(user_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT advice_history FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row['advice_history'] if row and row['advice_history'] else '[]'
+
+def save_advice_history(user_id, history_json):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE users SET advice_history = ? WHERE user_id = ?", (history_json, user_id))
     conn.commit()
     conn.close()

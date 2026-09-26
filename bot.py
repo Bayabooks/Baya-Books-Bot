@@ -232,6 +232,28 @@ def cmd_getlogs(message):
         bot.reply_to(message, str(e))
 
 # ══════════════════════════════════════════
+#  /topup COMMAND (Manual Advice Paywall)
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["topup", "buy_advice"])
+def cmd_topup(message):
+    chat_id = message.chat.id
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (120 መልዕክቶች)", callback_data="buy_advice_120"))
+    markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (300 መልዕክቶች)", callback_data="buy_advice_300"))
+    markup.add(InlineKeyboardButton("🔹 Heavy: 700 ብር (600 መልዕክቶች)", callback_data="buy_advice_600"))
+    
+    cta_text = (
+        "⚠️ <b>የአማካሪ (Advice) ፓኬጅ ግዢ</b>\n\n"
+        "የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
+        "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
+        "🔹 <b>Starter: 200 ብር</b> (120 መልዕክቶች) - ለአንድ ሳምንት ጥልቅ ውይይት የሚበቃ።\n"
+        "🔹 <b>Pro: 400 ብር</b> (300 መልዕክቶች) - [ተመራጭ] በእጥፍ ዋጋ 2.5x መልዕክቶች።\n"
+        "🔹 <b>Heavy: 700 ብር</b> (600 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n\n"
+        "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
+    )
+    bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
+
+# ══════════════════════════════════════════
 #  /start COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["start"])
@@ -611,6 +633,10 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         msgs = int(data.split("_")[2])
         amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
+        
+        # Override to 10 birr for testing as per user's earlier request
+        amount = 10 
+        
         show_payment_instructions(chat_id, amount, uid, f"ADVICE_{msgs}")
         return
 

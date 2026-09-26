@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 2.0 Flash for all generation
-MODEL_TEXT = "gemini-2.0-flash"
-MODEL_VISION = "gemini-2.0-flash"
+# Use Gemini 3.8 Flash as requested by the API
+MODEL_TEXT = "gemini-3.8-flash"
+MODEL_VISION = "gemini-3.8-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 

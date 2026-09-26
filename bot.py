@@ -1700,11 +1700,9 @@ def handle_messages(message):
         # Get AI response
         ai_response = ai_engine.chat_with_mentor(user_text, history)
         
-        # Update history (keep last 10 messages to avoid token bloat)
+        # Update history (save unlimited conversation history per session)
         history.append({"role": "user", "parts": [user_text]})
         history.append({"role": "model", "parts": [ai_response]})
-        if len(history) > 20:
-            history = history[-20:]
         session["data"]["advice_history"] = history
         
         # Send response

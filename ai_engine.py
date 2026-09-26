@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini Pro for universally stable text and older SDK compat
-MODEL_TEXT = "gemini-pro"
-MODEL_VISION = "gemini-pro-vision"
+# Use Gemini 2.0 Flash for all generation
+MODEL_TEXT = "gemini-2.0-flash"
+MODEL_VISION = "gemini-2.0-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 

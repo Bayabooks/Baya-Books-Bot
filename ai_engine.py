@@ -5,9 +5,9 @@ import config
 
 genai.configure(api_key=config.GEMINI_API_KEY)
 
-# Use Gemini 3.7 Flash for speed and vision
-MODEL_TEXT = "gemini-3.7-flash"
-MODEL_VISION = "gemini-3.7-flash"
+# Use Gemini 1.5 Flash for speed and vision
+MODEL_TEXT = "gemini-1.5-flash"
+MODEL_VISION = "gemini-1.5-flash"
 
 # ─── The Master Prompt (User's original) ──────────
 
@@ -291,10 +291,12 @@ def chat_with_mentor(user_message, history):
                 parts = [parts]
             clean_history.append({"role": role, "parts": [str(p) for p in parts]})
         
-        chat = model.start_chat(history=clean_history)
-        response = chat.send_message(
-            user_message,
-            request_options={"timeout": 120}
+        # Append current user message to history
+        clean_history.append({"role": "user", "parts": [str(user_message)]})
+        
+        response = model.generate_content(
+            contents=clean_history,
+            request_options={"timeout": 60}
         )
         logging.info(f"chat_with_mentor got response, length={len(response.text)}")
         # Convert any markdown to HTML manually if needed

@@ -333,6 +333,26 @@ def chat_with_mentor(user_message, history, gender=None):
         return f"⚠️ AI ERROR: {e}"
 
 
+def generate_psych_broadcast():
+    """Generates a short, empowering, curiosity-inducing psychological broadcast in Amharic."""
+    prompt = (
+        "Write a very short (2-4 sentences), powerful, and curiosity-inducing psychological insight "
+        "or empowering quote in Amharic. It should make the reader feel understood, motivated, and "
+        "curious to chat more with their AI therapist. Do not use generic greetings like 'Hello'. "
+        "Just write the profound text itself, using beautiful and empathetic Amharic. Make it completely random and fresh."
+    )
+    try:
+        model = genai.GenerativeModel(MODEL_TEXT)
+        response = model.generate_content(prompt, request_options={"timeout": 30})
+        text = response.text
+        # Bold (now dotall not needed for standard bold but just in case)
+        import re
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
+        return text.strip()
+    except Exception as e:
+        logging.error(f"Broadcast generation error: {e}")
+        return "⚠️ ይቅርታ፣ መልዕክት ማመንጨት አልተቻለም።"
+
 def identify_book_cover(image_bytes):
     """Identify a book from a cover photo using Gemini Vision."""
     try:

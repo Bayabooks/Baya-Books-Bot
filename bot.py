@@ -481,14 +481,15 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("🔍 User Lookup", callback_data="adm_search"),
     )
     markup.add(
-        InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast"),
+        InlineKeyboardButton("📢 Custom Broadcast", callback_data="admin_broadcast"),
+        InlineKeyboardButton("🤖 Auto Psych Broadcast", callback_data="adm_auto_broadcast_init"),
+    )
+    markup.add(
         InlineKeyboardButton("💳 Add Credit/Msgs", callback_data="admin_credit"),
-    )
-    markup.add(
         InlineKeyboardButton("👑 Sub-Admins", callback_data="adm_subadmin_menu"),
-        InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
     )
     markup.add(
+        InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
     )
     
@@ -967,6 +968,60 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         set_state(uid, "ADMIN_VIP_USER")
         bot.send_message(chat_id, "👑 <b>VIP Manager</b>\n\nEnter User ID to grant VIP:\n(/cancel to exit)", parse_mode="HTML")
+        return
+
+    # ── Admin: Auto Psych Broadcast ──────────
+    if data in ["adm_auto_broadcast_init", "adm_auto_refresh"]:
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "🧠 Generating profound message...", show_alert=False)
+        bot.send_chat_action(chat_id, 'typing')
+        psych_text = ai_engine.generate_psych_broadcast()
+        
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("✅ Verify & Broadcast", callback_data="adm_confirm_auto_broadcast"))
+        markup.add(InlineKeyboardButton("🔄 Refresh (Generate New)", callback_data="adm_auto_refresh"))
+        markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_back"))
+        
+        msg = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{psych_text}\n\n<i>(This is what users will see. Verify or refresh.)</i>"
+        
+        if data == "adm_auto_refresh":
+            bot.edit_message_text(msg, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+        else:
+            bot.send_message(chat_id, msg, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "adm_confirm_auto_broadcast":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "✅ Broadcasting...", show_alert=False)
+        
+        # Extract the actual text generated
+        original = call.message.text
+        # Remove the headers and footers
+        try:
+            parts = original.split("━━━━━━━━━━━━━━━━━━━━\n\n")
+            if len(parts) > 1:
+                content = parts[1].split("\n\n(This is what")[0].strip()
+            else:
+                content = original
+        except:
+            content = original
+
+        # Create broadcast thread
+        all_users = database.get_all_user_ids()
+        def background_broadcast():
+            import time
+            success = 0
+            for u in all_users:
+                try:
+                    bot.send_message(u, f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}", parse_mode="HTML")
+                    success += 1
+                except: pass
+                time.sleep(0.05)
+            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\nSent to {success} users.", parse_mode="HTML")
+            except: pass
+            
+        threading.Thread(target=background_broadcast, daemon=True).start()
+        bot.edit_message_text(f"🚀 <b>Broadcast Started!</b>\nSending to {len(all_users)} users in the background...\n\nMessage:\n{content}", chat_id, call.message.message_id, parse_mode="HTML")
         return
 
     # ── Admin: Broadcast ─────────────────────

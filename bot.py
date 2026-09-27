@@ -458,15 +458,11 @@ def show_admin_menu(chat_id, user):
     )
     markup.add(
         InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast"),
-        InlineKeyboardButton("📤 Push PDF", callback_data="admin_push_pdf"),
-    )
-    markup.add(
-        InlineKeyboardButton("💳 Add Credit", callback_data="admin_credit"),
-        InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
+        InlineKeyboardButton("💳 Add Credit/Msgs", callback_data="admin_credit"),
     )
     markup.add(
         InlineKeyboardButton("👑 Sub-Admins", callback_data="adm_subadmin_menu"),
-        InlineKeyboardButton("📋 Recent Orders", callback_data="adm_recent_orders"),
+        InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
     )
     markup.add(
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
@@ -718,7 +714,7 @@ def handle_callback(call):
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🌐 ክፈት (Open Web Dashboard)", url=f"{config.BASE_URL}/admin_dashboard"))
+        markup.add(InlineKeyboardButton("🌐 ክፈት (Open Web Dashboard)", url=f"{config.BASE_URL}/admin_dashboard?v=2"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
@@ -1469,6 +1465,9 @@ class DummyHandler(BaseHTTPRequestHandler):
         if self.path == '/admin_dashboard':
             self.send_response(200)
             self.send_header("Content-type", "text/html")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
             self.end_headers()
             try:
                 with open('admin_dashboard.html', 'rb') as f:

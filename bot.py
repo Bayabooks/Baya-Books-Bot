@@ -322,10 +322,11 @@ def check_onboarding(chat_id, user_id, first_name):
     age_verified, gender = database.get_onboarding_status(user_id)
     if not age_verified or not gender:
         text = (
-            "⚠️ <b>ማሳሰቢያ:</b> ይህ የስነ-ልቦና ምክር የሚሰጥ አርቲፊሻል ኢንተለጀንስ (AI) ነው።\n\n"
-            "🔹 ይህ AI በስነ-ልቦና እና በካውንስሊንግ ጥልቅ ዕውቀት ያለው ሲሆን፣ ግላዊ ጭንቀቶችዎን እና ስሜቶችዎን ለመረዳት የተዘጋጀ ነው።\n"
-            "🔹 የእርስዎ መረጃዎች ጥቅም ላይ የሚውሉት ለዚህ ውይይት ብቻ ነው።\n"
-            "🔹 በየትኛውም ጊዜ /reset_advice የሚለውን በመጫን የውይይት ታሪክዎን ሙሉ በሙሉ ማጥፋት ይችላሉ። የውይይት ታሪክዎን ከእርስዎ እና ከዚህ AI ውጭ ማንም አያየውም።\n\n"
+            "⚠️ <b>የግላዊነት ማሳሰቢያ እና ስምምነት</b>\n\n"
+            "ውድ ደንበኛ፣ ይህ የላቀ አርቲፊሻል ኢንተለጀንስ (AI) የስነ-ልቦና አማካሪ ነው።\n\n"
+            "🧠 <b>የባለሙያነት ደረጃ:</b> ይህ AI በስነ-ልቦና ምክር (Psychotherapy)፣ በአስተሳሰብ ህክምና (CBT)፣ እና በግላዊ ካውንስሊንግ ጥልቅ ዕውቀት እንዲኖረው ተደርጎ የተዘጋጀ ነው።\n\n"
+            "🔒 <b>ሚስጥራዊነት:</b> እዚህ የምናደርገው ማንኛውም ውይይት 100% ሚስጥራዊ ነው። የእርስዎ መረጃዎች ጥቅም ላይ የሚውሉት እርስዎን ለመምከር እና ውይይቱን ለማስታወስ ብቻ ነው።\n\n"
+            "🧹 <b>ማህደር ማጽዳት:</b> በየትኛውም ጊዜ <b>👤 የኔ ገፅ</b> ውስጥ በመግባት <b>'🧹 ማህደር አጽዳ'</b> የሚለውን ቁልፍ በመጫን መረጃዎን ሙሉ በሙሉ ከሲስተማችን ላይ ማጥፋት ይችላሉ።\n\n"
             "በመጀመሪያ፣ እባክዎ ከ18 ዓመት በላይ መሆንዎን ያረጋግጡ።"
         )
         markup = InlineKeyboardMarkup()
@@ -346,9 +347,10 @@ def send_welcome(chat_id, first_name):
     )
     
     intro_text = (
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ በደህና መጡ።\n\n"
-        f"በህይወትዎ ውስጥ የሚያጋጥሙዎትን ጭንቀቶች፣ ፍርሃቶች፣ የህይወት ውጣ ውረዶች፣ ወይም ማንኛውንም የስነ-ልቦና ጉዳይ በነፃነት ሊያወያዩኝ ይችላሉ። እኔም ጥልቅ እና እውነተኛ የሆነ መፍትሄ እሰጥዎታለሁ።\n\n"
-        f"💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>"
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya የስነ-ልቦና ማማከሪያ በደህና መጡ።\n\n"
+        f"እኔ ሚስጥር ጠባቂ፣ ያለመታከት የማዳምጥዎት እና ያለአንዳች ፍርድ (Non-judgmental) የምረዳዎት የኤአይ (AI) የስነ-ልቦና አማካሪዎ ነኝ።\n\n"
+        f"በህይወትዎ ውስጥ የሚያጋጥሙዎትን ጭንቀቶች፣ የውስጥ ፍርሃቶች፣ የህይወት ውጣ ውረዶች፣ የስራ ወይም የትዳር ጉዳዮችን፣ ወይም ማንኛውንም በውስጥዎ የሚቀመጥ ስሜት በነፃነት ሊያካፍሉኝ ይችላሉ። ሁሌም ከጎንዎ ነኝ፤ አብረን እንወያይ እና መፍትሄ እንፈልግ።\n\n"
+        f"💡 <b>እስኪ እንነጋገር... ዛሬ ምን ይዘው መጡ? አሁን ላይ ምን እየተሰማዎት ነው?</b> (እባክዎ በነፃነት ፅፈው ይላኩልኝ...)"
     )
 
     bot.send_message(
@@ -365,13 +367,45 @@ def send_welcome(chat_id, first_name):
 def cmd_help(message):
     bot.send_message(
         message.chat.id,
-        "🧠 <b>Baya Books የስነ-ልቦና አማካሪ</b>\n"
+        "📖 <b>Baya Books እንዴት እንጠቀማለን?</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        "1️⃣ /new — አዲስ ውይይት ለመጀመር\n"
-        "2️⃣ /topup — ተጨማሪ መልዕክቶችን ለመግዛት\n"
-        "3️⃣ ከታች ያሉትን ቁልፎች (Buttons) በመጠቀም መለያዎን ማስተዳደር ይችላሉ።\n\n"
+        "1️⃣ መጽሐፍ ይምረጡ ወይም እኛ እንምረጥልዎ\n"
+        "2️⃣ ጥቂት ጥያቄዎችን ይመልሱ\n"
+        "3️⃣ ነጻ ማሳያ ያንብቡ\n"
+        f"4️⃣ ሙሉ PDF ይዘዙ ({config.PRICE_SINGLE} ብር)\n"
+        "5️⃣ ግላዊ መመሪያዎን ያውርዱ!\n\n"
+        "📚 /mylibrary — ያዘዙዋቸው PDFs\n"
+        "🔗 /referral — ጓደኞችን ይጋብዙ\n"
+        "🆕 /new — አዲስ PDF ይጀምሩ\n\n"
         "ለማንኛውም ጥያቄ @Bayabooks ያናግሩን!",
         parse_mode="HTML",
+    )
+
+@bot.message_handler(commands=["mylibrary"])
+def cmd_library(message):
+    if not check_channel_member(message.from_user.id):
+        send_join_channel_msg(message.chat.id); return
+
+    orders = database.get_user_orders(message.from_user.id)
+    if not orders:
+        bot.send_message(message.chat.id, "📚 ገና ምንም PDF አልተዘጋጀልዎም።\n\n/new ይጫኑ ለመጀመር!")
+        return
+
+    lines = []
+    for i, o in enumerate(orders, 1):
+        date = o["delivered_date"][:10] if o["delivered_date"] else "N/A"
+        lines.append(f"  {i}. 📕 {o['book_title']} ({date})")
+
+    markup = InlineKeyboardMarkup()
+    for i, o in enumerate(orders, 1):
+        if o["pdf_file_id"]:
+            markup.add(InlineKeyboardButton(f"📥 {i}. {o['book_title']}", callback_data=f"redownload_{o['id']}"))
+
+    bot.send_message(
+        message.chat.id,
+        f"📚 <b>ቤተ-መጽሐፍትዎ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        + "\n".join(lines) + "\n\n📥 ለማውረድ ከታች ይጫኑ",
+        parse_mode="HTML", reply_markup=markup,
     )
 
 @bot.message_handler(commands=["referral"])
@@ -1220,7 +1254,7 @@ def handle_messages(message):
                 for chunk in clean_chunks:
                     bot.send_message(chat_id, chunk)
         else:
-            bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
+            bot.send_message(chat_id, "💡 <b>እኔ ከጎንዎ ነኝ፤ እባክዎ የሚያስጨንቅዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ያካፍሉኝ...</b>", parse_mode="HTML")
         return
         
     if message.text == "👤 የኔ ገፅ":

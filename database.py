@@ -39,6 +39,8 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN is_sub_admin INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN advice_messages_left INTEGER DEFAULT 15",
         "ALTER TABLE users ADD COLUMN advice_history TEXT DEFAULT '[]'",
+        "ALTER TABLE users ADD COLUMN gender TEXT",
+        "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -670,3 +672,27 @@ def save_advice_history(user_id, history_json):
     c.execute("UPDATE users SET advice_history = ? WHERE user_id = ?", (history_json, user_id))
     conn.commit()
     conn.close()
+
+def set_user_gender(user_id, gender):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET gender = ? WHERE user_id = ?", (gender, user_id))
+    conn.commit()
+    conn.close()
+
+def set_user_age_verified(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET age_verified = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def get_onboarding_status(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT age_verified, gender FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return False, None
+    return bool(row['age_verified']), row['gender']

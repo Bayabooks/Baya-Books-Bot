@@ -313,7 +313,24 @@ def cmd_start(message):
         send_join_channel_msg(message.chat.id)
         return
 
-    send_welcome(message.chat.id, user.first_name)
+    if check_onboarding(message.chat.id, user.id, user.first_name):
+        send_welcome(message.chat.id, user.first_name)
+
+def check_onboarding(chat_id, user_id, first_name):
+    age_verified, gender = database.get_onboarding_status(user_id)
+    if not age_verified or not gender:
+        text = (
+            "⚠️ <b>ማሳሰቢያ:</b> ይህ የስነ-ልቦና ምክር የሚሰጥ አርቲፊሻል ኢንተለጀንስ (AI) ነው።\n\n"
+            "🔹 ይህ AI በስነ-ልቦና እና በካውንስሊንግ ጥልቅ ዕውቀት ያለው ሲሆን፣ ግላዊ ጭንቀቶችዎን እና ስሜቶችዎን ለመረዳት የተዘጋጀ ነው።\n"
+            "🔹 የእርስዎ መረጃዎች ጥቅም ላይ የሚውሉት ለዚህ ውይይት ብቻ ነው።\n"
+            "🔹 በየትኛውም ጊዜ /reset_advice የሚለውን በመጫን የውይይት ታሪክዎን ሙሉ በሙሉ ማጥፋት ይችላሉ። የውይይት ታሪክዎን ከእርስዎ እና ከዚህ AI ውጭ ማንም አያየውም።\n\n"
+            "በመጀመሪያ፣ እባክዎ ከ18 ዓመት በላይ መሆንዎን ያረጋግጡ።"
+        )
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("✅ እኔ ከ 18 ዓመት በላይ ነኝ", callback_data="onboard_age_18"))
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return False
+    return True
 
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
@@ -409,7 +426,8 @@ def cmd_new(message):
     if not check_channel_member(message.from_user.id):
         send_join_channel_msg(message.chat.id); return
     clear_state(message.from_user.id)
-    send_welcome(message.chat.id, message.from_user.first_name)
+    if check_onboarding(message.chat.id, message.from_user.id, message.from_user.first_name):
+        send_welcome(message.chat.id, message.from_user.first_name)
 
 @bot.message_handler(commands=["reset_advice"])
 def cmd_reset_advice(message):
@@ -534,9 +552,25 @@ def handle_callback(call):
         if check_channel_member(uid):
             bot.answer_callback_query(call.id, "✅ ተቀላቅለዋል!")
             safe_delete_message(chat_id, call.message.message_id)
-            send_welcome(chat_id, call.from_user.first_name)
+            if check_onboarding(chat_id, uid, call.from_user.first_name):
+                send_welcome(chat_id, call.from_user.first_name)
         else:
             bot.answer_callback_query(call.id, "❌ ገና አልተቀላቀሉም!", show_alert=True)
+        return
+
+    # ── Onboarding ───────────────────────────
+    if data == "onboard_age_18":
+        database.set_user_age_verified(uid)
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("👨 ወንድ", callback_data="onboard_gen_m"), InlineKeyboardButton("👩 ሴት", callback_data="onboard_gen_f"))
+        bot.edit_message_text("እባክዎ ጾታዎን ይምረጡ (ለአነጋገር እንዲመች):", chat_id, call.message.message_id, reply_markup=markup)
+        return
+        
+    if data.startswith("onboard_gen_"):
+        gender = "male" if data == "onboard_gen_m" else "female"
+        database.set_user_gender(uid, gender)
+        bot.delete_message(chat_id, call.message.message_id)
+        send_welcome(chat_id, call.from_user.first_name)
         return
 
     # ── Re-download PDF ──────────────────────
@@ -1723,6 +1757,10 @@ def handle_messages(message):
         if message.text.startswith("/"):
             return
             
+        # Enforce onboarding first
+        if not check_onboarding(chat_id, uid, message.from_user.first_name):
+            return
+            
         # Check quota
         msgs_left = database.get_advice_messages_left(uid)
         is_vip = database.is_vip(uid)
@@ -1775,8 +1813,11 @@ def handle_messages(message):
                 except Exception:
                     history = []
                 
+                # Get user gender
+                _, user_gender = database.get_onboarding_status(uid)
+
                 # Get AI response
-                ai_response = ai_engine.chat_with_mentor(user_text, history)
+                ai_response = ai_engine.chat_with_mentor(user_text, history, gender=user_gender)
                 
                 stop_typing.set()
                 

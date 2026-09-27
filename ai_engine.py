@@ -271,16 +271,23 @@ def recommend_books(category, count=3):
         return {"error": err_msg}
 
 
-def chat_with_mentor(user_message, history):
+def chat_with_mentor(user_message, history, gender=None):
     """
     Continues a conversation with the psychological mentor.
     history is a list of {"role": "user"/"model", "parts": ["text"]}
     """
     try:
         logging.info(f"chat_with_mentor called, history length={len(history)}")
+        
+        system_prompt = ADVICE_SYSTEM_PROMPT
+        if gender == "male":
+            system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. You MUST use masculine Amharic pronouns (አንተ, ያንተ, አድርገህ, ወዘተ) when addressing him."
+        elif gender == "female":
+            system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. You MUST use feminine Amharic pronouns (አንቺ, ያንቺ, አድርገሽ, ወዘተ) when addressing her."
+
         model = genai.GenerativeModel(
             model_name=MODEL_TEXT,
-            system_instruction=ADVICE_SYSTEM_PROMPT
+            system_instruction=system_prompt
         )
         
         # Sanitize history: ensure parts are lists of strings

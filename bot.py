@@ -317,24 +317,19 @@ def cmd_start(message):
 
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
-
     bottom_markup.add(
-        KeyboardButton("➕ አዲስ መመሪያ"),
-        KeyboardButton("📚 የኔ መመሪያዎች")
+        KeyboardButton("🧠 የነፍስ ቀዶ ጥገና (Start Session)"),
+        KeyboardButton("👤 የኔ ገፅ (Profile)")
     )
     bottom_markup.add(
-        KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
-        KeyboardButton("☕ ቡድኑን ያበረታቱ")
+        KeyboardButton("🎁 ጓደኛ ይጋብዙ (Invite)"),
+        KeyboardButton("☕ ቡድኑን ያበረታቱ (Donate)")
     )
-    bottom_markup.add(KeyboardButton("💬 አስተያየት ይስጡን"), KeyboardButton("🌐 ቋንቋ / Language"))
     
     intro_text = (
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books በደህና መጡ።\n"
-        f"🆔 የእርስዎ ID: <code>{chat_id}</code>\n\n"
-        f"📚 ከዓለም ምርጥ መጽሐፍት ጥበብ በመውሰድ ለእርስዎ ህይወት ብቻ "
-        f"የተዘጋጀ <b>ግላዊ የህይወት መመሪያ</b> እንሰራልዎታለን።\n\n"
-        f"✨ መጽሐፉን ይምረጡ፣ ጥቂት ጥያቄዎችን ይመልሱ፣ "
-        f"ህይወትዎን የሚቀይር መመሪያ ይቀበሉ!"
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ (Soul Surgeon) በደህና መጡ。\n\n"
+        f"እኔ ጥልቅ የስነ-ልቦና አዋቂ ነኝ። የህይወትዎን ውስብስብ ችግሮች፣ ድብቅ ፍርሃቶች እና ከራስዎ የደበቋቸውን እውነታዎች በማውጣት ግልፅ እና እውነተኛ (No-Bullshit) መፍትሄ እሰጥዎታለሁ።\n\n"
+        f"ከስር <b>'🧠 የነፍስ ቀዶ ጥገና'</b> የሚለውን ተጭነው የገጠመዎትን ነገር ያካፍሉኝ!"
     )
 
     bot.send_message(
@@ -342,39 +337,6 @@ def send_welcome(chat_id, first_name):
         intro_text, 
         parse_mode="HTML", 
         reply_markup=bottom_markup
-    )
-
-    markup = InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        InlineKeyboardButton("📖 መጽሐፉን እኔው ራሴ እመርጣለሁ", callback_data="has_book"),
-        InlineKeyboardButton("🧭 መጽሐፎቹን እናንተ አማርጡኝ", callback_data="choose_for_me"),
-        InlineKeyboardButton("💡 ጥልቅ የስነ-ልቦና ምክር ፈልጋለሁ", callback_data="get_advice"),
-    )
-
-    credits = database.get_credits(chat_id)
-    credit_line = f"\n🎫 የእርስዎ ክሬዲት: <b>{credits} መመሪያ</b>\n" if credits > 0 else ""
-
-    has_free_full = database.has_free_protocol(chat_id)
-    previews_left, _ = database.get_preview_quota(chat_id)
-    
-    gifts = []
-    if previews_left > 0:
-        gifts.append(f"{previews_left} ነጻ የሙከራ መመሪያዎች")
-    if has_free_full:
-        gifts.append("1 ሙሉ ነጻ መመሪያ")
-        
-    if gifts:
-        gifts_text = " እና ".join(gifts)
-        preview_line = f"🎁 <b>ያልዎት ስጦታ፡ {gifts_text}</b>\n"
-    else:
-        preview_line = ""
-
-    bot.send_message(
-        chat_id,
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"{preview_line}{credit_line}\n"
-        f"👇 ከታች ያለውን በመጫን ይጀምሩ",
-        parse_mode="HTML", reply_markup=markup,
     )
 
 # ══════════════════════════════════════════
@@ -1724,71 +1686,39 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text == "➕ አዲስ መመሪያ":
-        send_welcome(chat_id, message.from_user.first_name)
+    if message.text == "🧠 የነፍስ ቀዶ ጥገና (Start Session)":
+        bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
         return
-
-    
-    if message.text == "🌐 ቋንቋ / Language":
-        markup = InlineKeyboardMarkup()
-        markup.add(
-            InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),
-            InlineKeyboardButton("🇪🇹 Oromiffa", callback_data="setlang_om"),
-            InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="setlang_ti")
+        
+    if message.text == "👤 የኔ ገፅ (Profile)":
+        msgs = database.get_advice_messages_left(uid)
+        bot.send_message(
+            chat_id,
+            f"👤 <b>የእርስዎ ገፅ</b>\n━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎫 ቀሪ ነጻ መልዕክቶች: <b>{msgs}</b>\n\n"
+            f"ፓኬጅ ለመግዛት /topup ይጫኑ።",
+            parse_mode="HTML"
         )
-        markup.add(InlineKeyboardButton("🇬🇧 English", callback_data="setlang_en"))
-        bot.send_message(chat_id, "የቦቱን ቋንቋ ይምረጡ / Choose Bot Language:", reply_markup=markup)
         return
 
-    if message.text == "📚 የኔ መመሪያዎች":
-        orders = database.get_user_orders(uid)
-        if not orders:
-            bot.send_message(chat_id, "በአሁኑ ሰዓት የተዘጋጀ መመሪያ የለዎትም። አዲስ ለመጀመር '➕ አዲስ መመሪያ' ይጫኑ።")
-        else:
-            bot.send_message(chat_id, "📚 <b>የእርስዎ መመሪያዎች</b>\n━━━━━━━━━━━━━━━━━━━━", parse_mode="HTML")
-            for order in orders:
-                bot.send_message(
-                    chat_id,
-                    f"📖 <b>{html.escape(order['book_title'])}</b>\n"
-                    f"📅 {order['delivered_date'][:10]}\n\n"
-                    f"🔗 {order['pdf_file_id']}",
-                    parse_mode="HTML"
-                )
-        return
-
-    if message.text == "🎁 ጓደኛ ይጋብዙ":
+    if message.text == "🎁 ጓደኛ ይጋብዙ (Invite)":
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
         bot.send_message(
             chat_id,
-            f"🎁 <b>ጓደኛዎን ይጋብዙ፣ ነጻ መመሪያ ያግኙ!</b>\n\n"
-            f"5 ጓደኞችዎን ሲጋብዙ 1 ነጻ መመሪያ ያገኛሉ!\n\n"
-            f"📊 ያጋበዙት: <b>{count}</b>/5\n\n"
+            f"🎁 <b>ጓደኛዎን ይጋብዙ!</b>\n\n"
             f"🔗 የእርስዎ መጋበዣ ሊንክ:\n<code>{link}</code>",
             parse_mode="HTML"
         )
         return
 
-    if message.text == "☕ ቡድኑን ያበረታቱ":
+    if message.text == "☕ ቡድኑን ያበረታቱ (Donate)":
         show_tip_cta(chat_id)
         return
 
-    if message.text == "💬 አስተያየት ይስጡን":
-        bot.send_message(chat_id, "💡 አስተያየትዎን፣ ጥያቄዎን ወይም ያጋጠመዎትን ችግር እዚህ ይጻፉልን። (ወደ አድሚን ይላካል)")
-        set_state(uid, "AWAITING_FEEDBACK")
-        return
-
-    if state == "AWAITING_FEEDBACK" and message.text:
-        admin_id = get_admin_id()
-        if admin_id:
-            bot.send_message(admin_id, f"💬 <b>አዲስ አስተያየት:</b>\n👤 {message.from_user.first_name} (@{message.from_user.username})\n\n{html.escape(message.text)}", parse_mode="HTML")
-        bot.send_message(chat_id, "✅ አስተያየትዎ ደርሶናል! ከልብ እናመሰግናለን።")
-        clear_state(uid)
-        return
-
-    # ── Advice Chat Mode ─────────────────────
-    if state == "ADVICE_CHAT_MODE" and message.text:
+    # ── Advice Chat Mode (All other text) ─────────────────────
+    if message.text:
         # Ignore commands
         if message.text.startswith("/"):
             return

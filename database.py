@@ -37,7 +37,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN bot_language TEXT DEFAULT 'am'",
         "ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN is_sub_admin INTEGER DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN advice_messages_left INTEGER DEFAULT 15",
+        "ALTER TABLE users ADD COLUMN advice_messages_left INTEGER DEFAULT 8",
         "ALTER TABLE users ADD COLUMN advice_history TEXT DEFAULT '[]'",
         "ALTER TABLE users ADD COLUMN gender TEXT",
         "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
@@ -639,10 +639,10 @@ def get_banned_users():
 def get_advice_messages_left(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT IFNULL(advice_messages_left, 15) as advice_messages_left FROM users WHERE user_id = ?", (user_id,))
+    c.execute("SELECT IFNULL(advice_messages_left, 8) as advice_messages_left FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     conn.close()
-    return row['advice_messages_left'] if row else 15
+    return row['advice_messages_left'] if row else 8
 
 def consume_advice_message(user_id):
     conn = get_connection()
@@ -654,7 +654,7 @@ def consume_advice_message(user_id):
 def add_advice_messages(user_id, count):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE users SET advice_messages_left = IFNULL(advice_messages_left, 15) + ? WHERE user_id = ?", (count, user_id))
+    c.execute("UPDATE users SET advice_messages_left = IFNULL(advice_messages_left, 8) + ? WHERE user_id = ?", (count, user_id))
     conn.commit()
     conn.close()
 

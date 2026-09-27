@@ -238,17 +238,19 @@ def cmd_getlogs(message):
 def cmd_topup(message):
     chat_id = message.chat.id
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (120 መልዕክቶች)", callback_data="buy_advice_120"))
-    markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (300 መልዕክቶች)", callback_data="buy_advice_300"))
-    markup.add(InlineKeyboardButton("🔹 Heavy: 700 ብር (600 መልዕክቶች)", callback_data="buy_advice_600"))
+    markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (25 መልዕክቶች)", callback_data="buy_advice_25"))
+    markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (75 መልዕክቶች)", callback_data="buy_advice_75"))
+    markup.add(InlineKeyboardButton("🔹 Heavy: 1200 ብር (225 መልዕክቶች)", callback_data="buy_advice_225"))
+    markup.add(InlineKeyboardButton("♾️ Unlimited: 1800 ብር (ለ1 ሳምንት)", callback_data="buy_advice_unlimited"))
     
     cta_text = (
         "⚠️ <b>የአማካሪ (Advice) ፓኬጅ ግዢ</b>\n\n"
         "የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
         "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
-        "🔹 <b>Starter: 200 ብር</b> (120 መልዕክቶች) - ለአንድ ሳምንት ጥልቅ ውይይት የሚበቃ።\n"
-        "🔹 <b>Pro: 400 ብር</b> (300 መልዕክቶች) - [ተመራጭ] በእጥፍ ዋጋ 2.5x መልዕክቶች።\n"
-        "🔹 <b>Heavy: 700 ብር</b> (600 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n\n"
+        "🔹 <b>Starter: 200 ብር</b> (25 መልዕክቶች) - ለአጭር ውይይት የሚበቃ።\n"
+        "🔹 <b>Pro: 400 ብር</b> (75 መልዕክቶች) - [ተመራጭ] ለተሻለ ጥልቅ ውይይት።\n"
+        "🔹 <b>Heavy: 1200 ብር</b> (225 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n"
+        "♾️ <b>Unlimited: 1800 ብር</b> (ያለ ገደብ ለ1 ሳምንት) - ምንም ገደብ የሌለው ሙሉ መዳረሻ።\n\n"
         "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
     )
     bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
@@ -650,13 +652,15 @@ def handle_callback(call):
     # ── Buy Advice Packages ──────────────────
     if data.startswith("buy_advice_"):
         bot.answer_callback_query(call.id)
-        msgs = int(data.split("_")[2])
-        amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
+        pkg = data.split("_")[2] # can be '25', '75', '225', or 'unlimited'
         
-        # Override to 10 birr for testing as per user's earlier request
-        amount = 10 
-        
-        show_payment_instructions(chat_id, amount, uid, f"ADVICE_{msgs}")
+        if pkg == "unlimited":
+            amount = 1800
+        else:
+            msgs = int(pkg)
+            amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
+            
+        show_payment_instructions(chat_id, amount, uid, f"ADVICE_{pkg}")
         return
 
     # ── Admin Reset Chat ─────────────────────
@@ -1768,17 +1772,19 @@ def handle_messages(message):
         
         if msgs_left <= 0 and not is_vip and not is_adm:
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (120 መልዕክቶች)", callback_data="buy_advice_120"))
-            markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (300 መልዕክቶች)", callback_data="buy_advice_300"))
-            markup.add(InlineKeyboardButton("🔹 Heavy: 700 ብር (600 መልዕክቶች)", callback_data="buy_advice_600"))
+            markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (25 መልዕክቶች)", callback_data="buy_advice_25"))
+            markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (75 መልዕክቶች)", callback_data="buy_advice_75"))
+            markup.add(InlineKeyboardButton("🔹 Heavy: 1200 ብር (225 መልዕክቶች)", callback_data="buy_advice_225"))
+            markup.add(InlineKeyboardButton("♾️ Unlimited: 1800 ብር (ለ1 ሳምንት)", callback_data="buy_advice_unlimited"))
             
             cta_text = (
                 "⚠️ <b>ነፃ የሙከራ ጊዜዎ አልቋል።</b>\n\n"
                 "እስካሁን ጥሩ ቆይታ አድርገናል፤ ነገር ግን ትክክለኛው ለውጥ አሁን ነው የሚጀምረው። የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
                 "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
-                "🔹 <b>Starter: 200 ብር</b> (120 መልዕክቶች) - ለአንድ ሳምንት ጥልቅ ውይይት የሚበቃ።\n"
-                "🔹 <b>Pro: 400 ብር</b> (300 መልዕክቶች) - [ተመራጭ] በእጥፍ ዋጋ 2.5x መልዕክቶች።\n"
-                "🔹 <b>Heavy: 700 ብር</b> (600 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n\n"
+                "🔹 <b>Starter: 200 ብር</b> (25 መልዕክቶች) - ለአጭር ውይይት የሚበቃ።\n"
+                "🔹 <b>Pro: 400 ብር</b> (75 መልዕክቶች) - [ተመራጭ] ለተሻለ ጥልቅ ውይይት።\n"
+                "🔹 <b>Heavy: 1200 ብር</b> (225 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n"
+                "♾️ <b>Unlimited: 1800 ብር</b> (ያለ ገደብ ለ1 ሳምንት) - ምንም ገደብ የሌለው ሙሉ መዳረሻ።\n\n"
                 "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
             )
             bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
@@ -1825,9 +1831,8 @@ def handle_messages(message):
                     bot.send_message(chat_id, "⚠️ ይቅርታ፣ ምላሽ ማግኘት አልተቻለም። እባክዎ እንደገና ይሞክሩ።")
                     return
                 
-                # Deduct quota (unless VIP or Admin)
-                if not is_vip and not is_adm:
-                    database.consume_advice_message(uid)
+                # Deduct quota (everyone counts down, but VIP/Admin bypass block)
+                database.consume_advice_message(uid)
                     
                 # Update history and save back to DB
                 history.append({"role": "user", "parts": [user_text]})
@@ -2001,11 +2006,18 @@ def process_chapa_success(tx_ref):
         database.add_credit(uid, 5)
         bot.send_message(chat_id, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n5 ነጻ ምርመራዎች ወደ አካውንትዎ ገብተዋል።", parse_mode="HTML")
     elif purpose.startswith("ADVICE_"):
-        msgs = int(purpose.split("_")[1])
-        payment_amount = {120: 200, 300: 400, 600: 700}.get(msgs, 200)
-        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
-        database.add_advice_messages(uid, msgs)
-        bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n{msgs} መልዕክቶች ወደ አካውንትዎ ገብተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
+        pkg = purpose.split("_")[1]
+        if pkg == "unlimited":
+            payment_amount = 1800
+            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+            database.set_vip(uid, days=7)
+            bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\nለ1 ሳምንት ያህል ያልተገደበ (Unlimited) መዳረሻ አግኝተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
+        else:
+            msgs = int(pkg)
+            payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
+            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+            database.add_advice_messages(uid, msgs)
+            bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n{msgs} መልዕክቶች ወደ አካውንትዎ ገብተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
     elif purpose == "TIP":
         database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
         bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")

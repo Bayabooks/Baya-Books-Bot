@@ -1405,7 +1405,32 @@ def handle_messages(message):
             # Their Telegram client has the old keyboard cached. Send welcome to update it.
             send_welcome(chat_id, message.from_user.first_name)
             return
-        bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
+            
+        history_str = database.get_advice_history(uid)
+        last_ai_msg = None
+        if history_str:
+            try:
+                history = json.loads(history_str)
+                for item in reversed(history):
+                    if item.get("role") == "model":
+                        last_ai_msg = item.get("parts", [""])[0]
+                        break
+            except Exception:
+                pass
+                
+        if last_ai_msg:
+            try:
+                chunks = [last_ai_msg[i:i+4000] for i in range(0, len(last_ai_msg), 4000)]
+                for chunk in chunks:
+                    bot.send_message(chat_id, chunk, parse_mode="HTML")
+            except Exception:
+                import re as re_mod
+                clean = re_mod.sub(r'<[^>]+>', '', last_ai_msg)
+                clean_chunks = [clean[i:i+4000] for i in range(0, len(clean), 4000)]
+                for chunk in clean_chunks:
+                    bot.send_message(chat_id, chunk)
+        else:
+            bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
         return
         
     if message.text == "👤 የኔ ገፅ":

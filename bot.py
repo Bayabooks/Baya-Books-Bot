@@ -612,6 +612,21 @@ def handle_callback(call):
         else:
             bot.answer_callback_query(call.id, "❌ ገና 10 ሰው አልሞሉም!", show_alert=True)
         return
+    if data == "confirm_reset":
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("✅ አዎ፣ አጽዳ", callback_data="reset_account"),
+            InlineKeyboardButton("❌ ተመለስ", callback_data="cancel_reset")
+        )
+        bot.edit_message_text(
+            "⚠️ <b>እርግጠኛ ነዎት?</b>\n\nማህደርዎን ካፀዱ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ሙሉ በሙሉ ይሰረዛል፣ እናም AI-ው ያለፈውን አያስታውስም።",
+            chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup
+        )
+        return
+
+    if data == "cancel_reset":
+        bot.edit_message_text("❌ ተሰርዟል። ማህደርዎ አልተሰረዘም።", chat_id, call.message.message_id)
+        return
 
     if data == "reset_account":
         database.reset_user_onboarding(uid)
@@ -1471,7 +1486,7 @@ def handle_messages(message):
         markup = InlineKeyboardMarkup()
         if count >= 10:
             markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
-        markup.add(InlineKeyboardButton("🧹 ማህደር አጽዳ (Reset)", callback_data="reset_account"))
+        markup.add(InlineKeyboardButton("🧹 ማህደር አጽዳ (Reset)", callback_data="confirm_reset"))
             
         bot.send_message(
             chat_id,

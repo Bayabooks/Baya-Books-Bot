@@ -318,17 +318,17 @@ def cmd_start(message):
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
     bottom_markup.add(
-        KeyboardButton("🧠 የነፍስ ቀዶ ጥገና (Start Session)"),
-        KeyboardButton("👤 የኔ ገፅ (Profile)")
+        KeyboardButton("🧠 የነፍስ ቀዶ ጥገና"),
+        KeyboardButton("👤 የኔ ገፅ")
     )
     bottom_markup.add(
-        KeyboardButton("🎁 ጓደኛ ይጋብዙ (Invite)"),
-        KeyboardButton("☕ ቡድኑን ያበረታቱ (Donate)")
+        KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
+        KeyboardButton("☕ ቡድኑን ያበረታቱ")
     )
     
     intro_text = (
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ (Soul Surgeon) በደህና መጡ。\n\n"
-        f"እኔ ጥልቅ የስነ-ልቦና አዋቂ ነኝ። የህይወትዎን ውስብስብ ችግሮች፣ ድብቅ ፍርሃቶች እና ከራስዎ የደበቋቸውን እውነታዎች በማውጣት ግልፅ እና እውነተኛ (No-Bullshit) መፍትሄ እሰጥዎታለሁ።\n\n"
+        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ በደህና መጡ።\n\n"
+        f"እኔ ጥልቅ የስነ-ልቦና አዋቂ ነኝ። የህይወትዎን ውስብስብ ችግሮች፣ ድብቅ ፍርሃቶች እና ከራስዎ የደበቋቸውን እውነታዎች በማውጣት ግልፅ እና እውነተኛ መፍትሄ እሰጥዎታለሁ።\n\n"
         f"ከስር <b>'🧠 የነፍስ ቀዶ ጥገና'</b> የሚለውን ተጭነው የገጠመዎትን ነገር ያካፍሉኝ!"
     )
 
@@ -1686,11 +1686,11 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text == "🧠 የነፍስ ቀዶ ጥገና (Start Session)":
+    if message.text == "🧠 የነፍስ ቀዶ ጥገና":
         bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
         return
         
-    if message.text == "👤 የኔ ገፅ (Profile)":
+    if message.text == "👤 የኔ ገፅ":
         msgs = database.get_advice_messages_left(uid)
         bot.send_message(
             chat_id,
@@ -1701,7 +1701,7 @@ def handle_messages(message):
         )
         return
 
-    if message.text == "🎁 ጓደኛ ይጋብዙ (Invite)":
+    if message.text == "🎁 ጓደኛ ይጋብዙ":
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
@@ -1713,7 +1713,7 @@ def handle_messages(message):
         )
         return
 
-    if message.text == "☕ ቡድኑን ያበረታቱ (Donate)":
+    if message.text == "☕ ቡድኑን ያበረታቱ":
         show_tip_cta(chat_id)
         return
 

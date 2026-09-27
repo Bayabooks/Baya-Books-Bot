@@ -337,7 +337,7 @@ def check_onboarding(chat_id, user_id, first_name):
 def send_welcome(chat_id, first_name):
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
     bottom_markup.add(
-        KeyboardButton("🧠 የስነ-ልቦና ምክር"),
+        KeyboardButton("🧠 ምክክራችንን እንቀጥል"),
         KeyboardButton("👤 የኔ ገፅ")
     )
     bottom_markup.add(
@@ -348,7 +348,7 @@ def send_welcome(chat_id, first_name):
     intro_text = (
         f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ በደህና መጡ።\n\n"
         f"በህይወትዎ ውስጥ የሚያጋጥሙዎትን ጭንቀቶች፣ ፍርሃቶች፣ የህይወት ውጣ ውረዶች፣ ወይም ማንኛውንም የስነ-ልቦና ጉዳይ በነፃነት ሊያወያዩኝ ይችላሉ። እኔም ጥልቅ እና እውነተኛ የሆነ መፍትሄ እሰጥዎታለሁ።\n\n"
-        f"ከስር <b>'🧠 የስነ-ልቦና ምክር'</b> የሚለውን ተጭነው የገጠመዎትን ነገር ያካፍሉኝ!"
+        f"<b>እስኪ እንነጋገር... አሁን ላይ ምን እያስቸገረዎት ነው? ወይንም ምን እየተሰማዎት ነው?</b>"
     )
 
     bot.send_message(
@@ -1724,7 +1724,7 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text == "🧠 የስነ-ልቦና ምክር":
+    if message.text == "🧠 ምክክራችንን እንቀጥል":
         bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
         return
         

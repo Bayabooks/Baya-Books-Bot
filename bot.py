@@ -1224,8 +1224,8 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text in ["🧠 ምክክራችንን እንቀጥል", "🧠 የስነ-ልቦና ምክር"]:
-        if message.text == "🧠 የስነ-ልቦና ምክር":
+    if "ምክክራችንን እንቀጥል" in message.text or "የስነ-ልቦና ምክር" in message.text:
+        if "የስነ-ልቦና ምክር" in message.text:
             # Their Telegram client has the old keyboard cached. Send welcome to update it.
             send_welcome(chat_id, message.from_user.first_name)
             return
@@ -1257,7 +1257,7 @@ def handle_messages(message):
             bot.send_message(chat_id, "💡 <b>እኔ ከጎንዎ ነኝ፤ እባክዎ የሚያስጨንቅዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ያካፍሉኝ...</b>", parse_mode="HTML")
         return
         
-    if message.text == "👤 የኔ ገፅ":
+    if "የኔ ገፅ" in message.text:
         msgs = database.get_advice_messages_left(uid)
         count = database.get_uncredited_referral_count(uid)
         markup = InlineKeyboardMarkup()
@@ -1280,7 +1280,7 @@ def handle_messages(message):
         )
         return
 
-    if message.text == "🎁 ጓደኛ ይጋብዙ":
+    if "ጓደኛ ይጋብዙ" in message.text:
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
@@ -1301,7 +1301,7 @@ def handle_messages(message):
         )
         return
 
-    if message.text == "☕ ቡድኑን ያበረታቱ":
+    if "ቡድኑን ያበረታቱ" in message.text:
         show_tip_cta(chat_id)
         return
 

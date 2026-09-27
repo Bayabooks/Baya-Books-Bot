@@ -41,6 +41,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN advice_history TEXT DEFAULT '[]'",
         "ALTER TABLE users ADD COLUMN gender TEXT",
         "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN bot_blocked INTEGER DEFAULT 0",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -332,10 +333,10 @@ def get_analytics():
     today = now.strftime("%Y-%m-%d")
     week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
 
-    c.execute("SELECT COUNT(*) FROM users")
+    c.execute("SELECT COUNT(*) FROM users WHERE bot_blocked = 0")
     total_users = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM users WHERE joined_date LIKE ?", (today + "%",))
+    c.execute("SELECT COUNT(*) FROM users WHERE joined_date LIKE ? AND bot_blocked = 0", (today + "%",))
     new_today = c.fetchone()[0]
 
     c.execute("SELECT COUNT(*) FROM users WHERE advice_history != '[]'")
@@ -504,6 +505,13 @@ def ban_user(user_id):
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def mark_user_blocked(user_id, is_blocked=1):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET bot_blocked = ? WHERE user_id = ?", (is_blocked, user_id))
     conn.commit()
     conn.close()
 

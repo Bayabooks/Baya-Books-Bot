@@ -744,7 +744,7 @@ def handle_callback(call):
         
         bot.send_message(chat_id,
             f"📊 <b>DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"👥 Total Users: <b>{stats['total_users']}</b>\n"
+            f"👥 Active Users: <b>{stats['total_users']}</b>\n"
             f"🟢 New Today: <b>{stats['new_today']}</b>\n"
             f"💬 Active Advice Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
             f"━━ 💰 Revenue ━━━━━━━━━━━━\n"
@@ -1015,11 +1015,13 @@ def handle_callback(call):
             for u in all_users:
                 try:
                     bot.send_message(u, f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}", parse_mode="HTML")
+                    database.mark_user_blocked(u, 0)
                     success += 1
-                except:
+                except Exception as e:
+                    database.mark_user_blocked(u, 1)
                     failed += 1
                 time.sleep(0.05)
-            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Blocked/Left)", parse_mode="HTML")
+            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
             except: pass
             
         threading.Thread(target=background_broadcast, daemon=True).start()
@@ -1229,14 +1231,28 @@ def handle_messages(message):
     if state == "ADMIN_BROADCAST" and is_admin(message.from_user):
         if message.text == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        
         users = database.get_all_user_ids()
-        success, failed = 0, 0
-        for u in users:
+        msg_id = message.message_id
+        
+        def run_custom_broadcast():
+            import time
+            success, failed = 0, 0
+            for u in users:
+                try:
+                    bot.copy_message(u, chat_id, msg_id)
+                    database.mark_user_blocked(u, 0)
+                    success += 1
+                except Exception:
+                    database.mark_user_blocked(u, 1)
+                    failed += 1
+                time.sleep(0.05)
             try:
-                bot.copy_message(u, chat_id, message.message_id); success += 1
-            except Exception:
-                failed += 1
-        bot.send_message(chat_id, f"✅ Broadcast complete!\n✔️ {success} delivered | ❌ {failed} failed")
+                bot.send_message(chat_id, f"✅ <b>Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
+            except: pass
+            
+        threading.Thread(target=run_custom_broadcast, daemon=True).start()
+        bot.send_message(chat_id, f"🚀 <b>Broadcast Started!</b>\nSending to {len(users)} users in the background...", parse_mode="HTML")
         clear_state(uid); return
 
     if state == "ADMIN_CREDIT_USER" and is_admin(message.from_user):

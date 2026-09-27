@@ -617,7 +617,18 @@ def handle_callback(call):
         database.reset_user_onboarding(uid)
         clear_state(uid)
         bot.answer_callback_query(call.id, "✅ ማህደርዎ ፀድቷል! አዲስ ውይይት እንጀምራለን።", show_alert=True)
-        bot.delete_message(chat_id, call.message.message_id)
+        
+        # Start a thread to wipe the last 40 bot messages for a clean visual slate
+        def wipe_chat_history(chat, start_msg_id):
+            import time
+            for i in range(start_msg_id, max(0, start_msg_id - 50), -1):
+                try:
+                    bot.delete_message(chat, i)
+                except Exception:
+                    pass
+                time.sleep(0.02)
+        threading.Thread(target=wipe_chat_history, args=(chat_id, call.message.message_id), daemon=True).start()
+        
         # Check onboarding again, which will prompt the 18+ age question
         check_onboarding(chat_id, uid, call.from_user.first_name)
         return
@@ -1468,6 +1479,7 @@ def handle_messages(message):
             f"🎫 ቀሪ ነጻ መልዕክቶች: <b>{msgs}</b>\n\n"
             f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
             f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
+            f"🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።\n\n"
             f"ፓኬጅ ለመግዛት /topup ይጫኑ።",
             parse_mode="HTML",
             reply_markup=markup

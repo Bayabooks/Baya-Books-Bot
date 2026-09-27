@@ -613,6 +613,15 @@ def handle_callback(call):
             bot.answer_callback_query(call.id, "❌ ገና 10 ሰው አልሞሉም!", show_alert=True)
         return
 
+    if data == "reset_account":
+        database.reset_user_onboarding(uid)
+        clear_state(uid)
+        bot.answer_callback_query(call.id, "✅ ማህደርዎ ፀድቷል! አዲስ ውይይት እንጀምራለን።", show_alert=True)
+        bot.delete_message(chat_id, call.message.message_id)
+        # Check onboarding again, which will prompt the 18+ age question
+        check_onboarding(chat_id, uid, call.from_user.first_name)
+        return
+
     if data.startswith("tip_"):
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
@@ -1448,10 +1457,10 @@ def handle_messages(message):
     if message.text == "👤 የኔ ገፅ":
         msgs = database.get_advice_messages_left(uid)
         count = database.get_uncredited_referral_count(uid)
-        markup = None
+        markup = InlineKeyboardMarkup()
         if count >= 10:
-            markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
+        markup.add(InlineKeyboardButton("🧹 ማህደር አጽዳ (Reset)", callback_data="reset_account"))
             
         bot.send_message(
             chat_id,

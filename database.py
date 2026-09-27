@@ -696,3 +696,10 @@ def get_onboarding_status(user_id):
     if not row:
         return False, None
     return bool(row['age_verified']), row['gender']
+
+def reset_user_onboarding(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET age_verified = 0, gender = NULL, advice_history = '[]' WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()

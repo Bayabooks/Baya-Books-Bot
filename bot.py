@@ -348,7 +348,7 @@ def send_welcome(chat_id, first_name):
     intro_text = (
         f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya Books የስነ-ልቦና አማካሪ በደህና መጡ።\n\n"
         f"በህይወትዎ ውስጥ የሚያጋጥሙዎትን ጭንቀቶች፣ ፍርሃቶች፣ የህይወት ውጣ ውረዶች፣ ወይም ማንኛውንም የስነ-ልቦና ጉዳይ በነፃነት ሊያወያዩኝ ይችላሉ። እኔም ጥልቅ እና እውነተኛ የሆነ መፍትሄ እሰጥዎታለሁ።\n\n"
-        f"<b>እስኪ እንነጋገር... አሁን ላይ ምን እያስቸገረዎት ነው? ወይንም ምን እየተሰማዎት ነው?</b>"
+        f"💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>"
     )
 
     bot.send_message(
@@ -365,45 +365,13 @@ def send_welcome(chat_id, first_name):
 def cmd_help(message):
     bot.send_message(
         message.chat.id,
-        "📖 <b>Baya Books እንዴት እንጠቀማለን?</b>\n"
+        "🧠 <b>Baya Books የስነ-ልቦና አማካሪ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
-        "1️⃣ መጽሐፍ ይምረጡ ወይም እኛ እንምረጥልዎ\n"
-        "2️⃣ ጥቂት ጥያቄዎችን ይመልሱ\n"
-        "3️⃣ ነጻ ማሳያ ያንብቡ\n"
-        f"4️⃣ ሙሉ PDF ይዘዙ ({config.PRICE_SINGLE} ብር)\n"
-        "5️⃣ ግላዊ መመሪያዎን ያውርዱ!\n\n"
-        "📚 /mylibrary — ያዘዙዋቸው PDFs\n"
-        "🔗 /referral — ጓደኞችን ይጋብዙ\n"
-        "🆕 /new — አዲስ PDF ይጀምሩ\n\n"
+        "1️⃣ /new — አዲስ ውይይት ለመጀመር\n"
+        "2️⃣ /topup — ተጨማሪ መልዕክቶችን ለመግዛት\n"
+        "3️⃣ ከታች ያሉትን ቁልፎች (Buttons) በመጠቀም መለያዎን ማስተዳደር ይችላሉ።\n\n"
         "ለማንኛውም ጥያቄ @Bayabooks ያናግሩን!",
         parse_mode="HTML",
-    )
-
-@bot.message_handler(commands=["mylibrary"])
-def cmd_library(message):
-    if not check_channel_member(message.from_user.id):
-        send_join_channel_msg(message.chat.id); return
-
-    orders = database.get_user_orders(message.from_user.id)
-    if not orders:
-        bot.send_message(message.chat.id, "📚 ገና ምንም PDF አልተዘጋጀልዎም።\n\n/new ይጫኑ ለመጀመር!")
-        return
-
-    lines = []
-    for i, o in enumerate(orders, 1):
-        date = o["delivered_date"][:10] if o["delivered_date"] else "N/A"
-        lines.append(f"  {i}. 📕 {o['book_title']} ({date})")
-
-    markup = InlineKeyboardMarkup()
-    for i, o in enumerate(orders, 1):
-        if o["pdf_file_id"]:
-            markup.add(InlineKeyboardButton(f"📥 {i}. {o['book_title']}", callback_data=f"redownload_{o['id']}"))
-
-    bot.send_message(
-        message.chat.id,
-        f"📚 <b>ቤተ-መጽሐፍትዎ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        + "\n".join(lines) + "\n\n📥 ለማውረድ ከታች ይጫኑ",
-        parse_mode="HTML", reply_markup=markup,
     )
 
 @bot.message_handler(commands=["referral"])

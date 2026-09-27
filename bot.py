@@ -442,6 +442,30 @@ def cmd_reset_advice(message):
         bot.reply_to(message, "❌ Admin only command.")
 
 # ══════════════════════════════════════════
+@bot.message_handler(commands=["ban"])
+def cmd_ban(message):
+    if not is_admin(message.from_user): return
+    try:
+        target_id = int(message.text.split()[1])
+        database.ban_user(target_id)
+        bot.reply_to(message, f"✅ User {target_id} has been BANNED.")
+        try: bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
+        except: pass
+    except:
+        bot.reply_to(message, "Usage: /ban <user_id>")
+
+@bot.message_handler(commands=["unban"])
+def cmd_unban(message):
+    if not is_admin(message.from_user): return
+    try:
+        target_id = int(message.text.split()[1])
+        database.unban_user(target_id)
+        bot.reply_to(message, f"✅ User {target_id} has been UNBANNED.")
+        try: bot.send_message(target_id, "✅ አካውንትዎ ተከፍቷል! /start ይጫኑ ለመጀመር።")
+        except: pass
+    except:
+        bot.reply_to(message, "Usage: /unban <user_id>")
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])

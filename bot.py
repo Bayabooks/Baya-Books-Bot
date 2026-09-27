@@ -628,6 +628,11 @@ def handle_callback(call):
         bot.edit_message_text("❌ ተሰርዟል። ማህደርዎ አልተሰረዘም።", chat_id, call.message.message_id)
         return
 
+    if data == "show_topup":
+        bot.answer_callback_query(call.id)
+        show_pricing(chat_id, uid)
+        return
+
     if data == "reset_account":
         database.reset_user_onboarding(uid)
         clear_state(uid)
@@ -1486,6 +1491,7 @@ def handle_messages(message):
         markup = InlineKeyboardMarkup()
         if count >= 10:
             markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
+        markup.add(InlineKeyboardButton("💳 ክሬዲት ይግዙ (Top Up)", callback_data="show_topup"))
         markup.add(InlineKeyboardButton("🧹 ማህደር አጽዳ (Reset)", callback_data="confirm_reset"))
             
         bot.send_message(

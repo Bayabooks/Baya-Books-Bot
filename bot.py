@@ -601,6 +601,18 @@ def handle_callback(call):
             send_welcome(chat_id, call.from_user.first_name)
         return
 
+    if data == "claim_referrals":
+        count = database.get_uncredited_referral_count(uid)
+        if count >= 10:
+            database.mark_n_referrals_credited(uid, n=count)
+            database.add_advice_messages(uid, count)
+            bot.answer_callback_query(call.id, f"🎉 እንኳን ደስ አለዎት! {count} ነፃ መልዕክቶች ተሰጥቶዎታል!", show_alert=True)
+            bot.delete_message(chat_id, call.message.message_id)
+            send_welcome(chat_id, call.from_user.first_name)
+        else:
+            bot.answer_callback_query(call.id, "❌ ገና 10 ሰው አልሞሉም!", show_alert=True)
+        return
+
     if data.startswith("tip_"):
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
@@ -1435,12 +1447,21 @@ def handle_messages(message):
         
     if message.text == "👤 የኔ ገፅ":
         msgs = database.get_advice_messages_left(uid)
+        count = database.get_uncredited_referral_count(uid)
+        markup = None
+        if count >= 10:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
+            
         bot.send_message(
             chat_id,
             f"👤 <b>የእርስዎ ገፅ</b>\n━━━━━━━━━━━━━━━━━━━━\n"
             f"🎫 ቀሪ ነጻ መልዕክቶች: <b>{msgs}</b>\n\n"
+            f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
+            f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
             f"ፓኬጅ ለመግዛት /topup ይጫኑ።",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=markup
         )
         return
 
@@ -1448,11 +1469,20 @@ def handle_messages(message):
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
+        
+        markup = None
+        if count >= 10:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
+            
         bot.send_message(
             chat_id,
             f"🎁 <b>ጓደኛዎን ይጋብዙ!</b>\n\n"
+            f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
+            f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
             f"🔗 የእርስዎ መጋበዣ ሊንክ:\n<code>{link}</code>",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=markup
         )
         return
 

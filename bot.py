@@ -1274,7 +1274,22 @@ def handle_messages(message):
         return
         
     if "የኔ ገፅ" in message.text:
-        msgs = database.get_advice_messages_left(uid)
+        is_vip = database.is_vip(uid)
+        if is_vip:
+            user_data = database.get_user(uid)
+            expiry_str = user_data["vip_expiry"] if user_data else ""
+            formatted_expiry = ""
+            if expiry_str:
+                try:
+                    from datetime import datetime
+                    d = datetime.fromisoformat(expiry_str)
+                    formatted_expiry = f" (እስከ {d.strftime('%Y-%m-%d')})"
+                except: pass
+            msgs_display = f"♾️ <b>Unlimited{formatted_expiry}</b>"
+        else:
+            msgs = database.get_advice_messages_left(uid)
+            msgs_display = f"<b>{msgs}</b>"
+            
         count = database.get_uncredited_referral_count(uid)
         markup = InlineKeyboardMarkup()
         if count >= 10:
@@ -1285,7 +1300,7 @@ def handle_messages(message):
         bot.send_message(
             chat_id,
             f"👤 <b>የእርስዎ ገፅ</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎫 ቀሪ ነጻ መልዕክቶች: <b>{msgs}</b>\n\n"
+            f"🎫 ቀሪ ነጻ መልዕክቶች: {msgs_display}\n\n"
             f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
             f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
             f"🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።\n"

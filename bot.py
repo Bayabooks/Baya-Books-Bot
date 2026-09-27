@@ -713,30 +713,26 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "📊 Loading...")
         stats = database.get_analytics()
-        top_books = "\n".join([f"  {i+1}. 📕 {b[0]} ({b[1]}x)" for i, b in enumerate(stats["top_books"])]) or "  — None"
-        top_goals = "\n".join([f"  {i+1}. 🎯 {g[0]} ({g[1]}x)" for i, g in enumerate(stats["top_goals"])]) or "  — None"
         total = stats["male_count"] + stats["female_count"]
         m_pct = f"{stats['male_count']/total*100:.0f}%" if total > 0 else "0%"
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
         markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🌐 ክፈት (Open Web Dashboard)", url=f"{config.BASE_URL}/admin_dashboard"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
             f"📊 <b>DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
             f"👥 Total Users: <b>{stats['total_users']}</b>\n"
             f"🟢 New Today: <b>{stats['new_today']}</b>\n"
-            f"📄 Total PDFs: <b>{stats['total_pdfs']}</b>\n\n"
-            f"━━ 📈 Today's Activity ━━━━━━━\n"
-            f"  🎁 Trials Given: <b>{stats['today_trials']}</b>\n"
-            f"  ✅ Full Packages: <b>{stats['today_full']}</b>\n\n"
+            f"💬 Active Advice Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
             f"━━ 💰 Revenue ━━━━━━━━━━━━\n"
             f"  📅 Today: <b>{stats['today_revenue']:,} ETB</b>\n"
             f"  📆 Weekly: <b>{stats['weekly_revenue']:,} ETB</b>\n"
             f"  💵 Total: <b>{stats['total_revenue']:,} ETB</b>\n\n"
-            f"━━ 🔥 Top 5 Books ━━━━━━━━━\n{top_books}\n\n"
             f"━━ 👥 Gender Split ━━━━━━━━━\n"
-            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}",
+            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}\n\n"
+            f"💡 <i>ለተጨማሪ መረጃ ከታች ያለውን Web Dashboard ይክፈቱ!</i>",
             parse_mode="HTML", reply_markup=markup,
         )
         return

@@ -338,51 +338,47 @@ def get_analytics():
     c.execute("SELECT COUNT(*) FROM users WHERE joined_date LIKE ?", (today + "%",))
     new_today = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered'")
-    total_pdfs = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM users WHERE advice_history != '[]'")
+    active_advice_users = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'approved'")
+    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'approved' OR tx_ref LIKE '%WEBHOOK%'")
     total_revenue = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'approved' AND payment_date LIKE ?", (today + "%",))
+    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE (status = 'approved' OR tx_ref LIKE '%WEBHOOK%') AND payment_date LIKE ?", (today + "%",))
     today_revenue = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'approved' AND payment_date >= ?", (week_ago,))
+    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE (status = 'approved' OR tx_ref LIKE '%WEBHOOK%') AND payment_date >= ?", (week_ago,))
     weekly_revenue = c.fetchone()[0]
 
-    c.execute('''SELECT book_title, COUNT(*) as cnt FROM orders WHERE status = 'delivered'
-        GROUP BY book_title ORDER BY cnt DESC LIMIT 5''')
-    top_books = [(r['book_title'], r['cnt']) for r in c.fetchall()]
-
-    c.execute('''SELECT goal, COUNT(*) as cnt FROM orders WHERE status = 'delivered'
-        GROUP BY goal ORDER BY cnt DESC LIMIT 5''')
-    top_goals = [(r['goal'], r['cnt']) for r in c.fetchall()]
-
-    c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND gender = 'male'")
+    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'male'")
     male_count = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND gender = 'female'")
+    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'female'")
     female_count = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM orders WHERE created_date LIKE ?", (today + "%",))
-    today_trials = c.fetchone()[0]
+    c.execute('''
+        SELECT u.first_name, p.amount, p.payment_date 
+        FROM payments p 
+        JOIN users u ON p.user_id = u.user_id 
+        WHERE p.status = 'approved' OR p.tx_ref LIKE '%WEBHOOK%' 
+        ORDER BY p.id DESC LIMIT 10
+    ''')
+    recent_payments = [{"name": r['first_name'], "amount": r['amount'], "date": r['payment_date']} for r in c.fetchall()]
 
-    c.execute("SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND delivered_date LIKE ?", (today + "%",))
-    today_full = c.fetchone()[0]
+    c.execute("SELECT first_name, joined_date FROM users ORDER BY user_id DESC LIMIT 10")
+    recent_users = [{"name": r['first_name'], "date": r['joined_date']} for r in c.fetchall()]
 
     conn.close()
     return {
         "total_users": total_users,
         "new_today": new_today,
-        "total_pdfs": total_pdfs,
+        "active_advice_users": active_advice_users,
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
         "weekly_revenue": weekly_revenue,
-        "top_books": top_books,
-        "top_goals": top_goals,
         "male_count": male_count,
         "female_count": female_count,
-        "today_trials": today_trials,
-        "today_full": today_full,
+        "recent_payments": recent_payments,
+        "recent_users": recent_users
     }
 
 # Run setup

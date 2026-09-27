@@ -618,10 +618,10 @@ def handle_callback(call):
         clear_state(uid)
         bot.answer_callback_query(call.id, "✅ ማህደርዎ ፀድቷል! አዲስ ውይይት እንጀምራለን።", show_alert=True)
         
-        # Start a thread to wipe the last 40 bot messages for a clean visual slate
+        # Start a thread to wipe the last 500 bot messages for a clean visual slate
         def wipe_chat_history(chat, start_msg_id):
             import time
-            for i in range(start_msg_id, max(0, start_msg_id - 50), -1):
+            for i in range(start_msg_id, max(0, start_msg_id - 500), -1):
                 try:
                     bot.delete_message(chat, i)
                 except Exception:
@@ -1479,7 +1479,8 @@ def handle_messages(message):
             f"🎫 ቀሪ ነጻ መልዕክቶች: <b>{msgs}</b>\n\n"
             f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
             f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
-            f"🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።\n\n"
+            f"🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።\n"
+            f"⚠️ <b>ማሳሰቢያ:</b> በምክክር መሃል ከሆኑ ይህን አይጫኑት! ምክንያቱም AI-ው ያለፈውን ውይይት ስለሚረሳው የጀመሩትን ምክክር መቀጠል አይችልም።\n\n"
             f"ፓኬጅ ለመግዛት /topup ይጫኑ።",
             parse_mode="HTML",
             reply_markup=markup

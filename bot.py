@@ -442,6 +442,12 @@ def cmd_reset_advice(message):
         bot.reply_to(message, "❌ Admin only command.")
 
 # ══════════════════════════════════════════
+@bot.message_handler(commands=["wipe_all_data_confirm"])
+def cmd_wipe_data(message):
+    if not is_admin(message.from_user): return
+    database.factory_reset()
+    bot.reply_to(message, "⚠️ <b>FACTORY RESET COMPLETE</b>\n\nAll users, orders, and payments have been permanently deleted from the database. The system is completely fresh for official launch.", parse_mode="HTML")
+
 @bot.message_handler(commands=["ban"])
 def cmd_ban(message):
     if not is_admin(message.from_user): return
@@ -793,8 +799,7 @@ def handle_callback(call):
         
         markup = InlineKeyboardMarkup(row_width=2)
         markup.add(
-            InlineKeyboardButton("💳 Add Credit", callback_data=f"adm_credit_{target_id}"),
-            InlineKeyboardButton("📤 Push PDF", callback_data=f"adm_push_{target_id}"),
+            InlineKeyboardButton("💳 Add Credit", callback_data=f"adm_credit_{target_id}")
         )
         if database.is_banned(target_id):
             markup.add(InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{target_id}"))
@@ -833,15 +838,6 @@ def handle_callback(call):
         bot.answer_callback_query(call.id)
         set_state(uid, "ADMIN_CREDIT_AMOUNT", target_id=target_id)
         bot.send_message(chat_id, f"💳 How many credits to add for user <code>{target_id}</code>?\n(/cancel to exit)", parse_mode="HTML")
-        return
-    
-    # ── Admin: Quick Push from profile ────────
-    if data.startswith("adm_push_") and not data.startswith("adm_push_pdf"):
-        if not is_admin(call.from_user): return
-        target_id = int(data.replace("adm_push_", ""))
-        bot.answer_callback_query(call.id)
-        set_state(uid, "ADMIN_PUSH_BOOK", target_id=target_id)
-        bot.send_message(chat_id, f"📤 <b>Push PDF</b>\n\nBook title for user <code>{target_id}</code>?\n(/cancel to exit)", parse_mode="HTML")
         return
     
     # ── Admin: Ban User ──────────────────────
@@ -943,23 +939,6 @@ def handle_callback(call):
         bot.send_message(chat_id, f"✅ User <code>{target_id}</code> is no longer a Sub-Admin.", parse_mode="HTML")
         return
     
-    # ── Admin: Recent Orders ─────────────────
-    if data == "adm_recent_orders":
-        if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id, "📋 Loading...")
-        orders = database.get_recent_orders(10)
-        text = "📋 <b>Recent 10 Orders</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        for o in orders:
-            status_icon = {"draft": "📝", "preview_sent": "👁️", "delivered": "✅", "paid": "💰"}.get(o["status"], "❓")
-            text += f"{status_icon} <b>{o['book_title'][:25]}</b>\n"
-            text += f"   👤 {o['first_name'] or 'N/A'} — <code>{o['user_id']}</code>\n"
-            text += f"   📅 {o['created_date'][:10] if o['created_date'] else 'N/A'}\n\n"
-        if not orders:
-            text += "No orders yet.\n"
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
-        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
-        return
     
 
     # ── Admin: VIP Manager ───────────────────
@@ -1044,14 +1023,7 @@ def handle_callback(call):
         bot.send_message(chat_id, "💳 <b>ክሬዲት ጨምር</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
         return
 
-    # ── Admin: Push PDF ──────────────────────
-    if data == "admin_push_pdf":
-        if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id)
-        set_state(uid, "ADMIN_PUSH_USER")
-        bot.send_message(chat_id, "📤 <b>PDF ላክ</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
-        return
-
+    
 
 
 # ══════════════════════════════════════════
@@ -1284,30 +1256,7 @@ def handle_messages(message):
             bot.send_message(chat_id, "❌ ቁጥር ብቻ ያስገቡ!")
         return
 
-    if state == "ADMIN_PUSH_USER" and is_admin(message.from_user):
-        if message.text == "/cancel":
-            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
-        try:
-            target_id = int(message.text.strip())
-            target = database.get_user(target_id)
-            if not target:
-                bot.send_message(chat_id, "❌ ተጠቃሚ አልተገኘም!"); return
-            set_state(uid, "ADMIN_PUSH_BOOK", target_id=target_id)
-            bot.send_message(chat_id, f"👤 {target['first_name']}\n\n📖 የመጽሐፉ ስም?")
-        except ValueError:
-            bot.send_message(chat_id, "❌ User ID ቁጥር ብቻ!")
-        return
-
-    if state == "ADMIN_PUSH_BOOK" and is_admin(message.from_user):
-        if message.text == "/cancel":
-            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
-        set_state(uid, "ADMIN_PUSH_GENDER", push_book=message.text.strip())
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👨 ወንድ", callback_data="gen_m"), InlineKeyboardButton("👩 ሴት", callback_data="gen_f"))
-        bot.send_message(chat_id, "👤 ጾታ?", reply_markup=markup)
-        # Override the gender callback to continue admin push flow
-        return
-
+    
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):
         send_join_channel_msg(chat_id); return

@@ -707,3 +707,13 @@ def reset_user_onboarding(user_id):
     c.execute("UPDATE users SET age_verified = 0, gender = NULL, advice_history = '[]' WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
+
+
+def factory_reset():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('DELETE FROM users')
+    c.execute('DELETE FROM orders')
+    c.execute('DELETE FROM payments')
+    conn.commit()
+    conn.close()

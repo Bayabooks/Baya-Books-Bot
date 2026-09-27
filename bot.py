@@ -630,7 +630,36 @@ def handle_callback(call):
 
     if data == "show_topup":
         bot.answer_callback_query(call.id)
-        show_pricing(chat_id, uid)
+        cmd_topup(call.message)
+        return
+
+    if data.startswith("buy_advice_"):
+        pkg = data.replace("buy_advice_", "")
+        if pkg == "unlimited":
+            amount = 1800
+        else:
+            msgs = int(pkg)
+            amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
+            
+        bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
+        purpose = f"ADVICE_{pkg}"
+        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, purpose)
+        if not checkout_url:
+            bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
+            return
+            
+        markup = InlineKeyboardMarkup()
+        from telebot.types import WebAppInfo
+        markup.add(InlineKeyboardButton(f"💳 Pay Now / አሁን ይክፈሉ", web_app=WebAppInfo(url=checkout_url)))
+        
+        bot.send_message(
+            chat_id,
+            f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\n"
+            f"ክፍያዎ እንደተጠናቀቀ ሲስተሙ በራስ-ሰር ይከፈትልዎታል!",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
         return
 
     if data == "reset_account":
@@ -1028,268 +1057,9 @@ def ask_language(chat_id):
 # ══════════════════════════════════════════
 #  PREVIEW & PDF GENERATION
 # ══════════════════════════════════════════
-def generate_and_show_preview(chat_id, uid, data):
-    """Generate Part 1 (free hook) and show it."""
-    if not data.get("book_title") or not data.get("age_range"):
-        bot.send_message(chat_id, "⚠️ የሲስተም እድሳት ስለተደረገ መረጃዎ ጠፍቷል። እባክዎ /start በመጫን እንደገና ይጀምሩ። (Session expired)")
-        return
-        
-    # Enforce quota one last time just in case
-    if uid != get_admin_id():
-        previews_left, _ = database.get_preview_quota(uid)
-        if previews_left <= 0:
-            enforce_preview_quota(uid, chat_id)
-            return
-
-    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ ምርመራዎ በመዘጋጀት ላይ...</b>", parse_mode="HTML")
-
-    preview = ai_engine.generate_preview(
-        data.get("book_title", ""),
-        data.get("gender", "male"),
-        data.get("age_range", "20-24"),
-        data.get("goal", ""),
-        data.get("location", "Ethiopia"),
-        data.get("living_situation", "Alone"),
-        data.get("employment", "Working"),
-        data.get("specific_change", ""),
-        data.get("language", "am"),
-    )
-
-    safe_delete_message(chat_id, loading.message_id)
-
-    if not preview:
-        bot.send_message(chat_id, "⚠️ ችግር ተፈጥሯል። እባክዎ /new ይጫኑ እንደገና ለመሞከር።")
-        return
-
-    # Consume a preview quota
-    if uid != get_admin_id():
-        database.consume_preview(uid)
-
-    # Save order
-    order_id = database.create_order(
-        uid, 
-        data.get("book_title"), 
-        data.get("gender"),
-        data.get("age_range"), 
-        data.get("goal"), 
-        data.get("location"),
-        data.get("living_situation"),
-        data.get("employment"),
-        data.get("specific_change"),
-        data.get("language", "am"),
-    )
-    database.update_order_preview(order_id, preview)
-    set_state(uid, "PREVIEW_SHOWN", order_id=order_id)
-
-    # Send preview
-    header = (
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"📖 <b>{html.escape(data.get('book_title', ''))}</b> መመሪያ\n"
-        f"👤 {data.get('age_range', '')} | {GENDER_DISPLAY.get(data.get('gender', ''), data.get('gender', ''))}\n"
-        f"🏠 {LIVING_DISPLAY.get(data.get('living_situation', ''), data.get('living_situation', ''))} | 📍 {LOCATION_DISPLAY.get(data.get('location', ''), data.get('location', ''))}\n"
-        f"🎯 {html.escape(data.get('specific_change', ''))}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-    )
-    # Truncate preview if too long for Telegram (4096 chars max)
-    max_len = 4096 - len(header) - 200
-    display_preview = preview[:max_len] if len(preview) > max_len else preview
-
-    try:
-        bot.send_message(chat_id, header + display_preview, parse_mode="HTML")
-    except Exception:
-        # If Telegram rejects the HTML (due to unclosed tags or invalid characters),
-        # strip the <b> tags and send as plain text
-        clean_preview = display_preview.replace("<b>", "").replace("</b>", "")
-        clean_header = header.replace("<b>", "").replace("</b>", "")
-        bot.send_message(chat_id, clean_header + clean_preview)
-
-    # CTA
-    strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-    btn_text = f"🎁 የመጀመሪያዎን ሙሉ መመሪያ በነጻ ያግኙ ({strikethrough_300})" if database.has_free_protocol(uid) else f"💳 ሙሉ መመሪያ {config.PRICE_SINGLE} ብር ({strikethrough_300})"
-    
-    bot.send_message(
-        chat_id,
-        "━━━━━━━━━━━━━━━━━━━━\n"
-        "⬆️ <b>ይህ የመነሻ ምርመራ ብቻ ነው!</b>\n\n"
-        "ሙሉው የ90-ቀን ስትራቴጂ፣ ዕለታዊ ልምምድ፣\n"
-        "የሳምንታዊ ግምገማ፣ እና ሙሉ ግላዊ መመሪያ\n"
-        "ለማግኘት ከታች ይዘዙ 👇\n"
-        "━━━━━━━━━━━━━━━━━━━━",
-        parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup().add(
-            InlineKeyboardButton(btn_text, callback_data="buy_now")
-        ),
-    )
-
-
-def show_pricing(chat_id, uid):
-    credits = database.get_credits(uid)
-    
-    if credits > 0:
-        markup = InlineKeyboardMarkup(row_width=1)
-        markup.add(InlineKeyboardButton(f"🎫 ክሬዲት ተጠቀም ({credits} ቀሪ)", callback_data="use_credit"))
-        strikethrough_300 = "3\u03360\u03360\u0336 ብ\u0336ር\u0336"
-        markup.add(InlineKeyboardButton(f"1️⃣ 1 መመሪያ — {config.PRICE_SINGLE} ብር ({strikethrough_300})", callback_data="pay_single"))
-        bot.send_message(
-            chat_id,
-            "💳 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-            "ከታች የሚስማማዎትን ይምረጡ 👇",
-            parse_mode="HTML", reply_markup=markup,
-        )
-    else:
-        # Bypass directly to payment instructions
-        set_state(uid, "AWAITING_RECEIPT", payment_amount=config.PRICE_SINGLE)
-        show_payment_instructions(chat_id, config.PRICE_SINGLE, uid)
-
-def show_payment_instructions(chat_id, amount, uid, purpose="PROTOCOL"):
-    checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, purpose)
-    if not checkout_url:
-        bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
-        return
-        
-    markup = InlineKeyboardMarkup()
-    from telebot.types import WebAppInfo
-    markup.add(InlineKeyboardButton("💳 Pay Now / አሁን ይክፈሉ", web_app=WebAppInfo(url=checkout_url)))
-    
-    bot.send_message(
-        chat_id,
-        f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\n"
-        f"ክፍያዎ እንደተጠናቀቀ መመሪያዎ በራስ-ሰር ይላክልዎታል!",
-        parse_mode="HTML",
-        reply_markup=markup
-    )
-
-
-def generate_and_deliver_pdf(chat_id, uid, data):
-    """Generate full protocol and deliver it."""
-    if not data.get("book_title") or not data.get("age_range"):
-        bot.send_message(chat_id, "⚠️ የሲስተም እድሳት ስለተደረገ መረጃዎ ጠፍቷል። እባክዎ /start በመጫን እንደገና ይጀምሩ። (Session expired)")
-        return
-        
-    loading = bot.send_message(chat_id, "⏳ <b>ግላዊ መመሪያዎ በመዘጋጀት ላይ...</b>\nይህ ከ30-60 ሰከንድ ሊወስድ ይችላል።", parse_mode="HTML")
-
-    full_text = ai_engine.generate_full_protocol(
-        data.get("book_title", ""),
-        data.get("gender", "male"),
-        data.get("age_range", "20-24"),
-        data.get("goal", ""),
-        data.get("location", "Ethiopia"),
-        data.get("living_situation", "Alone"),
-        data.get("employment", "Working"),
-        data.get("specific_change", ""),
-        data.get("language", "am"),
-    )
-
-    if not full_text:
-        safe_delete_message(chat_id, loading.message_id)
-        bot.send_message(chat_id, "⚠️ ይቅርታ፣ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ ወይም @Bayabooks ያናግሩን።")
-        return
-
-    # Generate Telegraph URL
-    page_url = telegraph_generator.create_protocol_page(
-        data.get("book_title", "Baya Books Protocol"), 
-        full_text
-    )
-
-    safe_delete_message(chat_id, loading.message_id)
-
-    if not page_url or page_url.startswith("ERROR:"):
-        bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር ተፈጥሯል: {page_url}")
-        return
-
-    # Send Link
-    msg_text = (
-        f"🎉 <b>ግላዊ መመሪያዎ ዝግጁ ነው!</b>\n\n"
-        f"📖 <b>{html.escape(data.get('book_title', ''))}</b>\n"
-        f"👤 {data.get('age_range', '')} | {GENDER_DISPLAY.get(data.get('gender', ''), data.get('gender', ''))}\n"
-        f"🏠 {LIVING_DISPLAY.get(data.get('living_situation', ''), data.get('living_situation', ''))} | 📍 {LOCATION_DISPLAY.get(data.get('location', ''), data.get('location', ''))}\n"
-        f"🎯 {html.escape(data.get('specific_change', ''))}\n\n"
-        f"👇 <b>ከታች ያለውን ሊንክ ተጭነው ያንብቡ:</b>\n"
-        f"{page_url}"
-    )
-    
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📖 መመሪያዎን ያንብቡ", url=page_url))
-    
-    try:
-        sent_msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
-    except Exception as e:
-        logging.error(f"Failed to send Telegraph link: {e}")
-        sent_msg = bot.send_message(chat_id, f"ግላዊ መመሪያዎ ዝግጁ ነው!\n{page_url}")
-
-    # Save to database
-    order_id = data.get("order_id")
-    if order_id:
-        # Save the URL instead of file_id
-        database.update_order_full(order_id, full_text, page_url)
-
-
-
-    # Show tip CTA instead of referral
-    show_tip_cta(chat_id)
-    
-    clear_state(uid)
-
-
-def show_tip_cta(chat_id):
-    markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton("☕ 100 ብር", callback_data="tip_100"),
-        InlineKeyboardButton("🎁 1,000 ብር", callback_data="tip_1000")
-    )
-    markup.add(
-        InlineKeyboardButton("🏅 5,000 ብር", callback_data="tip_5000"),
-        InlineKeyboardButton("💎 10,000 ብር", callback_data="tip_10000")
-    )
-    bot.send_message(
-        chat_id,
-        "💎 <b>የ Baya Books ራዕይን ይደግፉ!</b>\n\n"
-        "ይህን መመሪያ ጠቃሚ ሆኖ ካገኙት እና የ Baya Books ቴክኖሎጂ ለብዙዎች እንዲደርስ ከተመኙ፣ ከታች ካሉት አማራጮች በመምረጥ የፕሮጀክታችን ደጋፊ መሆን ይችላሉ።\n\n"
-        "🙏 ከልብ እናመሰግናለን!",
-        parse_mode="HTML",
-        reply_markup=markup
-    )
-
 # ══════════════════════════════════════════
 #  PAYMENT HANDLING
 # ══════════════════════════════════════════
-def handle_payment_approved(payment_id):
-    """Process an approved payment — generate and deliver PDF."""
-    payment = database.get_payment(payment_id)
-    if not payment:
-        return
-
-    database.approve_payment(payment_id)
-    uid = payment["user_id"]
-    order_id = payment["order_id"]
-    if order_id == -1:
-        database.reset_previews(uid, 5)
-        bot.send_message(uid, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n5 ተጨማሪ ነጻ ምርመራዎች ተጨምሮልዎታል!\n/new ይጫኑ", parse_mode="HTML")
-        return
-
-    order = database.get_order(order_id)
-    if not order:
-        return
-
-    # User bought a full protocol, reset their preview quota too!
-    database.reset_previews(uid, 5)
-
-    data = {
-        "book_title": order["book_title"],
-        "gender": order["gender"],
-        "age_range": order["age_range"],
-        "goal": order["goal"],
-        "location": order.get("location", ""),
-        "living_situation": order.get("living_situation", ""),
-        "employment": order.get("employment", ""),
-        "specific_change": order.get("specific_change", ""),
-        "language": order["language"],
-        "order_id": order_id,
-    }
-    generate_and_deliver_pdf(uid, uid, data)
-
-
 # ══════════════════════════════════════════
 #  TEXT & PHOTO MESSAGE HANDLER
 # ══════════════════════════════════════════
@@ -1679,19 +1449,7 @@ def process_chapa_success(tx_ref):
     chat_id = uid
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
     
-    if purpose == "PROTOCOL":
-        payment_amount = config.PRICE_SINGLE
-        session = get_session(uid)
-        d = session.get("data", {})
-        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
-        bot.send_message(chat_id, f"✅ <b>ክፍያዎ በተሳካ ሁኔታ ተረጋግጧል!</b>\n\n📄 መመሪያዎን በማዘጋጀት ላይ ነን...", parse_mode="HTML")
-        generate_and_deliver_pdf(chat_id, uid, d)
-    elif purpose == "TOPUP":
-        payment_amount = 100
-        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
-        database.add_credit(uid, 5)
-        bot.send_message(chat_id, "✅ <b>ክፍያዎ ተረጋግጧል!</b>\n5 ነጻ ምርመራዎች ወደ አካውንትዎ ገብተዋል።", parse_mode="HTML")
-    elif purpose.startswith("ADVICE_"):
+    if purpose.startswith("ADVICE_"):
         pkg = purpose.split("_")[1]
         if pkg == "unlimited":
             payment_amount = 1800
@@ -1707,11 +1465,6 @@ def process_chapa_success(tx_ref):
     elif purpose == "TIP":
         database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
         bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")
-    elif purpose == "VIP":
-        payment_amount = 500
-        database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK_VIP")
-        database.set_vip(uid, days=30)
-        bot.send_message(chat_id, "👑 <b>እንኳን ደስ አሎት!</b>\nየVIP አባልነትዎ ነቅቷል! አሁን ያለምንም ክፍያ ያልተገደበ መመሪያ ማዘጋጀት ይችላሉ!", parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):

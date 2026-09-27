@@ -1400,7 +1400,11 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text == "🧠 ምክክራችንን እንቀጥል":
+    if message.text in ["🧠 ምክክራችንን እንቀጥል", "🧠 የስነ-ልቦና ምክር"]:
+        if message.text == "🧠 የስነ-ልቦና ምክር":
+            # Their Telegram client has the old keyboard cached. Send welcome to update it.
+            send_welcome(chat_id, message.from_user.first_name)
+            return
         bot.send_message(chat_id, "💡 <b>እባክዎ የገጠመዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ይፃፉልኝ።</b>", parse_mode="HTML")
         return
         

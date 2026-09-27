@@ -1011,13 +1011,15 @@ def handle_callback(call):
         def background_broadcast():
             import time
             success = 0
+            failed = 0
             for u in all_users:
                 try:
                     bot.send_message(u, f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}", parse_mode="HTML")
                     success += 1
-                except: pass
+                except:
+                    failed += 1
                 time.sleep(0.05)
-            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\nSent to {success} users.", parse_mode="HTML")
+            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Blocked/Left)", parse_mode="HTML")
             except: pass
             
         threading.Thread(target=background_broadcast, daemon=True).start()

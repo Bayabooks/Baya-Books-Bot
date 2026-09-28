@@ -764,7 +764,6 @@ def handle_callback(call):
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🌐 ክፈት (Open Web Dashboard)", url=f"{config.BASE_URL}/admin_dashboard?v=2"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
@@ -777,8 +776,7 @@ def handle_callback(call):
             f"  📆 Weekly: <b>{stats['weekly_revenue']:,} ETB</b>\n"
             f"  💵 Total: <b>{stats['total_revenue']:,} ETB</b>\n\n"
             f"━━ 👥 Gender Split ━━━━━━━━━\n"
-            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}\n\n"
-            f"💡 <i>ለተጨማሪ መረጃ ከታች ያለውን Web Dashboard ይክፈቱ!</i>",
+            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}",
             parse_mode="HTML", reply_markup=markup,
         )
         return

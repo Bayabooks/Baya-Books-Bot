@@ -322,7 +322,12 @@ def cmd_start(message):
 
 def check_onboarding(chat_id, user_id, first_name):
     age_verified, gender = database.get_onboarding_status(user_id)
-    if not age_verified or not gender:
+    
+    # Ensure user exists in DB (handles DB wipe on Render)
+    if not database.get_user(user_id):
+        database.add_user(user_id, "Unknown", first_name or "User")
+    
+    if not age_verified:
         text = (
             "⚠️ <b>የግላዊነት ማሳሰቢያ እና ስምምነት</b>\n\n"
             "ውድ ደንበኛ፣ ይህ የላቀ አርቲፊሻል ኢንተለጀንስ (AI) የስነ-ልቦና አማካሪ ነው።\n\n"
@@ -335,6 +340,14 @@ def check_onboarding(chat_id, user_id, first_name):
         markup.add(InlineKeyboardButton("✅ እኔ ከ 18 ዓመት በላይ ነኝ", callback_data="onboard_age_18"))
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return False
+    
+    if not gender:
+        # Age is verified but gender is missing — go straight to gender selection
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("👨 ወንድ", callback_data="onboard_gen_m"), InlineKeyboardButton("👩 ሴት", callback_data="onboard_gen_f"))
+        bot.send_message(chat_id, "እባክዎ ጾታዎን ይምረጡ (ለአነጋገር እንዲመች):", reply_markup=markup)
+        return False
+    
     return True
 
 def send_welcome(chat_id, first_name):

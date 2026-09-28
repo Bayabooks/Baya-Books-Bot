@@ -217,6 +217,8 @@ def notify_admin(text):
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["getlogs"])
 def cmd_getlogs(message):
+    if not is_admin(message.from_user):
+        return
     try:
         import os
         if not os.path.exists("app.log"):
@@ -227,7 +229,7 @@ def cmd_getlogs(message):
         with open("app.log", "r") as f:
             lines = f.readlines()
             logs = "".join(lines[-40:])
-            bot.reply_to(message, f"<pre>{logs[-3500:]}</pre>", parse_mode="HTML")
+            bot.reply_to(message, f"<pre>{html.escape(logs[-3500:])}</pre>", parse_mode="HTML")
     except Exception as e:
         bot.reply_to(message, str(e))
 
@@ -699,11 +701,15 @@ def handle_callback(call):
         # Start a thread to wipe the last 500 bot messages for a clean visual slate
         def wipe_chat_history(chat, start_msg_id):
             import time
+            consecutive_failures = 0
             for i in range(start_msg_id, max(0, start_msg_id - 500), -1):
                 try:
                     bot.delete_message(chat, i)
+                    consecutive_failures = 0
                 except Exception:
-                    pass
+                    consecutive_failures += 1
+                    if consecutive_failures > 20:
+                        break
                 time.sleep(0.02)
         threading.Thread(target=wipe_chat_history, args=(chat_id, call.message.message_id), daemon=True).start()
         
@@ -1026,6 +1032,22 @@ def handle_callback(call):
     
 
 
+def show_tip_cta(chat_id):
+    """Show tip/donation options to the user."""
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("☕ 50 ብር", callback_data="tip_50"),
+               InlineKeyboardButton("🎁 100 ብር", callback_data="tip_100"))
+    markup.add(InlineKeyboardButton("💝 200 ብር", callback_data="tip_200"),
+               InlineKeyboardButton("🌟 500 ብር", callback_data="tip_500"))
+    bot.send_message(
+        chat_id,
+        "☕ <b>ቡድናችንን ያበረታቱ!</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        "የእርስዎ ድጋፍ ቡድናችን የተሻለ አገልግሎት እንዲሰጥ ይረዳል።\n"
+        "ከታች ካሉት ውስጥ አንዱን ይምረጡ፦\n",
+        parse_mode="HTML", reply_markup=markup,
+    )
+
 # ══════════════════════════════════════════
 #  INTERVIEW FLOW HELPERS
 # ══════════════════════════════════════════
@@ -1262,7 +1284,7 @@ def handle_messages(message):
         send_join_channel_msg(chat_id); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if "ምክክራችንን እንቀጥል" in message.text or "የስነ-ልቦና ምክር" in message.text:
+    if message.text and ("ምክክራችንን እንቀጥል" in message.text or "የስነ-ልቦና ምክር" in message.text):
         if "የስነ-ልቦና ምክር" in message.text:
             # Their Telegram client has the old keyboard cached. Send welcome to update it.
             send_welcome(chat_id, message.from_user.first_name)
@@ -1295,7 +1317,7 @@ def handle_messages(message):
             bot.send_message(chat_id, "💡 <b>እኔ ከጎንዎ ነኝ፤ እባክዎ የሚያስጨንቅዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ያካፍሉኝ...</b>", parse_mode="HTML")
         return
         
-    if "የኔ ገፅ" in message.text:
+    if message.text and "የኔ ገፅ" in message.text:
         is_vip = database.is_vip(uid)
         if is_vip:
             user_data = database.get_user(uid)
@@ -1333,7 +1355,7 @@ def handle_messages(message):
         )
         return
 
-    if "ጓደኛ ይጋብዙ" in message.text:
+    if message.text and "ጓደኛ ይጋብዙ" in message.text:
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
@@ -1354,7 +1376,7 @@ def handle_messages(message):
         )
         return
 
-    if "ቡድኑን ያበረታቱ" in message.text:
+    if message.text and "ቡድኑን ያበረታቱ" in message.text:
         show_tip_cta(chat_id)
         return
 
@@ -1518,12 +1540,15 @@ def process_chapa_success(tx_ref):
             database.add_advice_messages(uid, msgs)
             bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n{msgs} መልዕክቶች ወደ አካውንትዎ ገብተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
     elif purpose == "TIP":
-        database.record_payment(uid, order_id, 0, tx_ref, "CHAPA_WEBHOOK_TIP")
+        # Verify the actual amount from the Chapa transaction
+        tip_success, tip_data = chapa.verify_chapa_payment(tx_ref)
+        tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
+        database.record_payment(uid, order_id, tip_amount, tx_ref, "CHAPA_WEBHOOK_TIP")
         bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/admin_dashboard':
+        if self.path.startswith('/admin_dashboard'):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -1537,7 +1562,15 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Admin Dashboard not found.")
             return
 
-        if self.path == '/admin/data':
+        if self.path.startswith('/admin/data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b'Forbidden')
+                return
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()

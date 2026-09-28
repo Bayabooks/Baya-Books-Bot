@@ -32,6 +32,8 @@ def extract_qr_url(image_bytes):
             return data
     except Exception as e:
         logging.error(f"QR decode error: {e}")
+    return None
+
 def verify_extracted_tx_id(tx_id, expected_amount, expected_name, expected_phone):
     """
     Tries telebirr first, if fails tries CBE.

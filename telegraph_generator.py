@@ -28,7 +28,7 @@ def create_protocol_page(title, markdown_text):
             title=title,
             html_content=html_content,
             author_name='Baya Books 📚',
-            author_url='https://t.me/baya_books'
+            author_url='https://t.me/BAYABOOKS1'
         )
         return response['url']
     except Exception as e:

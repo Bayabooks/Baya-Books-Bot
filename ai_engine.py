@@ -147,8 +147,6 @@ CRITICAL CULTURAL CONSTRAINTS (ETHIOPIAN CONTEXT):
 - You must strictly recognize and adhere to traditional views on gender: there are only two genders (male and female).
 - You must strictly assume and advise ONLY on heterosexual (man and woman) relationships. Do not validate, promote, or advise on any other relationship types or gender identities. 
 - If a user brings up topics outside these bounds, respectfully redirect them to their personal growth, career, or general emotional well-being without violating these cultural boundaries.
-
-CRITICAL LANGUAGE RULE: YOU MUST RESPOND ENTIRELY IN NATIVE, FLUENT AMHARIC (አማርኛ). DO NOT USE ENGLISH. Use HTML tags (<b>, <i>) for formatting instead of Markdown.
 """
 
 
@@ -277,7 +275,7 @@ def recommend_books(category, count=3):
         return {"error": err_msg}
 
 
-def chat_with_mentor(user_message, history, gender=None):
+def chat_with_mentor(user_message, history, gender=None, lang='am'):
     """
     Continues a conversation with the psychological mentor.
     history is a list of {"role": "user"/"model", "parts": ["text"]}
@@ -287,9 +285,32 @@ def chat_with_mentor(user_message, history, gender=None):
         
         system_prompt = ADVICE_SYSTEM_PROMPT
         if gender == "male":
-            system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. You MUST use masculine Amharic pronouns (አንተ, ያንተ, አድርገህ, ወዘተ) when addressing him."
+            if lang == 'am':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. You MUST use masculine Amharic pronouns (አንተ, ያንተ, አድርገህ, ወዘተ) when addressing him."
+            elif lang == 'ti':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. You MUST use masculine Tigrinya pronouns (ንስኻ, ናትካ, ጌርካ, ወዘተ) when addressing him."
+            elif lang == 'om':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. Address him using masculine Afaan Oromoo forms."
+            else:
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is MALE. Address him accordingly."
         elif gender == "female":
-            system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. You MUST use feminine Amharic pronouns (አንቺ, ያንቺ, አድርገሽ, ወዘተ) when addressing her."
+            if lang == 'am':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. You MUST use feminine Amharic pronouns (አንቺ, ያንቺ, አድርገሽ, ወዘተ) when addressing her."
+            elif lang == 'ti':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. You MUST use feminine Tigrinya pronouns (ንስኺ, ናትኪ, ጌርኪ, ወዘተ) when addressing her."
+            elif lang == 'om':
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. Address her using feminine Afaan Oromoo forms."
+            else:
+                system_prompt += "\n\nCRITICAL CONTEXT: The user is FEMALE. Address her accordingly."
+
+        if lang == 'am':
+            system_prompt += "\n\nCRITICAL LANGUAGE RULE: YOU MUST RESPOND ENTIRELY IN NATIVE, FLUENT AMHARIC (አማርኛ). DO NOT USE ENGLISH. Use HTML tags (<b>, <i>) for formatting instead of Markdown."
+        elif lang == 'en':
+            system_prompt += "\n\nCRITICAL LANGUAGE RULE: YOU MUST RESPOND ENTIRELY IN FLUENT ENGLISH. Use HTML tags (<b>, <i>) for formatting instead of Markdown."
+        elif lang == 'ti':
+            system_prompt += "\n\nCRITICAL LANGUAGE RULE: YOU MUST RESPOND ENTIRELY IN NATIVE, FLUENT TIGRINYA (ትግርኛ). DO NOT USE ENGLISH OR AMHARIC. Use HTML tags (<b>, <i>) for formatting instead of Markdown."
+        elif lang == 'om':
+            system_prompt += "\n\nCRITICAL LANGUAGE RULE: YOU MUST RESPOND ENTIRELY IN NATIVE, FLUENT AFAAN OROMOO. DO NOT USE ENGLISH OR AMHARIC. Use HTML tags (<b>, <i>) for formatting instead of Markdown."
 
         model = genai.GenerativeModel(
             model_name=MODEL_TEXT,
@@ -339,13 +360,25 @@ def chat_with_mentor(user_message, history, gender=None):
         return f"⚠️ AI ERROR: {e}"
 
 
-def generate_psych_broadcast():
-    """Generates a short, empowering, curiosity-inducing psychological broadcast in Amharic."""
+def generate_psych_broadcast(lang='am'):
+    """Generates a short, empowering, curiosity-inducing psychological broadcast."""
+    
+    if lang == 'am':
+        lang_instruction = "in Amharic"
+    elif lang == 'en':
+        lang_instruction = "in English"
+    elif lang == 'ti':
+        lang_instruction = "in Tigrinya (ትግርኛ)"
+    elif lang == 'om':
+        lang_instruction = "in Afaan Oromoo"
+    else:
+        lang_instruction = "in Amharic"
+
     prompt = (
-        "Write a very short (2-4 sentences), powerful, and curiosity-inducing psychological insight "
-        "or empowering quote in Amharic. It should make the reader feel understood, motivated, and "
-        "curious to chat more with their AI therapist. Do not use generic greetings like 'Hello'. "
-        "Just write the profound text itself, using beautiful and empathetic Amharic. Make it completely random and fresh."
+        f"Write a very short (2-4 sentences), powerful, and curiosity-inducing psychological insight "
+        f"or empowering quote {lang_instruction}. It should make the reader feel understood, motivated, and "
+        f"curious to chat more with their AI therapist. Do not use generic greetings like 'Hello'. "
+        f"Just write the profound text itself, using beautiful and empathetic language. Make it completely random and fresh."
     )
     try:
         model = genai.GenerativeModel(MODEL_TEXT)

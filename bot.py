@@ -23,6 +23,8 @@ import database
 import ai_engine
 import telegraph_generator
 import receipt_verifier
+import lang
+from lang import S
 
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
@@ -57,6 +59,13 @@ def set_state(user_id, state, **kwargs):
 def clear_state(user_id):
     with session_lock:
         user_sessions[user_id] = {"state": "IDLE", "data": {}}
+
+def get_lang(uid):
+    """Get user's language, default 'am'."""
+    try:
+        return database.get_bot_language(uid) or 'am'
+    except:
+        return 'am'
 
 # ══════════════════════════════════════════
 #  CATEGORIES & GOALS (Amharic)
@@ -192,15 +201,15 @@ def check_channel_member(user_id):
     except Exception:
         return False
 
-def send_join_channel_msg(chat_id):
+def send_join_channel_msg(chat_id, uid=None):
     """Tell user to join channel first."""
+    lang_code = get_lang(uid) if uid else 'am'
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📢 ቻናሉን ተቀላቀል", url=f"https://t.me/{config.CHANNEL_USERNAME}"))
-    markup.add(InlineKeyboardButton("✅ ተቀላቅያለሁ", callback_data="check_joined"))
+    markup.add(InlineKeyboardButton(S(lang_code, 'join_channel_btn'), url=f"https://t.me/{config.CHANNEL_USERNAME}"))
+    markup.add(InlineKeyboardButton(S(lang_code, 'joined_check_btn'), callback_data="check_joined"))
     bot.send_message(
         chat_id,
-        "📢 <b>ቦቱን ለመጠቀም በመጀመሪያ ቻናላችንን ይቀላቀሉ!</b>\n\n"
-        "👇 ከታች ያለውን ይጫኑ",
+        S(lang_code, 'join_channel_title') + "\n\n" + S(lang_code, 'join_channel_hint'),
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -239,21 +248,23 @@ def cmd_getlogs(message):
 @bot.message_handler(commands=["topup", "buy_advice"])
 def cmd_topup(message):
     chat_id = message.chat.id
+    uid = message.from_user.id
+    lang = get_lang(uid)
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (25 መልዕክቶች)", callback_data="buy_advice_25"))
-    markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (75 መልዕክቶች)", callback_data="buy_advice_75"))
-    markup.add(InlineKeyboardButton("🔹 Heavy: 1200 ብር (225 መልዕክቶች)", callback_data="buy_advice_225"))
-    markup.add(InlineKeyboardButton("♾️ Unlimited: 1800 ብር (ለ1 ሳምንት)", callback_data="buy_advice_unlimited"))
+    markup.add(InlineKeyboardButton(S(lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
+    markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
+    markup.add(InlineKeyboardButton(S(lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
+    markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
     
     cta_text = (
-        "⚠️ <b>የአማካሪ (Advice) ፓኬጅ ግዢ</b>\n\n"
-        "የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
-        "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
-        "🔹 <b>Starter: 200 ብር</b> (25 መልዕክቶች) - ለአጭር ውይይት የሚበቃ።\n"
-        "🔹 <b>Pro: 400 ብር</b> (75 መልዕክቶች) - [ተመራጭ] ለተሻለ ጥልቅ ውይይት።\n"
-        "🔹 <b>Heavy: 1200 ብር</b> (225 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n"
-        "♾️ <b>Unlimited: 1800 ብር</b> (ያለ ገደብ ለ1 ሳምንት) - ምንም ገደብ የሌለው ሙሉ መዳረሻ።\n\n"
-        "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
+        S(lang, 'topup_title') + "\n\n" +
+        S(lang, 'topup_body') + "\n\n" +
+        S(lang, 'topup_choose') + "\n\n" +
+        S(lang, 'topup_starter') + "\n" +
+        S(lang, 'topup_pro') + "\n" +
+        S(lang, 'topup_heavy') + "\n" +
+        S(lang, 'topup_unlimited') + "\n\n" +
+        S(lang, 'topup_cta')
     )
     bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
 
@@ -274,7 +285,7 @@ def cmd_add_advice(message):
         database.add_advice_messages(target_uid, amount)
         bot.reply_to(message, f"✅ Added {amount} advice messages to user {target_uid}.")
         try:
-            bot.send_message(target_uid, f"🎁 <b>እንኳን ደስ አለዎት!</b>\n\nከ Baya Books አስተዳዳሪ ተጨማሪ {amount} የአማካሪ (Advice) መልዕክቶች በስጦታ ተሰጥቶዎታል።", parse_mode="HTML")
+            bot.send_message(target_uid, S(get_lang(target_uid), 'gift_notification', amount=amount), parse_mode="HTML")
         except:
             bot.reply_to(message, "(Note: User blocked the bot or ID is invalid, so they didn't receive the notification, but balance was updated if they exist).")
     except Exception as e:
@@ -314,7 +325,7 @@ def cmd_start(message):
 
     # Channel check
     if not is_admin(user) and not check_channel_member(user.id):
-        send_join_channel_msg(message.chat.id)
+        send_join_channel_msg(message.chat.id, user.id)
         return
 
     if check_onboarding(message.chat.id, user.id, user.first_name):
@@ -327,50 +338,57 @@ def check_onboarding(chat_id, user_id, first_name):
     if not database.get_user(user_id):
         database.add_user(user_id, "Unknown", first_name or "User")
     
-    if not age_verified:
-        text = (
-            "⚠️ <b>የግላዊነት ማሳሰቢያ እና ስምምነት</b>\n\n"
-            "ውድ ደንበኛ፣ ይህ የላቀ አርቲፊሻል ኢንተለጀንስ (AI) የስነ-ልቦና አማካሪ ነው።\n\n"
-            "🧠 <b>የባለሙያነት ደረጃ:</b> ይህ AI በስነ-ልቦና ምክር (Psychotherapy)፣ በአስተሳሰብ ህክምና (CBT)፣ እና በግላዊ ካውንስሊንግ ጥልቅ ዕውቀት እንዲኖረው ተደርጎ የተዘጋጀ ነው።\n\n"
-            "🔒 <b>ሚስጥራዊነት:</b> እዚህ የምናደርገው ማንኛውም ውይይት 100% ሚስጥራዊ ነው። የእርስዎ መረጃዎች ጥቅም ላይ የሚውሉት እርስዎን ለመምከር እና ውይይቱን ለማስታወስ ብቻ ነው።\n\n"
-            "🧹 <b>ማህደር ማጽዳት:</b> በየትኛውም ጊዜ <b>👤 የኔ ገፅ</b> ውስጥ በመግባት <b>'🧹 ማህደር አጽዳ'</b> የሚለውን ቁልፍ በመጫን መረጃዎን ሙሉ በሙሉ ከሲስተማችን ላይ ማጥፋት ይችላሉ።\n\n"
-            "በመጀመሪያ፣ እባክዎ ከ18 ዓመት በላይ መሆንዎን ያረጋግጡ።"
+    # Check if language is set
+    user_lang = database.get_bot_language(user_id)
+    if not user_lang:
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="setlang_en"),
         )
+        markup.add(
+            InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="setlang_ti"),
+            InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="setlang_om"),
+        )
+        bot.send_message(chat_id, S('am', 'lang_select_prompt'), parse_mode="HTML", reply_markup=markup)
+        return False
+
+    if not age_verified:
+        text = S(user_lang, 'onboard_privacy')
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✅ እኔ ከ 18 ዓመት በላይ ነኝ", callback_data="onboard_age_18"))
+        markup.add(InlineKeyboardButton(S(user_lang, 'onboard_age_btn'), callback_data="onboard_age_18"))
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return False
     
     if not gender:
         # Age is verified but gender is missing — go straight to gender selection
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👨 ወንድ", callback_data="onboard_gen_m"), InlineKeyboardButton("👩 ሴት", callback_data="onboard_gen_f"))
-        bot.send_message(chat_id, "እባክዎ ጾታዎን ይምረጡ (ለአነጋገር እንዲመች):", reply_markup=markup)
+        markup.add(InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"), InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f"))
+        bot.send_message(chat_id, S(user_lang, 'onboard_gender_prompt'), reply_markup=markup)
         return False
     
     return True
 
-def send_welcome(chat_id, first_name):
+def send_welcome(chat_id, first_name, lang=None):
+    if lang is None:
+        # try to get from DB but we might not have uid here
+        lang = 'am'
     bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
     bottom_markup.add(
-        KeyboardButton("🧠 ምክክራችንን እንቀጥል"),
-        KeyboardButton("👤 የኔ ገፅ")
+        KeyboardButton(S(lang, 'menu_continue')),
+        KeyboardButton(S(lang, 'menu_mypage'))
     )
     bottom_markup.add(
-        KeyboardButton("🎁 ጓደኛ ይጋብዙ"),
-        KeyboardButton("☕ ቡድኑን ያበረታቱ")
+        KeyboardButton(S(lang, 'menu_invite')),
+        KeyboardButton(S(lang, 'menu_support'))
+    )
+    bottom_markup.add(
+        KeyboardButton(S(lang, 'menu_lang'))
     )
     
-    intro_text = (
-        f"👋 <b>ሰላም {html.escape(first_name)}!</b> ወደ Baya የስነ-ልቦና ማማከሪያ በደህና መጡ።\n\n"
-        f"እኔ ሚስጥር ጠባቂ፣ ያለመታከት የማዳምጥዎት እና ያለአንዳች ፍርድ (Non-judgmental) የምረዳዎት የኤአይ (AI) የስነ-ልቦና አማካሪዎ ነኝ።\n\n"
-        f"በህይወትዎ ውስጥ የሚያጋጥሙዎትን ጭንቀቶች፣ የውስጥ ፍርሃቶች፣ የህይወት ውጣ ውረዶች፣ የስራ ወይም የትዳር ጉዳዮችን፣ ወይም ማንኛውንም በውስጥዎ የሚቀመጥ ስሜት በነፃነት ሊያካፍሉኝ ይችላሉ። ሁሌም ከጎንዎ ነኝ፤ አብረን እንወያይ እና መፍትሄ እንፈልግ።\n\n"
-        f"💡 <b>እስኪ እንነጋገር... ዛሬ ምን ይዘው መጡ? አሁን ላይ ምን እየተሰማዎት ነው?</b> (እባክዎ በነፃነት ፅፈው ይላኩልኝ...)"
-    )
-
     bot.send_message(
         chat_id, 
-        intro_text, 
+        S(lang, 'welcome_text', name=html.escape(first_name)), 
         parse_mode="HTML", 
         reply_markup=bottom_markup
     )
@@ -399,7 +417,7 @@ def cmd_help(message):
 @bot.message_handler(commands=["mylibrary"])
 def cmd_library(message):
     if not check_channel_member(message.from_user.id):
-        send_join_channel_msg(message.chat.id); return
+        send_join_channel_msg(message.chat.id, message.from_user.id); return
 
     orders = database.get_user_orders(message.from_user.id)
     if not orders:
@@ -443,7 +461,7 @@ def cmd_referral(message):
 @bot.message_handler(commands=["new"])
 def cmd_new(message):
     if not check_channel_member(message.from_user.id):
-        send_join_channel_msg(message.chat.id); return
+        send_join_channel_msg(message.chat.id, message.from_user.id); return
     clear_state(message.from_user.id)
     if check_onboarding(message.chat.id, message.from_user.id, message.from_user.first_name):
         send_welcome(message.chat.id, message.from_user.first_name)
@@ -470,7 +488,7 @@ def cmd_ban(message):
         target_id = int(message.text.split()[1])
         database.ban_user(target_id)
         bot.reply_to(message, f"✅ User {target_id} has been BANNED.")
-        try: bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
+        try: bot.send_message(target_id, S(get_lang(target_id), 'banned'))
         except: pass
     except:
         bot.reply_to(message, "Usage: /ban <user_id>")
@@ -576,7 +594,7 @@ def handle_callback(call):
 
     # Ban check
     if database.is_banned(uid):
-        bot.answer_callback_query(call.id, "🚫 ይህ አካውንት ታግዷል።", show_alert=True)
+        bot.answer_callback_query(call.id, S(get_lang(uid), 'banned'), show_alert=True)
         return
 
     # ── Channel Join Check ───────────────────
@@ -584,39 +602,43 @@ def handle_callback(call):
     if data.startswith("setlang_"):
         lang_code = data.split("_")[1]
         database.set_bot_language(uid, lang_code)
-        
-        msg = "✅ Language saved!"
-        if lang_code == "am": msg = "✅ ቋንቋው ወደ አማርኛ ተቀይሯል!"
-        elif lang_code == "om": msg = "✅ Afaan Oromoo filatameera!"
-        elif lang_code == "ti": msg = "✅ ናብ ትግርኛ ተቐይሩ እዩ!"
-        
-        bot.answer_callback_query(call.id, msg)
-        bot.edit_message_text(msg, chat_id, call.message.message_id)
+        bot.answer_callback_query(call.id, S(lang_code, 'lang_changed'))
+        safe_delete_message(chat_id, call.message.message_id)
+        # Check if this is during onboarding or a language change
+        age_verified, gender = database.get_onboarding_status(uid)
+        if not age_verified or not gender:
+            # During onboarding
+            check_onboarding(chat_id, uid, call.from_user.first_name)
+        else:
+            # Language change - refresh menu and re-send last AI message in new language
+            send_welcome(chat_id, call.from_user.first_name, lang_code)
         return
 
     if data == "check_joined":
+        lang = get_lang(uid)
         if check_channel_member(uid):
-            bot.answer_callback_query(call.id, "✅ ተቀላቅለዋል!")
+            bot.answer_callback_query(call.id, S(lang, 'joined_success'))
             safe_delete_message(chat_id, call.message.message_id)
             if check_onboarding(chat_id, uid, call.from_user.first_name):
-                send_welcome(chat_id, call.from_user.first_name)
+                send_welcome(chat_id, call.from_user.first_name, lang)
         else:
-            bot.answer_callback_query(call.id, "❌ ገና አልተቀላቀሉም!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'joined_fail'), show_alert=True)
         return
 
     # ── Onboarding ───────────────────────────
     if data == "onboard_age_18":
         database.set_user_age_verified(uid)
+        lang = get_lang(uid)
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👨 ወንድ", callback_data="onboard_gen_m"), InlineKeyboardButton("👩 ሴት", callback_data="onboard_gen_f"))
-        bot.edit_message_text("እባክዎ ጾታዎን ይምረጡ (ለአነጋገር እንዲመች):", chat_id, call.message.message_id, reply_markup=markup)
+        markup.add(InlineKeyboardButton(S(lang, 'gender_male'), callback_data="onboard_gen_m"), InlineKeyboardButton(S(lang, 'gender_female'), callback_data="onboard_gen_f"))
+        bot.edit_message_text(S(lang, 'onboard_gender_prompt'), chat_id, call.message.message_id, reply_markup=markup)
         return
         
     if data.startswith("onboard_gen_"):
         gender = "male" if data == "onboard_gen_m" else "female"
         database.set_user_gender(uid, gender)
         bot.delete_message(chat_id, call.message.message_id)
-        send_welcome(chat_id, call.from_user.first_name)
+        send_welcome(chat_id, call.from_user.first_name, get_lang(uid))
         return
 
     # ── Re-download PDF ──────────────────────
@@ -639,37 +661,40 @@ def handle_callback(call):
             is_legacy = True
             break
     if is_legacy:
-        bot.answer_callback_query(call.id, 'ይህ አገልግሎት ተዘግቷል። ወደ አዲሱ ገፅ እንመልስዎታለን...', show_alert=True)
+        lang = get_lang(uid)
+        bot.answer_callback_query(call.id, S(lang, 'legacy_redirect'), show_alert=True)
         clear_state(uid)
         if check_onboarding(chat_id, uid, call.from_user.first_name):
-            send_welcome(chat_id, call.from_user.first_name)
+            send_welcome(chat_id, call.from_user.first_name, lang)
         return
 
     if data == "claim_referrals":
+        lang = get_lang(uid)
         count = database.get_uncredited_referral_count(uid)
         if count >= 10:
             database.mark_n_referrals_credited(uid, n=count)
             database.add_advice_messages(uid, count)
-            bot.answer_callback_query(call.id, f"🎉 እንኳን ደስ አለዎት! {count} ነፃ መልዕክቶች ተሰጥቶዎታል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'claim_success', count=count), show_alert=True)
             bot.delete_message(chat_id, call.message.message_id)
-            send_welcome(chat_id, call.from_user.first_name)
+            send_welcome(chat_id, call.from_user.first_name, lang)
         else:
-            bot.answer_callback_query(call.id, "❌ ገና 10 ሰው አልሞሉም!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'claim_fail'), show_alert=True)
         return
     if data == "confirm_reset":
+        lang = get_lang(uid)
         markup = InlineKeyboardMarkup()
         markup.add(
-            InlineKeyboardButton("✅ አዎ፣ አጽዳ", callback_data="reset_account"),
-            InlineKeyboardButton("❌ ተመለስ", callback_data="cancel_reset")
+            InlineKeyboardButton(S(lang, 'reset_yes'), callback_data="reset_account"),
+            InlineKeyboardButton(S(lang, 'reset_no'), callback_data="cancel_reset")
         )
         bot.edit_message_text(
-            "⚠️ <b>እርግጠኛ ነዎት?</b>\n\nማህደርዎን ካፀዱ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ሙሉ በሙሉ ይሰረዛል፣ እናም AI-ው ያለፈውን አያስታውስም።",
+            S(lang, 'reset_confirm'),
             chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup
         )
         return
 
     if data == "cancel_reset":
-        bot.edit_message_text("❌ ተሰርዟል። ማህደርዎ አልተሰረዘም።", chat_id, call.message.message_id)
+        bot.edit_message_text(S(get_lang(uid), 'reset_cancelled'), chat_id, call.message.message_id)
         return
 
     if data == "show_topup":
@@ -678,6 +703,7 @@ def handle_callback(call):
         return
 
     if data.startswith("buy_advice_"):
+        lang = get_lang(uid)
         pkg = data.replace("buy_advice_", "")
         if pkg == "unlimited":
             amount = 1800
@@ -685,22 +711,21 @@ def handle_callback(call):
             msgs = int(pkg)
             amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
             
-        bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
+        bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
         purpose = f"ADVICE_{pkg}"
         checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, purpose)
         if not checkout_url:
-            bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
+            bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
             return
             
         markup = InlineKeyboardMarkup()
         from telebot.types import WebAppInfo
-        markup.add(InlineKeyboardButton(f"💳 Pay Now / አሁን ይክፈሉ", web_app=WebAppInfo(url=checkout_url)))
+        markup.add(InlineKeyboardButton(S(lang, 'btn_pay_now'), web_app=WebAppInfo(url=checkout_url)))
         
         bot.send_message(
             chat_id,
-            f"📱 <b>ክፍያ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\n"
-            f"ክፍያዎ እንደተጠናቀቀ ሲስተሙ በራስ-ሰር ይከፈትልዎታል!",
+            S(lang, 'payment_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+            S(lang, 'payment_instructions', amount=amount),
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -709,7 +734,7 @@ def handle_callback(call):
     if data == "reset_account":
         database.reset_user_onboarding(uid)
         clear_state(uid)
-        bot.answer_callback_query(call.id, "✅ ማህደርዎ ፀድቷል! አዲስ ውይይት እንጀምራለን።", show_alert=True)
+        bot.answer_callback_query(call.id, S(get_lang(uid), 'reset_done'), show_alert=True)
         
         # Start a thread to wipe the last 500 bot messages for a clean visual slate
         def wipe_chat_history(chat, start_msg_id):
@@ -731,21 +756,22 @@ def handle_callback(call):
         return
 
     if data.startswith("tip_"):
+        lang = get_lang(uid)
         amount = int(data.split("_")[1])
-        bot.answer_callback_query(call.id, "እየተዘጋጀ ነው...")
+        bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
         
         checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, "TIP")
         if not checkout_url:
-            bot.send_message(chat_id, f"❌ የክፍያ ሊንክ ማመንጨት አልተቻለም።\n<b>ምክንያት:</b> {err}", parse_mode="HTML")
+            bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
             return
             
         markup = InlineKeyboardMarkup()
         from telebot.types import WebAppInfo
-        markup.add(InlineKeyboardButton(f"💳 {amount} ብር ይሸልሙ", web_app=WebAppInfo(url=checkout_url)))
+        markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=amount), web_app=WebAppInfo(url=checkout_url)))
         
         bot.send_message(
             chat_id,
-            f"☕ <b>{amount} ብር ስጦታ</b>\nእባክዎ ከታች ያለውን ቁልፍ ተጭነው ስጦታዎን ይላኩ። ከልብ እናመሰግናለን!",
+            S(lang, 'tip_payment_text', amount=amount),
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -1043,19 +1069,18 @@ def handle_callback(call):
     
 
 
-def show_tip_cta(chat_id):
+def show_tip_cta(chat_id, uid):
     """Show tip/donation options to the user."""
+    lang = get_lang(uid)
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("☕ 50 ብር", callback_data="tip_50"),
-               InlineKeyboardButton("🎁 100 ብር", callback_data="tip_100"))
-    markup.add(InlineKeyboardButton("💝 200 ብር", callback_data="tip_200"),
-               InlineKeyboardButton("🌟 500 ብር", callback_data="tip_500"))
+    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=50), callback_data="tip_50"),
+               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=100), callback_data="tip_100"))
+    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=200), callback_data="tip_200"),
+               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=500), callback_data="tip_500"))
     bot.send_message(
         chat_id,
-        "☕ <b>ቡድናችንን ያበረታቱ!</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        "የእርስዎ ድጋፍ ቡድናችን የተሻለ አገልግሎት እንዲሰጥ ይረዳል።\n"
-        "ከታች ካሉት ውስጥ አንዱን ይምረጡ፦\n",
+        S(lang, 'tip_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+        S(lang, 'tip_body'),
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -1154,7 +1179,7 @@ def handle_messages(message):
 
     # Ban check
     if database.is_banned(uid):
-        bot.reply_to(message, "🚫 ይህ አካውንት ታግዷል።")
+        bot.reply_to(message, S(get_lang(uid), 'banned'))
         return
 
     # ── Admin States ─────────────────────────
@@ -1292,13 +1317,13 @@ def handle_messages(message):
     
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):
-        send_join_channel_msg(chat_id); return
+        send_join_channel_msg(chat_id, uid); return
 
     # ── Bottom Menu Handlers ─────────────────
-    if message.text and ("ምክክራችንን እንቀጥል" in message.text or "የስነ-ልቦና ምክር" in message.text):
+    if message.text and ("🧠" in message.text or "የስነ-ልቦና ምክር" in message.text):
         if "የስነ-ልቦና ምክር" in message.text:
             # Their Telegram client has the old keyboard cached. Send welcome to update it.
-            send_welcome(chat_id, message.from_user.first_name)
+            send_welcome(chat_id, message.from_user.first_name, get_lang(uid))
             return
             
         history_str = database.get_advice_history(uid)
@@ -1325,11 +1350,12 @@ def handle_messages(message):
                 for chunk in clean_chunks:
                     bot.send_message(chat_id, chunk)
         else:
-            bot.send_message(chat_id, "💡 <b>እኔ ከጎንዎ ነኝ፤ እባክዎ የሚያስጨንቅዎትን ነገር ወይም ያለዎትን ስሜት በነፃነት ያካፍሉኝ...</b>", parse_mode="HTML")
+            bot.send_message(chat_id, S(get_lang(uid), 'no_history_prompt'), parse_mode="HTML")
         return
         
-    if message.text and "የኔ ገፅ" in message.text:
+    if message.text and "👤" in message.text:
         is_vip = database.is_vip(uid)
+        lang = get_lang(uid)
         if is_vip:
             user_data = database.get_user(uid)
             expiry_str = user_data["vip_expiry"] if user_data else ""
@@ -1338,9 +1364,9 @@ def handle_messages(message):
                 try:
                     from datetime import datetime
                     d = datetime.fromisoformat(expiry_str)
-                    formatted_expiry = f" (እስከ {d.strftime('%Y-%m-%d')})"
+                    formatted_expiry = f" {d.strftime('%Y-%m-%d')}"
                 except: pass
-            msgs_display = f"♾️ <b>Unlimited{formatted_expiry}</b>"
+            msgs_display = S(lang, 'unlimited_display', date=formatted_expiry)
         else:
             msgs = database.get_advice_messages_left(uid)
             msgs_display = f"<b>{msgs}</b>"
@@ -1348,25 +1374,26 @@ def handle_messages(message):
         count = database.get_uncredited_referral_count(uid)
         markup = InlineKeyboardMarkup()
         if count >= 10:
-            markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
-        markup.add(InlineKeyboardButton("💳 ክሬዲት ይግዙ (Top Up)", callback_data="show_topup"))
-        markup.add(InlineKeyboardButton("🧹 ማህደር አጽዳ (Reset)", callback_data="confirm_reset"))
+            markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
+        markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
+        markup.add(InlineKeyboardButton(S(lang, 'btn_reset'), callback_data="confirm_reset"))
             
         bot.send_message(
             chat_id,
-            f"👤 <b>የእርስዎ ገፅ</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎫 ቀሪ ነጻ መልዕክቶች: {msgs_display}\n\n"
-            f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
-            f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
-            f"🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።\n"
-            f"⚠️ <b>ማሳሰቢያ:</b> በምክክር መሃል ከሆኑ ይህን አይጫኑት! ምክንያቱም AI-ው ያለፈውን ውይይት ስለሚረሳው የጀመሩትን ምክክር መቀጠል አይችልም።\n\n"
-            f"ፓኬጅ ለመግዛት /topup ይጫኑ።",
+            S(lang, 'mypage_title') + "\n━━━━━━━━━━━━━━━━━━━━\n" +
+            S(lang, 'mypage_msgs_left', msgs=msgs_display) + "\n\n" +
+            S(lang, 'mypage_referrals', count=count) + "\n" +
+            S(lang, 'mypage_referral_hint') + "\n\n" +
+            S(lang, 'mypage_reset_info') + "\n" +
+            S(lang, 'mypage_reset_warn') + "\n\n" +
+            S(lang, 'mypage_topup_hint'),
             parse_mode="HTML",
             reply_markup=markup
         )
         return
 
-    if message.text and "ጓደኛ ይጋብዙ" in message.text:
+    if message.text and "🎁" in message.text:
+        lang = get_lang(uid)
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
         count = database.get_uncredited_referral_count(uid)
@@ -1374,21 +1401,34 @@ def handle_messages(message):
         markup = None
         if count >= 10:
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("🎁 ነፃ መልዕክቶችን ውሰድ (Claim)", callback_data="claim_referrals"))
+            markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
             
         bot.send_message(
             chat_id,
-            f"🎁 <b>ጓደኛዎን ይጋብዙ!</b>\n\n"
-            f"👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>\n"
-            f"<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>\n\n"
-            f"🔗 የእርስዎ መጋበዣ ሊንክ:\n<code>{link}</code>",
+            S(lang, 'invite_title') + "\n\n" +
+            S(lang, 'invite_count', count=count) + "\n" +
+            S(lang, 'invite_hint') + "\n\n" +
+            S(lang, 'invite_link') + "\n<code>" + link + "</code>",
             parse_mode="HTML",
             reply_markup=markup
         )
         return
 
-    if message.text and "ቡድኑን ያበረታቱ" in message.text:
-        show_tip_cta(chat_id)
+    if message.text and "☕" in message.text:
+        show_tip_cta(chat_id, uid)
+        return
+
+    if message.text and "🌐" in message.text:
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="setlang_en"),
+        )
+        markup.add(
+            InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="setlang_ti"),
+            InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="setlang_om"),
+        )
+        bot.send_message(chat_id, S(get_lang(uid), 'lang_select_prompt'), parse_mode="HTML", reply_markup=markup)
         return
 
     # ── Advice Chat Mode (All other text) ─────────────────────
@@ -1407,21 +1447,22 @@ def handle_messages(message):
         is_adm = is_admin(message.from_user)
         
         if msgs_left <= 0 and not is_vip and not is_adm:
+            lang = get_lang(uid)
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("🔹 Starter: 200 ብር (25 መልዕክቶች)", callback_data="buy_advice_25"))
-            markup.add(InlineKeyboardButton("🔹 Pro: 400 ብር (75 መልዕክቶች)", callback_data="buy_advice_75"))
-            markup.add(InlineKeyboardButton("🔹 Heavy: 1200 ብር (225 መልዕክቶች)", callback_data="buy_advice_225"))
-            markup.add(InlineKeyboardButton("♾️ Unlimited: 1800 ብር (ለ1 ሳምንት)", callback_data="buy_advice_unlimited"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
             
             cta_text = (
-                "⚠️ <b>ነፃ የሙከራ ጊዜዎ አልቋል።</b>\n\n"
-                "እስካሁን ጥሩ ቆይታ አድርገናል፤ ነገር ግን ትክክለኛው ለውጥ አሁን ነው የሚጀምረው። የጀመርነውን ጥልቅ ውይይት ለመቀጠል እና ወደ ተግባር የሚቀየሩ መፍትሄዎችን ለማግኘት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\n\n"
-                "ከታች ካሉት አማራጮች አንዱን ይምረጡ፦\n\n"
-                "🔹 <b>Starter: 200 ብር</b> (25 መልዕክቶች) - ለአጭር ውይይት የሚበቃ።\n"
-                "🔹 <b>Pro: 400 ብር</b> (75 መልዕክቶች) - [ተመራጭ] ለተሻለ ጥልቅ ውይይት።\n"
-                "🔹 <b>Heavy: 1200 ብር</b> (225 መልዕክቶች) - ለረጅም ጊዜ አገልግሎት ፈላጊዎች።\n"
-                "♾️ <b>Unlimited: 1800 ብር</b> (ያለ ገደብ ለ1 ሳምንት) - ምንም ገደብ የሌለው ሙሉ መዳረሻ።\n\n"
-                "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇"
+                S(lang, 'paywall_title') + "\n\n" +
+                S(lang, 'paywall_body') + "\n\n" +
+                S(lang, 'topup_choose') + "\n\n" +
+                S(lang, 'topup_starter') + "\n" +
+                S(lang, 'topup_pro') + "\n" +
+                S(lang, 'topup_heavy') + "\n" +
+                S(lang, 'topup_unlimited') + "\n\n" +
+                S(lang, 'topup_cta')
             )
             bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
             return
@@ -1457,14 +1498,15 @@ def handle_messages(message):
                 
                 # Get user gender
                 _, user_gender = database.get_onboarding_status(uid)
+                user_lang = get_lang(uid)
 
                 # Get AI response
-                ai_response = ai_engine.chat_with_mentor(user_text, history, gender=user_gender)
+                ai_response = ai_engine.chat_with_mentor(user_text, history, gender=user_gender, lang=user_lang)
                 
                 stop_typing.set()
                 
                 if not ai_response:
-                    bot.send_message(chat_id, "⚠️ ይቅርታ፣ ምላሽ ማግኘት አልተቻለም። እባክዎ እንደገና ይሞክሩ።")
+                    bot.send_message(chat_id, S(user_lang, 'ai_error'))
                     return
                 
                 # Deduct quota (everyone counts down, but VIP/Admin bypass block)
@@ -1505,12 +1547,12 @@ def handle_messages(message):
             threading.Thread(target=process_advice_chat, daemon=True).start()
         except Exception as e:
             logging.error(f"Failed to start thread: {e}")
-            bot.send_message(chat_id, f"⚠️ የቴክኒክ ችግር: {e}")
+            bot.send_message(chat_id, S(get_lang(uid), 'tech_error', err=str(e)))
         return
 
     # ── Book Input (title or photo) ──────────
     if message.photo or message.document:
-        bot.reply_to(message, 'እባክዎ ፅሁፍ ብቻ ይላኩ። (Please send text only.)')
+        bot.reply_to(message, S(get_lang(uid), 'text_only'))
         return
 
     # ── Catch-all: Forward to admin ──────────
@@ -1539,23 +1581,25 @@ def process_chapa_success(tx_ref):
     
     if purpose.startswith("ADVICE_"):
         pkg = purpose.split("_")[1]
+        lang = get_lang(uid)
         if pkg == "unlimited":
             payment_amount = 1800
             database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
             database.set_vip(uid, days=7)
-            bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\nለ1 ሳምንት ያህል ያልተገደበ (Unlimited) መዳረሻ አግኝተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
+            bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
         else:
             msgs = int(pkg)
             payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
             database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
             database.add_advice_messages(uid, msgs)
-            bot.send_message(chat_id, f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n{msgs} መልዕክቶች ወደ አካውንትዎ ገብተዋል።\nውይይታችንን መቀጠል እንችላለን...", parse_mode="HTML")
+            bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
     elif purpose == "TIP":
         # Verify the actual amount from the Chapa transaction
+        lang = get_lang(uid)
         tip_success, tip_data = chapa.verify_chapa_payment(tx_ref)
         tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
         database.record_payment(uid, order_id, tip_amount, tx_ref, "CHAPA_WEBHOOK_TIP")
-        bot.send_message(chat_id, "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።", parse_mode="HTML")
+        bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):

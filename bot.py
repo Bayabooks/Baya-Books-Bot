@@ -371,27 +371,29 @@ def check_onboarding(chat_id, user_id, first_name):
 
 def send_welcome(chat_id, first_name, lang=None):
     if lang is None:
-        # try to get from DB but we might not have uid here
         lang = 'am'
-    bottom_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
-    bottom_markup.add(
-        KeyboardButton(S(lang, 'menu_continue')),
-        KeyboardButton(S(lang, 'menu_mypage'))
-    )
-    bottom_markup.add(
-        KeyboardButton(S(lang, 'menu_invite')),
-        KeyboardButton(S(lang, 'menu_support'))
-    )
-    bottom_markup.add(
-        KeyboardButton(S(lang, 'menu_lang'))
-    )
-    
     bot.send_message(
         chat_id, 
         S(lang, 'welcome_text', name=html.escape(first_name)), 
         parse_mode="HTML", 
-        reply_markup=bottom_markup
+        reply_markup=get_bottom_markup(lang)
     )
+
+def get_bottom_markup(lang='am'):
+    """Build the localized bottom keyboard."""
+    m = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
+    m.add(
+        KeyboardButton(S(lang, 'menu_continue')),
+        KeyboardButton(S(lang, 'menu_mypage'))
+    )
+    m.add(
+        KeyboardButton(S(lang, 'menu_invite')),
+        KeyboardButton(S(lang, 'menu_lang'))
+    )
+    m.add(
+        KeyboardButton(S(lang, 'menu_support'))
+    )
+    return m
 
 # ══════════════════════════════════════════
 #  /help & /mylibrary COMMANDS
@@ -1320,6 +1322,30 @@ def handle_messages(message):
         send_join_channel_msg(chat_id, uid); return
 
     # ── Bottom Menu Handlers ─────────────────
+    # Catch old cached buttons from previous users (no emoji prefix) and refresh their keyboard
+    if message.text and not message.text.startswith("/"):
+        old_buttons = ["ምክክራችንን እንቀጥል", "የኔ ገፅ", "ጓደኛ ይጋብዙ", "ቡድኑን ያበረታቱ", "ቋንቋ ቀይር", "የስነ-ልቦና ምክር"]
+        is_old_button = any(ob in message.text for ob in old_buttons)
+        has_menu_emoji = any(e in message.text for e in ["🧠", "👤", "🎁", "☕", "🌐"])
+        if is_old_button and not has_menu_emoji:
+            # Old cached keyboard — refresh it
+            user_lang = get_lang(uid)
+            if not database.get_bot_language(uid):
+                # They never picked a language — ask them
+                markup = InlineKeyboardMarkup(row_width=2)
+                markup.add(
+                    InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="setlang_am"),
+                    InlineKeyboardButton("🇬🇧 English", callback_data="setlang_en"),
+                )
+                markup.add(
+                    InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="setlang_ti"),
+                    InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="setlang_om"),
+                )
+                bot.send_message(chat_id, S('am', 'lang_select_prompt'), parse_mode="HTML", reply_markup=markup)
+                return
+            send_welcome(chat_id, message.from_user.first_name, user_lang)
+            return
+
     if message.text and ("🧠" in message.text or "የስነ-ልቦና ምክር" in message.text):
         if "የስነ-ልቦና ምክር" in message.text:
             # Their Telegram client has the old keyboard cached. Send welcome to update it.

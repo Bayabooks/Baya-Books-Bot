@@ -182,6 +182,12 @@ def is_admin(user):
 def is_owner(user):
     return bool(user.username and user.username.lower() == config.ADMIN_USERNAME)
 
+def is_admin_uid(uid):
+    user_data = database.get_user(uid)
+    if user_data and user_data['username'] and user_data['username'].lower() == config.ADMIN_USERNAME:
+        return True
+    return database.is_sub_admin(uid)
+
 def get_admin_id():
     try:
         conn = database.get_connection()
@@ -369,17 +375,19 @@ def check_onboarding(chat_id, user_id, first_name):
     
     return True
 
-def send_welcome(chat_id, first_name, lang=None):
+def send_welcome(chat_id, first_name, lang=None, uid=None):
     if lang is None:
         lang = 'am'
+    if uid is None:
+        uid = chat_id # Fallback
     bot.send_message(
         chat_id, 
         S(lang, 'welcome_text', name=html.escape(first_name)), 
         parse_mode="HTML", 
-        reply_markup=get_bottom_markup(lang)
+        reply_markup=get_bottom_markup(lang, uid)
     )
 
-def get_bottom_markup(lang='am'):
+def get_bottom_markup(lang='am', uid=None):
     """Build the localized bottom keyboard."""
     m = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
     m.add(
@@ -390,9 +398,15 @@ def get_bottom_markup(lang='am'):
         KeyboardButton(S(lang, 'menu_invite')),
         KeyboardButton(S(lang, 'menu_lang'))
     )
-    m.add(
-        KeyboardButton(S(lang, 'menu_support'))
-    )
+    if uid and is_admin_uid(uid):
+        m.add(
+            KeyboardButton(S(lang, 'menu_support')),
+            KeyboardButton("⚙️ Dashboard")
+        )
+    else:
+        m.add(
+            KeyboardButton(S(lang, 'menu_support'))
+        )
     return m
 
 # ══════════════════════════════════════════
@@ -1455,6 +1469,10 @@ def handle_messages(message):
             InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="setlang_om"),
         )
         bot.send_message(chat_id, S(get_lang(uid), 'lang_select_prompt'), parse_mode="HTML", reply_markup=markup)
+        return
+
+    if message.text and "⚙️" in message.text and is_admin_uid(uid):
+        show_admin_menu(chat_id, message.from_user)
         return
 
     # ── Advice Chat Mode (All other text) ─────────────────────

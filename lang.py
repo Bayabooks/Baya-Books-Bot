@@ -381,16 +381,16 @@ STRINGS = {
     },
 
     "tip_title": {
-        "am": "☕ <b>ቡድናችንን ያበረታቱ!</b>",
-        "en": "☕ <b>Support Our Team!</b>",
-        "ti": "☕ <b>ንጉጅለና ኣበራትዑ!</b>",
-        "om": "☕ <b>Garee keenya jajjabeessaa!</b>"
+        "am": "💛 <b>ከእኛ ጀርባ ያሉ ሰዎች</b>",
+        "en": "💛 <b>The People Behind This</b>",
+        "ti": "💛 <b>ኣብ ድሕሪ እዚ ዘለዉ ሰባት</b>",
+        "om": "💛 <b>Namoota Kana Duuba Jiran</b>"
     },
     "tip_body": {
-        "am": "የእርስዎ ድጋፍ ቡድናችን የተሻለ አገልግሎት እንዲሰጥ ይረዳል።\nከታች ካሉት ውስጥ አንዱን ይምረጡ፦",
-        "en": "Your support helps our team provide better service.\nPlease choose one from below:",
-        "ti": "ደገፍኩም ንጉጅለና ዝሓሸ ኣገልግሎት ንክህብ ይሕግዞ እዩ።\nካብዞም ኣብ ታሕቲ ዘለዉ ሓደ ምረጹ፦",
-        "om": "Deeggarsi keessan gareen keenya tajaajila gaarii akka kennu gargaara.\nKanneen armaan gadii keessaa tokko filadhaa:"
+        "am": "ይህን ቦት የሚያስተዳድሩት ልክ እንደ እርስዎ ህልም ያላቸው ወጣት ኢትዮጵያውያን ናቸው። እርስዎ የሚሰጡት ድጋፍ ለብዙ ሺህ ሰዎች ነፃ የስነ-ልቦና ምክር ማግኘት እንዲቀጥሉ ያስችላል። ትንሽ ስጦታ ትልቅ ለውጥ ታመጣለች።\n\nከታች ካሉት ውስጥ አንዱን ይምረጡ፦",
+        "en": "This bot is run by young Ethiopians who dream just like you. Your support allows thousands of people to continue accessing free psychological guidance. A small gift makes a big difference.\n\nChoose an amount below:",
+        "ti": "ነዚ ቦት ዝመርሕዎ ልክ ከማኹም ሕልሚ ዘለዎም መንእሰይ ኢትዮጵያውያን እዮም። ደገፍኩም ንብዙሓት ኣሽሓት ሰባት ነጻ ናይ ስነ-ኣእምሮ ምኽሪ ምርካብ ክቕጽሉ የኽእሎም። ንእሽቶ ህያብ ዓቢ ለውጢ ተምጽእ።\n\nካብዞም ኣብ ታሕቲ ዘለዉ ሓደ ምረጹ፦",
+        "om": "Bootiin kun Itoophiyaanota dargaggoota akka keessanii abjuu qaban kan hogganamudha. Deeggarsi keessan namoonni kumaatamaan lakkaa'aman gorsa xiin-sammuu bilisaa argachuu akka itti fufan dandeessisa. Kennaan xiqqaan jijjiirama guddaa fiddi.\n\nHamma armaan gadii keessaa filadhaa:"
     },
     "tip_pay_btn": {
         "am": "💳 {amount} ብር ይሸልሙ",

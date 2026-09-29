@@ -1075,10 +1075,10 @@ def show_tip_cta(chat_id, uid):
     """Show tip/donation options to the user."""
     lang = get_lang(uid)
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=50), callback_data="tip_50"),
-               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=100), callback_data="tip_100"))
-    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=200), callback_data="tip_200"),
-               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=500), callback_data="tip_500"))
+    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=500), callback_data="tip_500"),
+               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=1000), callback_data="tip_1000"))
+    markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=5000), callback_data="tip_5000"),
+               InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=10000), callback_data="tip_10000"))
     bot.send_message(
         chat_id,
         S(lang, 'tip_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +

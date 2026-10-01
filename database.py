@@ -280,13 +280,13 @@ def get_user_orders(user_id):
 
 # ─── Payment Functions ─────────────────────
 
-def record_payment(user_id, order_id, amount, tx_ref, receipt_file_id):
+def record_payment(user_id, order_id, amount, tx_ref, receipt_file_id, status='pending'):
     conn = get_connection()
     c = conn.cursor()
     try:
         c.execute('''INSERT INTO payments (user_id, order_id, amount, tx_ref, receipt_file_id, status, payment_date)
-            VALUES (?, ?, ?, ?, ?, 'pending', ?)
-        ''', (user_id, order_id, amount, tx_ref, receipt_file_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, order_id, amount, tx_ref, receipt_file_id, status, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         payment_id = c.lastrowid
         conn.commit()
     except Exception:
@@ -332,50 +332,89 @@ def get_analytics():
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    month_ago = (now - timedelta(days=30)).strftime("%Y-%m-%d")
 
+    # User counts
     c.execute("SELECT COUNT(*) FROM users WHERE bot_blocked = 0")
     total_users = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM users WHERE bot_blocked = 1")
+    blocked_users = c.fetchone()[0]
 
     c.execute("SELECT COUNT(*) FROM users WHERE joined_date LIKE ? AND bot_blocked = 0", (today + "%",))
     new_today = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM users WHERE advice_history != '[]'")
+    c.execute("SELECT COUNT(*) FROM users WHERE joined_date >= ? AND bot_blocked = 0", (week_ago,))
+    new_this_week = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM users WHERE advice_history != '[]' AND advice_history IS NOT NULL")
     active_advice_users = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'approved' OR tx_ref LIKE '%WEBHOOK%'")
+    # Revenue — count ALL payments that are approved OR have WEBHOOK in receipt_file_id or tx_ref
+    c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
+        WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'""")
     total_revenue = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE (status = 'approved' OR tx_ref LIKE '%WEBHOOK%') AND payment_date LIKE ?", (today + "%",))
+    c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%') 
+        AND payment_date LIKE ?""", (today + "%",))
     today_revenue = c.fetchone()[0]
 
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE (status = 'approved' OR tx_ref LIKE '%WEBHOOK%') AND payment_date >= ?", (week_ago,))
+    c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%') 
+        AND payment_date >= ?""", (week_ago,))
     weekly_revenue = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'male'")
+    c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%') 
+        AND payment_date >= ?""", (month_ago,))
+    monthly_revenue = c.fetchone()[0]
+
+    c.execute("""SELECT COUNT(*) FROM payments 
+        WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'""")
+    total_transactions = c.fetchone()[0]
+
+    # Gender stats
+    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'male' AND bot_blocked = 0")
     male_count = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'female'")
+    c.execute("SELECT COUNT(*) FROM users WHERE gender = 'female' AND bot_blocked = 0")
     female_count = c.fetchone()[0]
 
+    # Recent payments (include all successful)
     c.execute('''
-        SELECT u.first_name, p.amount, p.payment_date 
+        SELECT u.first_name, p.amount, p.payment_date, p.tx_ref
         FROM payments p 
-        JOIN users u ON p.user_id = u.user_id 
-        WHERE p.status = 'approved' OR p.tx_ref LIKE '%WEBHOOK%' 
-        ORDER BY p.id DESC LIMIT 10
+        LEFT JOIN users u ON p.user_id = u.user_id 
+        WHERE p.status = 'approved' OR p.receipt_file_id LIKE '%WEBHOOK%' OR p.tx_ref LIKE '%WEBHOOK%'
+        ORDER BY p.id DESC LIMIT 15
     ''')
-    recent_payments = [{"name": r['first_name'], "amount": r['amount'], "date": r['payment_date']} for r in c.fetchall()]
+    recent_payments = []
+    for r in c.fetchall():
+        tx = r['tx_ref'] or ''
+        ptype = 'Tip' if 'TIP' in tx else 'Advice' if 'ADVICE' in tx else 'Other'
+        recent_payments.append({
+            "name": r['first_name'] or 'Unknown', 
+            "amount": r['amount'], 
+            "date": r['payment_date'],
+            "type": ptype
+        })
 
-    c.execute("SELECT first_name, joined_date FROM users ORDER BY user_id DESC LIMIT 10")
-    recent_users = [{"name": r['first_name'], "date": r['joined_date']} for r in c.fetchall()]
+    # Recent users (only active, not blocked)
+    c.execute("SELECT first_name, username, joined_date FROM users WHERE bot_blocked = 0 ORDER BY user_id DESC LIMIT 15")
+    recent_users = [{"name": r['first_name'], "username": r['username'] or '', "date": r['joined_date']} for r in c.fetchall()]
 
     conn.close()
     return {
         "total_users": total_users,
+        "blocked_users": blocked_users,
         "new_today": new_today,
+        "new_this_week": new_this_week,
         "active_advice_users": active_advice_users,
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
         "weekly_revenue": weekly_revenue,
+        "monthly_revenue": monthly_revenue,
+        "total_transactions": total_transactions,
         "male_count": male_count,
         "female_count": female_count,
         "recent_payments": recent_payments,

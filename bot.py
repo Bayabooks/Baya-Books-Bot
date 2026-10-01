@@ -805,20 +805,33 @@ def handle_callback(call):
         m_pct = f"{stats['male_count']/total*100:.0f}%" if total > 0 else "0%"
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
 
+        # Recent payments summary
+        recent_pay_text = ""
+        for p in stats.get("recent_payments", [])[:5]:
+            ptype = {"Tip": "☕", "Advice": "🧠", "Other": "📦"}.get(p.get("type", ""), "📦")
+            recent_pay_text += f"  {ptype} {p['name']} — <b>{p['amount']:,} ብር</b> ({p['date'][:10] if p['date'] else 'N/A'})\n"
+        if not recent_pay_text:
+            recent_pay_text = "  — No payments yet\n"
+
         markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Refresh", callback_data="adm_dashboard"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
             f"📊 <b>DASHBOARD</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
             f"👥 Active Users: <b>{stats['total_users']}</b>\n"
-            f"🟢 New Today: <b>{stats['new_today']}</b>\n"
-            f"💬 Active Advice Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
+            f"🚫 Left/Blocked: <b>{stats.get('blocked_users', 0)}</b>\n"
+            f"🟢 New Today: <b>{stats['new_today']}</b> | This Week: <b>{stats.get('new_this_week', 0)}</b>\n"
+            f"💬 Chatting Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
             f"━━ 💰 Revenue ━━━━━━━━━━━━\n"
             f"  📅 Today: <b>{stats['today_revenue']:,} ETB</b>\n"
             f"  📆 Weekly: <b>{stats['weekly_revenue']:,} ETB</b>\n"
-            f"  💵 Total: <b>{stats['total_revenue']:,} ETB</b>\n\n"
-            f"━━ 👥 Gender Split ━━━━━━━━━\n"
-            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}",
+            f"  📅 Monthly: <b>{stats.get('monthly_revenue', 0):,} ETB</b>\n"
+            f"  💵 All-Time: <b>{stats['total_revenue']:,} ETB</b>\n"
+            f"  🧾 Transactions: <b>{stats.get('total_transactions', 0)}</b>\n\n"
+            f"━━ 👥 Gender ━━━━━━━━━━━━━━\n"
+            f"  👨 Male: {m_pct} | 👩 Female: {f_pct}\n\n"
+            f"━━ 💳 Recent Payments ━━━━━━\n{recent_pay_text}",
             parse_mode="HTML", reply_markup=markup,
         )
         return
@@ -1628,13 +1641,13 @@ def process_chapa_success(tx_ref):
         lang = get_lang(uid)
         if pkg == "unlimited":
             payment_amount = 1800
-            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
             database.set_vip(uid, days=7)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
         else:
             msgs = int(pkg)
             payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
-            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK")
+            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
             database.add_advice_messages(uid, msgs)
             bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
     elif purpose == "TIP":
@@ -1642,7 +1655,7 @@ def process_chapa_success(tx_ref):
         lang = get_lang(uid)
         tip_success, tip_data = chapa.verify_chapa_payment(tx_ref)
         tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
-        database.record_payment(uid, order_id, tip_amount, tx_ref, "CHAPA_WEBHOOK_TIP")
+        database.record_payment(uid, order_id, tip_amount, tx_ref, "CHAPA_WEBHOOK_TIP", status='approved')
         bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):

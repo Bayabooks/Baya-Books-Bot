@@ -361,7 +361,8 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
 
 
 def generate_psych_broadcast(lang='am'):
-    """Generates a short, empowering, curiosity-inducing psychological broadcast."""
+    """Generates a short, varied, engaging psychological broadcast."""
+    import random
     
     if lang == 'am':
         lang_instruction = "in Amharic"
@@ -374,17 +375,65 @@ def generate_psych_broadcast(lang='am'):
     else:
         lang_instruction = "in Amharic"
 
+    content_types = [
+        "A surprising psychological fact most people don't know, explained in a relatable way",
+        "A 'Did you know?' mini-lesson about how the human brain works (e.g. memory, emotions, habits)",
+        "A powerful real-life scenario showing how therapy/counseling transforms someone's life",
+        "A quick self-assessment question that makes the reader reflect deeply on their emotional state",
+        "A myth vs. reality about mental health (e.g. 'People think X but actually Y')",
+        "A short parable or metaphor about emotional healing (like a wound healing analogy)",
+        "A '3 signs that...' list about a psychological pattern (anxiety, burnout, emotional avoidance, etc.)",
+        "A micro-story about someone overcoming depression, anxiety, or self-doubt (2-3 sentences)",
+        "A CBT technique explained simply that readers can try right now (breathing, reframing, grounding)",
+        "A thought-provoking question about relationships, self-love, or personal boundaries",
+        "An empowering affirmation written as if speaking directly to someone who is struggling",
+        "A comparison between two mindsets (growth vs. fixed, reactive vs. proactive) with a powerful twist",
+        "A short explanation of an interesting psychology concept (Dunning-Kruger, attachment styles, projection, etc.)",
+        "A seasonal/time-appropriate reflection (morning motivation, evening gratitude, weekend self-care)",
+        "A challenge or dare for self-improvement (e.g. 'Today, try complimenting a stranger...')",
+        "A body-mind connection tip (how posture affects mood, how exercise changes brain chemistry)",
+        "A parenting or family psychology insight that's eye-opening",
+        "A workplace/school stress management tip backed by psychology",
+        "A quote from a famous psychologist (Freud, Jung, Adler, Frankl, Rogers) with a modern explanation",
+        "A love/relationship psychology insight about attachment, communication, or trust",
+        "A creativity and mental health connection — how art, music, or writing heals",
+        "A sleep psychology tip — how sleep affects emotions, decision-making, and mental clarity",
+        "A social media and mental health awareness message — digital wellbeing tips",
+        "A grief, loss, or change processing insight — normalizing difficult emotions",
+        "An Ethiopian cultural wisdom or proverb connected to modern psychology",
+    ]
+
+    chosen = random.choice(content_types)
+    
+    # Randomly vary the format too
+    formats = [
+        "Write it as 2-4 impactful sentences.",
+        "Write it as a short paragraph (3-4 sentences) with one bold key takeaway.",
+        "Write it as a numbered list of 3 short points.",
+        "Write it as a question followed by a 2-sentence answer.",
+        "Write it as a mini-story in 3 sentences.",
+    ]
+    chosen_format = random.choice(formats)
+
     prompt = (
-        f"Write a very short (2-4 sentences), powerful, and curiosity-inducing psychological insight "
-        f"or empowering quote {lang_instruction}. It should make the reader feel understood, motivated, and "
-        f"curious to chat more with their AI therapist. Do not use generic greetings like 'Hello'. "
-        f"Just write the profound text itself, using beautiful and empathetic language. Make it completely random and fresh."
+        f"You are a psychology content creator for a Telegram bot audience in Ethiopia.\n\n"
+        f"Generate the following type of content {lang_instruction}:\n"
+        f"→ {chosen}\n\n"
+        f"Format: {chosen_format}\n\n"
+        f"Rules:\n"
+        f"- Make it feel personal, warm, and empathetic\n"
+        f"- Use beautiful, poetic language appropriate for the culture\n"
+        f"- Do NOT use generic greetings like 'Hello' or 'Dear friend'\n"
+        f"- Do NOT start with 'Did you know' every time — vary your opening\n"
+        f"- Make it curiosity-inducing so readers want to chat with their AI therapist\n"
+        f"- Use **bold** for key phrases (1-2 max)\n"
+        f"- Keep it concise — no more than 5 sentences total\n"
+        f"- Make it completely unique and fresh, never repeat patterns"
     )
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
         response = model.generate_content(prompt, request_options={"timeout": 30})
         text = response.text
-        # Bold (now dotall not needed for standard bold but just in case)
         import re
         text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
         return text.strip()

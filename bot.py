@@ -1572,7 +1572,8 @@ def handle_messages(message):
                 # Check if this was the last free message — append punchy hook
                 remaining_after = database.get_advice_messages_left(uid)
                 if remaining_after <= 0 and not is_vip and not is_adm:
-                    ai_response += S(user_lang, 'last_free_hook')
+                    hook_key = 'last_free_hook_f' if user_gender == 'female' else 'last_free_hook_m'
+                    ai_response += S(user_lang, hook_key)
                     
                 # Update history and save back to DB
                 history.append({"role": "user", "parts": [user_text]})

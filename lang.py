@@ -458,6 +458,13 @@ STRINGS = {
         "en": "♾️ <b>Unlimited (until {date})</b>",
         "ti": "♾️ <b>Unlimited (ክሳብ {date})</b>",
         "om": "♾️ <b>Unlimited (hanga {date})</b>"
+    },
+
+    "last_free_hook": {
+        "am": "\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ <b>ይሄ የመጨረሻ ነፃ መልዕክትዎ ነበር።</b>\n\nአሁን ነው ትክክለኛው ለውጥ የሚጀምረው — የጀመርነውን ጥልቅ ውይይት ማቋረጥ አያስፈልግም። እኔ ገና ብዙ ነገር አይቻለሁ ስለ እርስዎ... ነገር ግን ያልገለጽኩልዎት ወሳኝ ነገሮች አሉ። ውይይታችንን ለመቀጠል /topup ይጫኑ።",
+        "en": "\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ <b>That was your last free message.</b>\n\nThis is exactly where the real breakthrough begins — don't walk away from what we've started. I've already seen patterns in what you've shared... but there are critical things I haven't told you yet. Press /topup to continue our conversation.",
+        "ti": "\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ <b>እዚ ናይ መወዳእታ ነጻ መልእኽትኹም ነይሩ።</b>\n\nሕጂ እዩ ናይ ብሓቂ ለውጢ ዝጅምር — ዝጀመርናዮ ዕሙቕ ዘተ ምቁራጽ ኣየድልን። ኣነ ድሮ ብዙሕ ነገራት ርእየ ብዛዕባኹም... ግን ዛጊት ዘይነገርኩኹም ወሰንቲ ነገራት ኣለዉ። ዕላልና ንምቕጻል /topup ጠውቑ።",
+        "om": "\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ <b>Kun ergaa bilisaa keessan isa dhumaa ture.</b>\n\nKan amma jijjiiramni dhugaa itti jalqabu dha — wanta jalqabne addaan hin kutinaa. Ani durumaan wantoota baay'ee isin keessatti argeen jira... garuu wantoota murteessoo ta'an kan amma iyyuu isiniif hin himne jiru. Marii keenya itti fufuuf /topup tuqaa."
     }
 }
 

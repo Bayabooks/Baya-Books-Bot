@@ -1568,6 +1568,11 @@ def handle_messages(message):
                 
                 # Deduct quota (everyone counts down, but VIP/Admin bypass block)
                 database.consume_advice_message(uid)
+                
+                # Check if this was the last free message — append punchy hook
+                remaining_after = database.get_advice_messages_left(uid)
+                if remaining_after <= 0 and not is_vip and not is_adm:
+                    ai_response += S(user_lang, 'last_free_hook')
                     
                 # Update history and save back to DB
                 history.append({"role": "user", "parts": [user_text]})

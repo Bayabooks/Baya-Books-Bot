@@ -1013,6 +1013,67 @@ def handle_callback(call):
         safe_delete_message(chat_id, call.message.message_id)
         return handle_callback_queries(call)
 
+    if data.startswith("adm_reply_"):
+        if not is_admin(call.from_user): return
+        target_uid = data.split("_")[2]
+        set_state(uid, f"ADMIN_REPLY_{target_uid}")
+        bot.send_message(chat_id, f"📝 <b>Reply to User {target_uid}</b>\n\nType your message below (/cancel to abort):", parse_mode="HTML")
+        bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("adm_view_user_"):
+        if not is_admin(call.from_user): return
+        target_uid = int(data.split("_")[3])
+        user = database.get_user(target_uid)
+        if not user:
+            bot.answer_callback_query(call.id, "User not found", show_alert=True)
+            return
+        bot.send_message(chat_id, f"👤 <b>User Info</b>\nName: {user['first_name']}\nID: <code>{user['user_id']}</code>\nLang: {user.get('bot_language')}\nGender: {user.get('gender')}\nAge Verified: {user.get('age_verified')}\nMsgs Left: {user.get('advice_messages_left', 5)}\nVIP Expiry: {user.get('vip_expiry')}\nBanned: {user.get('is_banned')}", parse_mode="HTML")
+        bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("adm_add_msgs_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        amount = int(parts[4])
+        database.add_advice_messages(target_uid, amount)
+        bot.answer_callback_query(call.id, f"Added {amount} messages to {target_uid}", show_alert=True)
+        bot.send_message(target_uid, S(get_lang(target_uid), 'gift_notification', amount=amount), parse_mode="HTML")
+        return
+
+    if data.startswith("adm_make_vip_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        days = int(parts[4])
+        from datetime import datetime, timedelta
+        expiry = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = database.get_connection(); c = conn.cursor()
+        c.execute("UPDATE users SET vip_expiry = ? WHERE user_id = ?", (expiry, target_uid))
+        conn.commit(); conn.close()
+        bot.answer_callback_query(call.id, f"Made VIP for {days} days", show_alert=True)
+        bot.send_message(target_uid, f"🎉 <b>እንኳን ደስ አለዎት!</b>\nለ {days} ቀናት VIP ሆነዋል!", parse_mode="HTML")
+        return
+
+    if data.startswith("adm_ban_"):
+        if not is_admin(call.from_user): return
+        target_uid = int(data.split("_")[2])
+        conn = database.get_connection(); c = conn.cursor()
+        c.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (target_uid,))
+        conn.commit(); conn.close()
+        bot.answer_callback_query(call.id, f"User {target_uid} banned", show_alert=True)
+        return
+
+    if data.startswith("adm_unban_"):
+        if not is_admin(call.from_user): return
+        target_uid = int(data.split("_")[2])
+        conn = database.get_connection(); c = conn.cursor()
+        c.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (target_uid,))
+        conn.commit(); conn.close()
+        bot.answer_callback_query(call.id, f"User {target_uid} unbanned", show_alert=True)
+        return
+
     if data == "adm_back":
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
@@ -1483,17 +1544,49 @@ def handle_messages(message):
         if admin_id:
             try:
                 gender_str = "👨 Male" if database.get_onboarding_status(uid)[1] == "male" else "👩 Female"
+                markup = InlineKeyboardMarkup(row_width=2)
+                markup.add(
+                    InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{uid}"),
+                    InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
+                )
+                markup.add(
+                    InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{uid}_10"),
+                    InlineKeyboardButton("🎁 +50 Msgs", callback_data=f"adm_add_msgs_{uid}_50")
+                )
+                markup.add(
+                    InlineKeyboardButton("👑 VIP (7 Days)", callback_data=f"adm_make_vip_{uid}_7"),
+                    InlineKeyboardButton("👑 VIP (30 Days)", callback_data=f"adm_make_vip_{uid}_30")
+                )
+                markup.add(
+                    InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{uid}"),
+                    InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{uid}")
+                )
+                
                 bot.send_message(
                     admin_id,
                     f"💬 <b>New Feedback</b>\n━━━━━━━━━━━━━━\n"
                     f"👤 {user_info.first_name} ({gender_str})\n"
-                    f"🌐 Lang: {lang}\n\n"
+                    f"🌐 Lang: {lang}\n"
+                    f"🆔 ID: <code>{uid}</code>\n\n"
                     f"<i>{feedback_text}</i>",
-                    parse_mode="HTML"
+                    parse_mode="HTML",
+                    reply_markup=markup
                 )
             except Exception:
                 pass
         bot.send_message(chat_id, S(lang, 'feedback_thanks'), parse_mode="HTML")
+        clear_state(uid)
+        return
+
+    if str(state).startswith("ADMIN_REPLY_") and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        target_uid = int(state.split("_")[2])
+        try:
+            bot.copy_message(target_uid, chat_id, message.message_id)
+            bot.send_message(chat_id, f"✅ Message sent to user {target_uid}.")
+        except Exception as e:
+            bot.send_message(chat_id, f"❌ Failed to send: {e}")
         clear_state(uid)
         return
 

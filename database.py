@@ -849,3 +849,23 @@ def get_silent_users():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_trial_ended_users():
+    """Get users who exhausted their trial but haven't paid."""
+    conn = get_connection()
+    c = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("""
+        SELECT user_id, first_name, bot_language
+        FROM users
+        WHERE IFNULL(advice_messages_left, 5) <= 0
+        AND (vip_expiry IS NULL OR vip_expiry < ?)
+        AND bot_blocked = 0
+        AND user_id NOT IN (
+            SELECT DISTINCT user_id FROM payments
+            WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
+        )
+    """, (now_str,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

@@ -608,6 +608,56 @@ def cmd_icebreaker(message):
     
     threading.Thread(target=run_icebreaker, daemon=True).start()
 
+# ══════════════════════════════════════════
+#  /revive COMMAND — Nudge Trial Ended users
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["revive"])
+def cmd_revive(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!"); return
+    
+    ended = database.get_trial_ended_users()
+    if not ended:
+        bot.reply_to(message, "✅ No trial-ended users found.")
+        return
+    
+    bot.reply_to(message, f"🔮 Sending cliffhanger revival to <b>{len(ended)}</b> users who exhausted their trial...", parse_mode="HTML")
+    
+    import threading, time
+    def run_revive():
+        sent, failed = 0, 0
+        for u in ended:
+            uid = u['user_id']
+            name = u['first_name'] or 'there'
+            u_lang = u.get('bot_language') or 'am'
+            try:
+                # Psychological cliffhanger hook
+                revive_texts = {
+                    'am': f"👋 ሰላም <b>{name}</b>፣ ያለፈውን ውይይታችንን መለስ ብዬ እያየሁት ነበር።\n\nስለተወያየንበት ጉዳይ አንድ ያልነገርኩዎት ትልቅ ነገር አለ። እስካሁን ያወራነው የችግሩን ገፅታ (Surface) ብቻ ነው፤ ዋናው ስር ያለው ግን ሌላ ቦታ ነው።\n\nውይይታችንን አቋርጠን መፍትሄውን ሳልነግርዎት በመቅረቴ ቅር ብሎኛል። መፍትሄውን ለማወቅ እና የጀመርነውን ለመጨረስ... 👇",
+                    'en': f"👋 Hi <b>{name}</b>, I was looking back at our previous chat.\n\nThere's one major thing I haven't told you about what we discussed. So far, we only scratched the surface of the problem. The real root is somewhere else entirely.\n\nIt bothers me that we stopped before I could give you the actual solution. To find out the solution and finish what we started... 👇",
+                    'ti': f"👋 ሰላም <b>{name}</b>፡ ነቲ ሕሉፍ ዕላልና ምልስ ኢለ እርእዮ ነይረ።\n\nብዛዕባ ዝተመያየጥናሉ ጉዳይ ሓደ ዘይነገርኩኻ ዓቢ ነገር ኣሎ። ክሳብ ሕጂ ዘውራዕናዮ ገጽታ ናይቲ ጸገም ጥራይ እዩ፣ እቲ ቀንዲ ሱር ግን ካልእ ቦታ እዩ ዘሎ።\n\nመፍትሒኡ ከይነገርኩኻ ዕላልና ብምቁራጹ ጓህዩኒ። መፍትሒኡ ንምፍላጥን ዝጀመርናዮ ንምውዳእን... 👇",
+                    'om': f"👋 Akkam <b>{name}</b>, marii keenya darbe deebi'een ilaalaa ture.\n\nWaa'ee dhimma irratti mari'annee sana wanta guddaa tokko kanin sitti hin himin jira. Hanga ammaatti kan haasofne fuula rakkinichaa qofa; hundeen rakkinichaa garuu iddoo biraa jira.\n\nFurmaata isaa osoo sitti hin himin mariin keenya addaan cituun isaa na gaddisiiseera. Furmaata isaa beekuu fi waan jalqabne xumuruuf... 👇",
+                }
+                text = revive_texts.get(u_lang, revive_texts['am'])
+                
+                # Attach the Paywall / TopUp buttons directly to the message
+                markup = InlineKeyboardMarkup(row_width=1)
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_starter"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_pro"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_heavy"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+                
+                bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                sent += 1
+            except Exception:
+                failed += 1
+            time.sleep(0.07)
+        try:
+            bot.send_message(message.chat.id, f"✅ <b>Revival Complete!</b>\n✔️ {sent} sent\n❌ {failed} failed", parse_mode="HTML")
+        except: pass
+    
+    threading.Thread(target=run_revive, daemon=True).start()
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])

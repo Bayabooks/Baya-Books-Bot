@@ -372,10 +372,10 @@ def check_onboarding(chat_id, user_id, first_name):
     return True
 
 def send_welcome(chat_id, first_name, lang=None, uid=None):
-    if lang is None:
-        lang = 'am'
     if uid is None:
         uid = chat_id # Fallback
+    if lang is None:
+        lang = get_lang(uid)
     bot.send_message(
         chat_id, 
         S(lang, 'welcome_text', name=html.escape(first_name)), 
@@ -1009,7 +1009,7 @@ def handle_callback(call):
         # Simulate clicking the dashboard button to refresh it
         call.data = "adm_dashboard"
         safe_delete_message(chat_id, call.message.message_id)
-        return handle_callback_queries(call)
+        return handle_callback(call)
 
     if data.startswith("adm_reply_"):
         if not is_admin(call.from_user): return

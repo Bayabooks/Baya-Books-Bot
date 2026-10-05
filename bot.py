@@ -359,18 +359,16 @@ def check_onboarding(chat_id, user_id, first_name):
         bot.send_message(chat_id, S('am', 'lang_select_prompt'), parse_mode="HTML", reply_markup=markup)
         return False
 
-    if not age_verified:
-        text = S(user_lang, 'onboard_privacy')
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(S(user_lang, 'onboard_age_btn'), callback_data="onboard_age_18"))
-        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
-        return False
-    
-    if not gender:
-        # Age is verified but gender is missing — go straight to gender selection
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"), InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f"))
-        bot.send_message(chat_id, S(user_lang, 'onboard_gender_prompt'), reply_markup=markup)
+    # Age + Gender combined in one fast step
+    if not age_verified or not gender:
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"),
+            InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f")
+        )
+        privacy_note = S(user_lang, 'onboard_privacy')
+        prompt = S(user_lang, 'onboard_age_gender_prompt')
+        bot.send_message(chat_id, f"{privacy_note}\n\n{prompt}", parse_mode="HTML", reply_markup=markup)
         return False
     
     return True
@@ -524,6 +522,53 @@ def cmd_unban(message):
     except:
         bot.reply_to(message, "Usage: /unban <user_id>")
 
+# ══════════════════════════════════════════
+#  /nudge COMMAND — Re-engage stuck users
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["nudge"])
+def cmd_nudge(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!"); return
+    
+    stuck = database.get_stuck_users()
+    if not stuck:
+        bot.reply_to(message, "✅ No stuck users! Everyone has completed onboarding.")
+        return
+    
+    bot.reply_to(message, f"🔄 Nudging <b>{len(stuck)}</b> users who haven't completed onboarding...", parse_mode="HTML")
+    
+    import threading, time
+    def run_nudge():
+        sent, failed = 0, 0
+        for u in stuck:
+            uid = u['user_id']
+            name = u['first_name'] or 'there'
+            u_lang = u.get('bot_language') or 'am'
+            try:
+                # Send a warm, curiosity-inducing re-engagement nudge
+                nudge_texts = {
+                    'am': f"👋 <b>{name}</b>፣ ወደ Baya ተመልሰዋል!\n\nቀደም ብቻ ጀምረው ቆሙ። ቀጣዩ እርምጃ ፈጣን ነው — ጾታዎን ብቻ ይምረጡ እና ወዲያውኑ ወደ AI-ው ይደርሳሉ። 👇",
+                    'en': f"👋 <b>{name}</b>, you're back at Baya!\n\nYou were almost done. One quick step left — just select your gender and you'll be in immediately. 👇",
+                    'ti': f"👋 <b>{name}</b>፣ ናብ Baya ተመሊስካ!\n\nቀዲምካ ጀሚርካ ኣቋሪጽካ። ዝተረፈ ሓደ ቀሊል ስጉምቲ ጥራይ እዩ — ጾታኻ ምረጽ ወዲኡ ናብ AI-ና ኢኻ ትኣቱ። 👇",
+                    'om': f"👋 <b>{name}</b>, gara Bayaatti deebitee!\n\nTurte hin fixne. Tarkaanfii xiqqaa tokko qofa hafe — saala kee filadhu, hatattamaan seenta. 👇",
+                }
+                text = nudge_texts.get(u_lang, nudge_texts['am'])
+                markup = InlineKeyboardMarkup(row_width=2)
+                markup.add(
+                    InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
+                    InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
+                )
+                bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                sent += 1
+            except Exception:
+                failed += 1
+            time.sleep(0.07)
+        try:
+            bot.send_message(message.chat.id, f"✅ <b>Nudge Complete!</b>\n✔️ {sent} sent\n❌ {failed} failed", parse_mode="HTML")
+        except: pass
+    
+    threading.Thread(target=run_nudge, daemon=True).start()
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])
@@ -646,15 +691,22 @@ def handle_callback(call):
 
     # ── Onboarding ───────────────────────────
     if data == "onboard_age_18":
+        # Legacy: just set age and re-show gender step
         database.set_user_age_verified(uid)
         lang = get_lang(uid)
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton(S(lang, 'gender_male'), callback_data="onboard_gen_m"), InlineKeyboardButton(S(lang, 'gender_female'), callback_data="onboard_gen_f"))
-        bot.edit_message_text(S(lang, 'onboard_gender_prompt'), chat_id, call.message.message_id, reply_markup=markup)
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton(S(lang, 'gender_male'), callback_data="onboard_gen_m"),
+            InlineKeyboardButton(S(lang, 'gender_female'), callback_data="onboard_gen_f")
+        )
+        prompt = S(lang, 'onboard_age_gender_prompt')
+        bot.edit_message_text(prompt, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
         return
         
     if data.startswith("onboard_gen_"):
         gender = "male" if data == "onboard_gen_m" else "female"
+        # Set both age AND gender in one tap (frictionless combined step)
+        database.set_user_age_verified(uid)
         database.set_user_gender(uid, gender)
         bot.delete_message(chat_id, call.message.message_id)
         send_welcome(chat_id, call.from_user.first_name, get_lang(uid))

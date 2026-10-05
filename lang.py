@@ -47,10 +47,16 @@ STRINGS = {
     },
 
     "onboard_privacy": {
-        "am": "⚠️ <b>የግላዊነት ማሳሰቢያ እና ስምምነት</b>\n\nውድ ደንበኛ፣ ይህ የላቀ አርቲፊሻል ኢንተለጀንስ (AI) የስነ-ልቦና አማካሪ ነው።\n\n🧠 <b>የባለሙያነት ደረጃ:</b> ይህ AI በስነ-ልቦና ምክር (Psychotherapy)፣ በአስተሳሰብ ህክምና (CBT)፣ እና በግላዊ ካውንስሊንግ ጥልቅ ዕውቀት እንዲኖረው ተደርጎ የተዘጋጀ ነው።\n\n🔒 <b>ሚስጥራዊነት:</b> እዚህ የምናደርገው ማንኛውም ውይይት 100% ሚስጥራዊ ነው። የእርስዎ መረጃዎች ጥቅም ላይ የሚውሉት እርስዎን ለመምከር እና ውይይቱን ለማስታወስ ብቻ ነው።\n\n🧹 <b>ማህደር ማጽዳት:</b> በየትኛውም ጊዜ <b>👤 የኔ ገፅ</b> ውስጥ በመግባት <b>'🧹 ማህደር አጽዳ'</b> የሚለውን ቁልፍ በመጫን መረጃዎን ሙሉ በሙሉ ከሲስተማችን ላይ ማጥፋት ይችላሉ።\n\nበመጀመሪያ፣ እባክዎ ከ18 ዓመት በላይ መሆንዎን ያረጋግጡ።",
-        "en": "⚠️ <b>Privacy Notice and Agreement</b>\n\nDear client, this is an advanced Artificial Intelligence (AI) psychological counselor.\n\n🧠 <b>Expertise Level:</b> This AI is trained with deep knowledge in psychotherapy, Cognitive Behavioral Therapy (CBT), and personal counseling.\n\n🔒 <b>Confidentiality:</b> Every conversation we have here is 100% confidential. Your information is used solely to counsel you and remember our context.\n\n🧹 <b>Data Deletion:</b> At any time, you can go to <b>👤 My Page</b> and click <b>'🧹 Reset Data'</b> to completely delete your information from our system.\n\nFirst, please confirm that you are over 18 years old.",
-        "ti": "⚠️ <b>መተሓሳሰቢ ብሕታውነትን ስምምዕን</b>\n\nክቡር ዓሚል፡ እዚ ዝማዕበለ ናይ ሰብ-ሰራሽ ኣስተውዕሎ (AI) ናይ ስነ-ኣእምሮ ኣማኻሪ እዩ።\n\n🧠 <b>ደረጃ ሞያ:</b> እዚ AI ኣብ ስነ-ኣእምሮኣዊ ምኽሪ (Psychotherapy)፡ ሕክምና ኣተሓሳስባ (CBT)፡ ከምኡ'ውን ኣብ ውልቃዊ ምኽሪ ዕምቆት ዘለዎ ፍልጠት ክህልዎ ተገይሩ ዝተዳለወ እዩ።\n\n🔒 <b>ምስጢራውነት:</b> ኣብዚ እንገብሮ ዝኾነ ይኹን ዕላል 100% ምስጢራዊ እዩ። ሓበሬታኹም ንዓኹም ንምምኻርን ነቲ ዕላል ንምዝካርን ጥራይ እዩ ዝውዕል።\n\n🧹 <b>መዝገብ ምጽራይ:</b> ኣብ ዝኾነ እዋን ናብ <b>👤 ገጸይ</b> ብምእታው <b>'🧹 መዝገብ ኣጽሪ'</b> ዝብል መርገጺ ብምጥዋቕ ሓበሬታኹም ካብ ስርዓትና ብምሉእ ክትድምስሱ ትኽእሉ ኢኹም።\n\nቅድም ክብል፡ በጃኹም ዕድሜኹም ልዕሊ 18 ዓመት ምዃኑ ኣረጋግጹ።",
-        "om": "⚠️ <b>Hubannoo Iccitii fi Walii-galtee</b>\n\nKabajamaa maamila keenya, kun gorsa xiin-sammuu Artificial Intelligence (AI) sadarkaa olaanaa ti.\n\n🧠 <b>Sadarkaa Ogeessummaa:</b> AI kun gorsa xiin-sammuu (Psychotherapy), wal'aansa ilaalchaa (CBT), fi gorsa dhuunfaa irratti beekumsa gadi fageenyaa akka qabaatutti kan qophaa'edha.\n\n🔒 <b>Iccitii:</b> Mariin nuti asitti goonu kamiyyuu 100% iccitii dha. Odeeffannoon keessan isin gorsuu fi marii keenya yaadachuuf qofa faayidaa irra oola.\n\n🧹 <b>Kuusaa Qulleessuu:</b> Yeroo kamiyyuu <b>👤 Fuula koo</b> keessa seenuun cuqqaallii <b>'🧹 Kuusaa qulleessi'</b> jedhu tuquun odeeffannoo keessan guutumaan guutuutti sirna keenya irraa haquu ni dandeessu.\n\nDuraan dursitee, maaloo umuriin keessan waggaa 18 ol ta'uu isaa mirkaneessaa."
+        "am": "🔒 ውይይታችን 100% ሚስጥራዊ ነው። ማህደርዎን በ👤 የኔ ገፅ ውስጥ በፈለጉት ጊዜ ማጽዳት ይችላሉ።",
+        "en": "🔒 Our conversation is 100% confidential. You can clear your data anytime from 👤 My Page.",
+        "ti": "🔒 ዕላልና 100% ምስጢራዊ እዩ። ሓበሬታኹም ኣብ ዝኾነ እዋን ካብ 👤 ገጸይ ምጽራይ ትኽእሉ ኢኹም።",
+        "om": "🔒 Marii keenya 100% iccitii dha. Odeeffannoo keessan yeroo kamiyyuu 👤 Fuula koo irraa haquu dandeessu."
+    },
+    "onboard_age_gender_prompt": {
+        "am": "🎯 <b>ጥቂት ብቻ ይቀራሉ!</b>\n\nስለ እርስዎ AI-ው እንዲያውቅ ጾታዎን ይምረጡ። <i>(ከ18 ዓመት በላይ መሆንዎን ያረጋግጣል)</i>",
+        "en": "🎯 <b>Almost there!</b>\n\nSelect your gender so the AI can speak to you naturally. <i>(Confirms you are 18+)</i>",
+        "ti": "🎯 <b>ቀሪ ቀሊል ጥራይ እዩ!</b>\n\nAI-ና ብዝግባእ ምእንቲ ኪዛረበኩም ጾታኹም ምረጹ። <i>(18+ ምዃንኩም የረጋግጽ)</i>",
+        "om": "🎯 <b>Hafe xiqqoo qofa!</b>\n\nAI-n siif akka haasofuuf saala keessan filadhaa. <i>(Waggaa 18+ ta'uu keessan mirkaneessa)</i>"
     },
     "onboard_age_btn": {
         "am": "✅ እኔ ከ 18 ዓመት በላይ ነኝ",

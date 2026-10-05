@@ -819,3 +819,17 @@ def get_user_stage_stats():
         "vip_users": vip_users,
         "paid_users": paid_users,
     }
+
+def get_stuck_users():
+    """Get users who haven't completed onboarding (no age_verified or no gender)."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT user_id, first_name, bot_language
+        FROM users
+        WHERE (IFNULL(age_verified, 0) = 0 OR gender IS NULL OR gender = '')
+        AND bot_blocked = 0
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

@@ -829,6 +829,7 @@ def get_stuck_users():
         FROM users
         WHERE (IFNULL(age_verified, 0) = 0 OR gender IS NULL OR gender = '')
         AND bot_blocked = 0
+        AND IFNULL(nudge_onboard_sent, 0) = 0
     """)
     rows = c.fetchall()
     conn.close()
@@ -845,6 +846,7 @@ def get_silent_users():
         AND gender IS NOT NULL AND gender != '' 
         AND (advice_history IS NULL OR advice_history = '[]') 
         AND bot_blocked = 0
+        AND IFNULL(nudge_silent_sent, 0) = 0
     """)
     rows = c.fetchall()
     conn.close()
@@ -861,6 +863,7 @@ def get_trial_ended_users():
         WHERE IFNULL(advice_messages_left, 5) <= 0
         AND (vip_expiry IS NULL OR vip_expiry < ?)
         AND bot_blocked = 0
+        AND IFNULL(nudge_revive_sent, 0) = 0
         AND user_id NOT IN (
             SELECT DISTINCT user_id FROM payments
             WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
@@ -895,3 +898,41 @@ def append_bot_message_to_history(user_id, text):
         history = history[-20:]
         
     save_advice_history(user_id, json.dumps(history, ensure_ascii=False))
+
+def get_setting(key, default=None):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT setting_value FROM settings WHERE setting_key = ?", (key,))
+    row = c.fetchone()
+    conn.close()
+    return row['setting_value'] if row else default
+
+def set_setting(key, value):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO settings (setting_key, setting_value) VALUES (?, ?)", (key, str(value)))
+    conn.commit()
+    conn.close()
+
+def mark_nudge_sent(user_id, nudge_type):
+    """Marks a user as having received a specific nudge (nudge_onboard_sent, nudge_silent_sent, nudge_revive_sent)"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(f"UPDATE users SET {nudge_type} = 1 WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def auto_migrate_nudge_columns():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS settings (
+        setting_key TEXT PRIMARY KEY,
+        setting_value TEXT
+    )''')
+    for col in ["nudge_onboard_sent", "nudge_silent_sent", "nudge_revive_sent"]:
+        try: c.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT 0")
+        except: pass
+    conn.commit()
+    conn.close()
+
+auto_migrate_nudge_columns()

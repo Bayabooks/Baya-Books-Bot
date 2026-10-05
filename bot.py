@@ -558,6 +558,7 @@ def cmd_nudge(message):
                 )
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
+                database.mark_nudge_sent(uid, "nudge_onboard_sent")
                 sent += 1
             except Exception:
                 failed += 1
@@ -600,6 +601,7 @@ def cmd_icebreaker(message):
                 text = ice_texts.get(u_lang, ice_texts['am'])
                 bot.send_message(uid, text, parse_mode="HTML")
                 database.append_bot_message_to_history(uid, text)
+                database.mark_nudge_sent(uid, "nudge_silent_sent")
                 sent += 1
             except Exception:
                 failed += 1
@@ -651,6 +653,7 @@ def cmd_revive(message):
                 
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
+                database.mark_nudge_sent(uid, "nudge_revive_sent")
                 sent += 1
             except Exception:
                 failed += 1
@@ -962,6 +965,12 @@ def handle_callback(call):
             recent_pay_text = "  — No payments yet\n"
 
         markup = InlineKeyboardMarkup()
+        
+        # Add Auto-Nudge Toggle
+        auto_nudge_status = database.get_setting("auto_nudge", "OFF")
+        nudge_btn_text = "🤖 Auto-Nudge: ON 🟢" if auto_nudge_status == "ON" else "🤖 Auto-Nudge: OFF 🔴"
+        markup.add(InlineKeyboardButton(nudge_btn_text, callback_data="toggle_auto_nudge"))
+        
         markup.add(InlineKeyboardButton("🔄 Refresh", callback_data="adm_dashboard"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
@@ -992,7 +1001,18 @@ def handle_callback(call):
             parse_mode="HTML", reply_markup=markup,
         )
         return
-    
+    if data == "toggle_auto_nudge":
+        if not is_admin(call.from_user): return
+        current = database.get_setting("auto_nudge", "OFF")
+        new_val = "OFF" if current == "ON" else "ON"
+        database.set_setting("auto_nudge", new_val)
+        bot.answer_callback_query(call.id, f"Auto-Nudge turned {new_val}")
+        
+        # Simulate clicking the dashboard button to refresh it
+        call.data = "adm_dashboard"
+        safe_delete_message(chat_id, call.message.message_id)
+        return handle_callback_queries(call)
+
     if data == "adm_back":
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
@@ -1990,6 +2010,7 @@ def run_dummy_server():
 # ══════════════════════════════════════════
 def main():
     threading.Thread(target=run_dummy_server, daemon=True).start()
+    threading.Thread(target=auto_nudge_daemon, daemon=True).start()
     print("=" * 50)
     print("  Baya Books Bot is LIVE!")
     print("=" * 50)
@@ -2000,3 +2021,74 @@ if __name__ == "__main__":
         main()
     except (KeyboardInterrupt, SystemExit):
         print("\nBot stopped.")
+
+def auto_nudge_daemon():
+    import time
+    while True:
+        try:
+            if database.get_setting("auto_nudge", "OFF") == "ON":
+                # 1. Onboarding Nudge
+                stuck = database.get_stuck_users()
+                for u in stuck:
+                    uid, name, u_lang = u['user_id'], u['first_name'] or 'there', u.get('bot_language') or 'am'
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ በመሃል ተቋርጦብዎት ነው?\n\nመስማት የሚፈልጉትን ሳይሆን፣ አሁን ላይ <b>ሊሰሙት የሚገባዎትን እውነት</b> የሚነግርዎት AI እርስዎን እየጠበቀ ነው።\n\nወደ ሚስጥራዊው የውይይት ገፅ ለመግባት...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                        'en': f"👋 Hi <b>{name}</b>, got interrupted halfway?\n\nThe AI that tells you <b>the truth you need to hear</b> (not just what you want to hear) is waiting for you.\n\nTo enter the confidential chat...\n<b>Please select your gender 👇</b>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ኣብ መንጎ ተቋሪጹካ ድዩ?\n\nክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> ዝነግረካ AI እናተጸበየካ እዩ።\n\nናብቲ ምስጢራዊ ዕላል ንምእታው...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                        'om': f"👋 Akkam <b>{name}</b>, gidduutti si jalaa citee?\n\nAI'n waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti himu si eegaa jira.\n\nMarii iccitii ta'e kana jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                    }.get(u_lang, "")
+                    if not text: text = "👋 " + name
+                    markup = InlineKeyboardMarkup(row_width=2)
+                    markup.add(
+                        InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
+                        InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
+                    )
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                        database.append_bot_message_to_history(uid, text)
+                        database.mark_nudge_sent(uid, "nudge_onboard_sent")
+                    except: pass
+                    time.sleep(0.1)
+
+                # 2. Silent Users Nudge (Icebreaker)
+                silent = database.get_silent_users()
+                for u in silent:
+                    uid, name, u_lang = u['user_id'], u['first_name'] or 'there', u.get('bot_language') or 'am'
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ በሩን ከፍተው ገብተዋል ግን ዝምታን መርጠዋል።\n\nብዙ ጊዜ ከየት መጀመር እንዳለብን ግራ ሲገባን ዝም እንላለን። የተስተካከለ ፅሁፍ ማዘጋጀት አይጠበቅብዎትም — አሁን ላይ የሚሰማዎትን ስሜት በአንድ ቃል፣ ወይም «ሰላም» በማለት ብቻ ይፃፉልኝ።\n\nእኔ እዚህ ያለሁት ላዳምጥዎት ነው። 👇",
+                        'en': f"👋 Hi <b>{name}</b>, you opened the door but stayed silent.\n\nOften we stay quiet because we don't know where to start. You don't need a perfectly crafted message — just type 'Hi', or send a single word about how you feel right now.\n\nI'm here to listen. 👇",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ማዕጾ ኸፊጥካ ኣቲኻ ግን ስቕታ መሪጽካ።\n\nመብዛሕትኡ ግዜ ካበይ ከም እንጅምር ምስ ዝጠፍኣና ስቕ ንብል። እተስተኻኸለ ጽሑፍ ምድላው ኣየድልየካን እዩ — ሕጂ ዝስመዓካ ዘሎ ስምዒት ብሓደ ቃል፡ ወይ ድማ «ሰላም» ብምባል ጥራይ ጸሓፈለይ።\n\nኣነ ንዓኻ ንምስማዕ ኣብዚ ኣለኹ። 👇",
+                        'om': f"👋 Akkam <b>{name}</b>, balbala banteet seente garuu cal'isuu filatte.\n\nYeroo baay'ee eessaa akka jalqabnu yeroo nutti bitaacha'u ni cal'isna. Barreeffama sirreeffame qopheessuun sirraa hin eegamu — miira amma sitti dhaga'amu jecha tokkoon, ykn «Akkam» jechuun qofa naaf barreessi.\n\nAni si dhaggeeffachuuf asan jira. 👇",
+                    }.get(u_lang, "")
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.append_bot_message_to_history(uid, text)
+                        database.mark_nudge_sent(uid, "nudge_silent_sent")
+                    except: pass
+                    time.sleep(0.1)
+
+                # 3. Trial Ended Nudge (Revive)
+                ended = database.get_trial_ended_users()
+                for u in ended:
+                    uid, name, u_lang = u['user_id'], u['first_name'] or 'there', u.get('bot_language') or 'am'
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ ያለፈውን ውይይታችንን መለስ ብዬ እያየሁት ነበር።\n\nስለተወያየንበት ጉዳይ አንድ ያልነገርኩዎት ትልቅ ነገር አለ። እስካሁን ያወራነው የችግሩን ገፅታ (Surface) ብቻ ነው፤ ዋናው ስር ያለው ግን ሌላ ቦታ ነው።\n\nውይይታችንን አቋርጠን መፍትሄውን ሳልነግርዎት በመቅረቴ ቅር ብሎኛል። መፍትሄውን ለማወቅ እና የጀመርነውን ለመጨረስ... 👇",
+                        'en': f"👋 Hi <b>{name}</b>, I was looking back at our previous chat.\n\nThere's one major thing I haven't told you about what we discussed. So far, we only scratched the surface of the problem. The real root is somewhere else entirely.\n\nIt bothers me that we stopped before I could give you the actual solution. To find out the solution and finish what we started... 👇",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ነቲ ሕሉፍ ዕላልና ምልስ ኢለ እርእዮ ነይረ።\n\nብዛዕባ ዝተመያየጥናሉ ጉዳይ ሓደ ዘይነገርኩኻ ዓቢ ነገር ኣሎ። ክሳብ ሕጂ ዘውራዕናዮ ገጽታ ናይቲ ጸገም ጥራይ እዩ፣ እቲ ቀንዲ ሱር ግን ካልእ ቦታ እዩ ዘሎ።\n\nመፍትሒኡ ከይነገርኩኻ ዕላልና ብምቁራጹ ጓህዩኒ። መፍትሒኡ ንምፍላጥን ዝጀመርናዮ ንምውዳእን... 👇",
+                        'om': f"👋 Akkam <b>{name}</b>, marii keenya darbe deebi'een ilaalaa ture.\n\nWaa'ee dhimma irratti mari'annee sana wanta guddaa tokko kanin sitti hin himin jira. Hanga ammaatti kan haasofne fuula rakkinichaa qofa; hundeen rakkinichaa garuu iddoo biraa jira.\n\nFurmaata isaa osoo sitti hin himin mariin keenya addaan cituun isaa na gaddisiiseera. Furmaata isaa beekuu fi waan jalqabne xumuruuf... 👇",
+                    }.get(u_lang, "")
+                    markup = InlineKeyboardMarkup(row_width=1)
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_starter"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_pro"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_heavy"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                        database.append_bot_message_to_history(uid, text)
+                        database.mark_nudge_sent(uid, "nudge_revive_sent")
+                    except: pass
+                    time.sleep(0.1)
+
+        except Exception as e:
+            print("Auto-nudge daemon error:", e)
+        time.sleep(3600)  # Sleep 1 hour

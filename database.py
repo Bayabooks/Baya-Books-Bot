@@ -859,7 +859,8 @@ def get_trial_ended_users():
     c.execute("""
         SELECT user_id, first_name, bot_language
         FROM users
-        WHERE IFNULL(advice_messages_left, 5) <= 0
+        WHERE advice_history IS NOT NULL AND advice_history != '[]'
+        AND IFNULL(advice_messages_left, 5) <= 0
         AND (vip_expiry IS NULL OR vip_expiry < ?)
         AND bot_blocked = 0
         AND IFNULL(nudge_revive_sent, 0) = 0

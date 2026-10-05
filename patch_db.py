@@ -3,38 +3,27 @@ import sys
 with open('database.py', 'r', encoding='utf-8') as f:
     content = f.read()
 
-vip_functions = """
-def is_vip(user_id):
+funcs = """
+def get_bot_language(user_id):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT vip_expiry FROM users WHERE id = ?
-    ''', (user_id,))
-    row = cursor.fetchone()
+    c = conn.cursor()
+    c.execute("SELECT bot_language FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
     conn.close()
-    if row and row[0]:
-        from datetime import datetime
-        try:
-            expiry = datetime.fromisoformat(row[0])
-            return datetime.now() < expiry
-        except:
-            pass
-    return False
+    if row and row["bot_language"]:
+        return row["bot_language"]
+    return "am"
 
-def set_vip(user_id, days=30):
-    from datetime import datetime, timedelta
-    expiry = (datetime.now() + timedelta(days=days)).isoformat()
+def set_bot_language(user_id, lang_code):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE users SET vip_expiry = ? WHERE id = ?
-    ''', (expiry, user_id))
+    c = conn.cursor()
+    c.execute("UPDATE users SET bot_language = ? WHERE user_id = ?", (lang_code, user_id))
     conn.commit()
     conn.close()
 """
 
-if "def is_vip" not in content:
-    content += "\n" + vip_functions
+if "def get_bot_language" not in content:
+    content += "\n" + funcs
     with open('database.py', 'w', encoding='utf-8') as f:
         f.write(content)
-print("done")
+print("Updated database.py")

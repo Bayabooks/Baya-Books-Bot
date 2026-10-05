@@ -53,10 +53,10 @@ STRINGS = {
         "om": "🔒 Marii keenya 100% iccitii dha. Odeeffannoo keessan yeroo kamiyyuu 👤 Fuula koo irraa haquu dandeessu."
     },
     "onboard_age_gender_prompt": {
-        "am": "🔒 ሚስጥርዎ ደህና ነው — ቃል ገብተናል።\n\nይህ AI ከሁሉም ሰው ጋር ተመሳሳይ አይናገርም። ለእርስዎ ብቻ ሆኖ፣ ሊሰሙ ከሚፈልጉት ሳይሆን <b>ሊሰሙ ከሚፈልጉት ይልቅ ሊያስፈልጎዎት ያልጠበቁትን ነገር</b> ይናገርልዎታል።\n\nAI-ው ለእርስዎ ትክክለኛ ቋንቋ ይጠቀምልዎታል —\n\n<b>ጾታዎን ይምረጡ 👇</b>\n<i>(ከ18 ዓመት በላይ ለሆኑ ብቻ)</i>",
-        "en": "🔒 Your secret stays here — we promise.\n\nThis AI does not speak to everyone the same way. It will tell you not what you <i>want</i> to hear, but what you <b>need</b> to hear.\n\nSelect your gender so it knows exactly how to reach you —\n\n<b>Choose below 👇</b>\n<i>(For adults 18+ only)</i>",
-        "ti": "🔒 ምስጢርካ ኣብዚ ይጸንሕ — ቃል ንኣቱ።\n\nእዚ AI ምስ ኩሉ ሰብ ብሓደ ኣይዛረብን እዩ። ክትሰምዖ ዝደለኻዮ ሳይኮን፣ <b>ክትሰምዖ ዘይሓሰብካዮ ሓቂ</b> እዩ ዝነግረካ።\n\nAI-ና ንዓካ ዝኸውን ቋንቋ ምእንቲ ኪጥቀም ጾታኻ ምረጽ —\n\n<b>ኣብ ታሕቲ ምረጽ 👇</b>\n<i>(ካብ 18 ዓመት ንላዕሊ ጥራይ)</i>",
-        "om": "🔒 Iccitii kee asumaan turaa — waadaa seenna.\n\nAI kun hundaafuu tokko miti haasofuu. Dhagahuu barbaaddu sitti himuuf miti — <b>dhugaa hin eegne</b> sitti himuu dhufeera.\n\nSaala kee filadhu; AI-n afaan sirrii keetiin siif haasofuuf —\n\n<b>Gaditti filadhu 👇</b>\n<i>(Waggaa 18 ol qofa)</i>"
+        "am": "🔒 በዚህ 100% ሚስጥራዊ በሆነ የውይይት ገፅ፣ ይህ AI ሰዎችን ለማስደሰት አይሞክርም። መስማት የሚፈልጉትን ሳይሆን፣ <b>አሁን ላይ ሊሰሙት የሚገባዎትን እውነት</b> ነው የሚነግርዎት።\n\nውይይታችንን ለመጀመር...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>\n<i>(ከ18 ዓመት በላይ ለሆኑ ብቻ)</i>",
+        "en": "🔒 In this 100% confidential space, this AI doesn't try to please anyone. It won't tell you what you want to hear, but <b>the truth you need to hear right now</b>.\n\nTo start our conversation...\n<b>Please select your gender 👇</b>\n<i>(For adults 18+ only)</i>",
+        "ti": "🔒 ኣብዚ 100% ምስጢራዊ ዝኾነ ዕላል፡ እዚ AI ንሰባት ንምሕጓስ ኣይፍተንን እዩ። ክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> እዩ ዝነግረካ።\n\nዕላልና ንምጅማር...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>\n<i>(ካብ 18 ዓመት ንላዕሊ ጥራይ)</i>",
+        "om": "🔒 Marii 100% iccitii ta'e kana keessatti, AI kun namoota gammachiisuuf hin yaalu. Waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti hima.\n\nMarii keenya jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>\n<i>(Waggaa 18 ol qofaaf)</i>"
     },
     "onboard_age_btn": {
         "am": "✅ እኔ ከ 18 ዓመት በላይ ነኝ",

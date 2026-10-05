@@ -763,51 +763,58 @@ def get_user_stage_stats():
     c = conn.cursor()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Stage 1: Stuck in onboarding (hasn't completed the age/gender step)
-    c.execute("SELECT COUNT(*) FROM users WHERE (gender IS NULL OR gender = '') AND bot_blocked = 0")
-    stuck_onboarding = c.fetchone()[0]
+    paid_sql = """
+        SELECT DISTINCT user_id FROM payments
+        WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
+    """
 
-    # Stage 2: Fully onboarded (has gender), never sent a message
-    c.execute("SELECT COUNT(*) FROM users WHERE gender IS NOT NULL AND gender != '' AND (advice_history IS NULL OR advice_history = '[]') AND bot_blocked = 0")
-    onboarded_no_chat = c.fetchone()[0]
-
-    # Stage 5: Started chatting, still has free messages > 0, not VIP, NEVER PAID
-    c.execute("""SELECT COUNT(*) FROM users
-        WHERE advice_history IS NOT NULL AND advice_history != '[]'
-        AND IFNULL(advice_messages_left, 5) > 0
-        AND (vip_expiry IS NULL OR vip_expiry < ?)
-        AND bot_blocked = 0
-        AND user_id NOT IN (
-            SELECT DISTINCT user_id FROM payments
-            WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
-        )""", (now_str,))
-    in_trial = c.fetchone()[0]
-
-    # Stage 6: Free trial FINISHED (0 messages left, not VIP, NEVER PAID)
-    c.execute("""SELECT COUNT(*) FROM users
-        WHERE IFNULL(advice_messages_left, 5) <= 0
-        AND (vip_expiry IS NULL OR vip_expiry < ?)
-        AND bot_blocked = 0
-        AND user_id NOT IN (
-            SELECT DISTINCT user_id FROM payments
-            WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
-        )""", (now_str,))
-    trial_ended = c.fetchone()[0]
-
-    # Stage 7: Active VIP users
+    # 1. VIP (Highest priority)
     c.execute("SELECT COUNT(*) FROM users WHERE vip_expiry IS NOT NULL AND vip_expiry > ? AND bot_blocked = 0", (now_str,))
     vip_users = c.fetchone()[0]
 
-    # Paid users (has paid, but NOT currently VIP)
-    c.execute("""SELECT COUNT(*) FROM users
-        WHERE user_id IN (
-            SELECT DISTINCT user_id FROM payments
-            WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
-        )
-        AND (vip_expiry IS NULL OR vip_expiry < ?)
-        AND bot_blocked = 0
-    """, (now_str,))
+    # 2. Paid Users (Not VIP)
+    c.execute(f"""SELECT COUNT(*) FROM users 
+        WHERE user_id IN ({paid_sql}) 
+        AND (vip_expiry IS NULL OR vip_expiry <= ?) 
+        AND bot_blocked = 0""", (now_str,))
     paid_users = c.fetchone()[0]
+
+    # 3. Stuck Onboarding (Not Paid, Not VIP, No Gender)
+    c.execute(f"""SELECT COUNT(*) FROM users 
+        WHERE (gender IS NULL OR gender = '') 
+        AND user_id NOT IN ({paid_sql}) 
+        AND (vip_expiry IS NULL OR vip_expiry <= ?) 
+        AND bot_blocked = 0""", (now_str,))
+    stuck_onboarding = c.fetchone()[0]
+
+    # 4. Onboarded, No Chat (Not Paid, Not VIP, Has Gender, No History)
+    c.execute(f"""SELECT COUNT(*) FROM users 
+        WHERE gender IS NOT NULL AND gender != '' 
+        AND (advice_history IS NULL OR advice_history = '[]') 
+        AND user_id NOT IN ({paid_sql}) 
+        AND (vip_expiry IS NULL OR vip_expiry <= ?) 
+        AND bot_blocked = 0""", (now_str,))
+    onboarded_no_chat = c.fetchone()[0]
+
+    # 5. In Trial (Not Paid, Not VIP, Has Gender, Has History, msgs > 0)
+    c.execute(f"""SELECT COUNT(*) FROM users 
+        WHERE gender IS NOT NULL AND gender != '' 
+        AND advice_history IS NOT NULL AND advice_history != '[]' 
+        AND IFNULL(advice_messages_left, 5) > 0 
+        AND user_id NOT IN ({paid_sql}) 
+        AND (vip_expiry IS NULL OR vip_expiry <= ?) 
+        AND bot_blocked = 0""", (now_str,))
+    in_trial = c.fetchone()[0]
+
+    # 6. Trial Ended (Not Paid, Not VIP, Has Gender, Has History, msgs <= 0)
+    c.execute(f"""SELECT COUNT(*) FROM users 
+        WHERE gender IS NOT NULL AND gender != '' 
+        AND advice_history IS NOT NULL AND advice_history != '[]' 
+        AND IFNULL(advice_messages_left, 5) <= 0 
+        AND user_id NOT IN ({paid_sql}) 
+        AND (vip_expiry IS NULL OR vip_expiry <= ?) 
+        AND bot_blocked = 0""", (now_str,))
+    trial_ended = c.fetchone()[0]
 
     conn.close()
     return {

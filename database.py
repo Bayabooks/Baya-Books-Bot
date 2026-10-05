@@ -763,20 +763,12 @@ def get_user_stage_stats():
     c = conn.cursor()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Stage 1: Joined but never picked a language
-    c.execute("SELECT COUNT(*) FROM users WHERE (bot_language IS NULL OR bot_language = '') AND bot_blocked = 0")
-    no_lang = c.fetchone()[0]
+    # Stage 1: Stuck in onboarding (hasn't completed the age/gender step)
+    c.execute("SELECT COUNT(*) FROM users WHERE (gender IS NULL OR gender = '') AND bot_blocked = 0")
+    stuck_onboarding = c.fetchone()[0]
 
-    # Stage 2: Picked language but not age-verified
-    c.execute("SELECT COUNT(*) FROM users WHERE bot_language IS NOT NULL AND bot_language != '' AND IFNULL(age_verified, 0) = 0 AND bot_blocked = 0")
-    no_age = c.fetchone()[0]
-
-    # Stage 3: Age-verified but no gender
-    c.execute("SELECT COUNT(*) FROM users WHERE IFNULL(age_verified, 0) = 1 AND (gender IS NULL OR gender = '') AND bot_blocked = 0")
-    no_gender = c.fetchone()[0]
-
-    # Stage 4: Fully onboarded, never sent a message
-    c.execute("SELECT COUNT(*) FROM users WHERE IFNULL(age_verified, 0) = 1 AND gender IS NOT NULL AND gender != '' AND (advice_history IS NULL OR advice_history = '[]') AND bot_blocked = 0")
+    # Stage 2: Fully onboarded (has gender), never sent a message
+    c.execute("SELECT COUNT(*) FROM users WHERE gender IS NOT NULL AND gender != '' AND (advice_history IS NULL OR advice_history = '[]') AND bot_blocked = 0")
     onboarded_no_chat = c.fetchone()[0]
 
     # Stage 5: Started chatting, still has free messages > 0, not VIP, NEVER PAID
@@ -819,14 +811,12 @@ def get_user_stage_stats():
 
     conn.close()
     return {
-        "no_lang": no_lang,
-        "no_age": no_age,
-        "no_gender": no_gender,
+        "stuck_onboarding": stuck_onboarding,
         "onboarded_no_chat": onboarded_no_chat,
         "in_trial": in_trial,
         "trial_ended": trial_ended,
-        "vip_users": vip_users,
         "paid_users": paid_users,
+        "vip_users": vip_users
     }
 
 def get_stuck_users():

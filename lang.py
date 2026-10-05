@@ -114,6 +114,24 @@ STRINGS = {
         "ti": "🌐 ቋንቋ ቀይር",
         "om": "🌐 Afaan jijjiiruu"
     },
+    "menu_feedback": {
+        "am": "💬 አስተያየትዎን ይስጡ",
+        "en": "💬 Give Feedback",
+        "ti": "💬 ርእይቶኹም ሃቡ",
+        "om": "💬 Yaada keessan kennaа"
+    },
+    "feedback_prompt": {
+        "am": "💬 <b>አስተያየትዎን ይስጡ!</b>\n\nበዚህ ቦት ስላደረጉት ልምዳቸው ምን ያስባሉ? ምን ነገር ቢሻሻል ኖሮ ይፈልጉ ነበር? አስተያየትዎን ያካፍሉን!\n\n<i>(በቻናላችን ላይ ስምዎ ሳይጠቀስ ይለጠፋል)</i>",
+        "en": "💬 <b>Give Your Feedback!</b>\n\nWhat do you think about your experience with this bot? What would you like to see improved? Share your thoughts with us!\n\n<i>(Your feedback will be posted anonymously on our channel)</i>",
+        "ti": "💬 <b>ርእይቶኹም ሃቡ!</b>\n\nብዛዕባ ልምድኹም ኣብዚ ቦት እንታይ ትሓስቡ? እንታይ ዝሻሻል ምደለኹም? ርእይቶኹም ምስና ኣካፍሉ!\n\n<i>(ርእይቶኹም ስምኹም ከይተጠቕሰ ኣብ ቻናልና ክለጠፍ እዩ)</i>",
+        "om": "💬 <b>Yaada keessan kennaа!</b>\n\nKana bootiitiin muuxannoo keessan irratti maal yaaddu? Maal fooyyaa'uu akka qabu barbaaddu? Yaada keessan nuuf qoodaa!\n\n<i>(Yaada keessan maqaa keessan osoo hin eeriin channelii keenya irratti maxxanfama)</i>"
+    },
+    "feedback_thanks": {
+        "am": "✅ <b>አስተያየትዎ ደርሶናል!</b>\n\nጊዜዎን ወስደው ለሰጡን ግብረ-መልስ ከልብ እናመሰግናለን። ቦቱን ለማሻሻል ቀጥለን እንሰራለን! 🙏",
+        "en": "✅ <b>Feedback Received!</b>\n\nThank you so much for taking the time to share your thoughts. We will keep working to improve the bot! 🙏",
+        "ti": "✅ <b>ርእይቶኹም ተቐቢልናዮ!</b>\n\nግዜኹም ወሲድኩም ርእይቶኹም ስለዘካፈልኩምና ካብ ልቢ ነመስግነኩም። ቦቱ ንምሻሻል ክንቅጽል ኢና! 🙏",
+        "om": "✅ <b>Yaadni keessan nuu geesse!</b>\n\nYaada keessan nuuf qooduu keessaniitiif yeroo fudhattaniif galatoomi. Booticha fooyyeessuu itti fufu tti hojjenna! 🙏"
+    },
 
     "mypage_title": {
         "am": "👤 <b>የእርስዎ ገፅ</b>",

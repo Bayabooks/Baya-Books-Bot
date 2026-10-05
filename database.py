@@ -756,3 +756,58 @@ def factory_reset():
     c.execute('DELETE FROM payments')
     conn.commit()
     conn.close()
+
+def get_user_stage_stats():
+    """Return counts of users at each stage of the funnel."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    # Stage 1: Joined but never picked a language
+    c.execute("SELECT COUNT(*) FROM users WHERE (bot_language IS NULL OR bot_language = '') AND bot_blocked = 0")
+    no_lang = c.fetchone()[0]
+
+    # Stage 2: Picked language but not age-verified
+    c.execute("SELECT COUNT(*) FROM users WHERE bot_language IS NOT NULL AND bot_language != '' AND IFNULL(age_verified, 0) = 0 AND bot_blocked = 0")
+    no_age = c.fetchone()[0]
+
+    # Stage 3: Age-verified but no gender
+    c.execute("SELECT COUNT(*) FROM users WHERE IFNULL(age_verified, 0) = 1 AND (gender IS NULL OR gender = '') AND bot_blocked = 0")
+    no_gender = c.fetchone()[0]
+
+    # Stage 4: Fully onboarded, never sent a message (still on free trial, full quota)
+    c.execute("SELECT COUNT(*) FROM users WHERE IFNULL(age_verified, 0) = 1 AND gender IS NOT NULL AND gender != '' AND (advice_history IS NULL OR advice_history = '[]') AND bot_blocked = 0")
+    onboarded_no_chat = c.fetchone()[0]
+
+    # Stage 5: Started chatting, still has free messages > 0
+    c.execute("SELECT COUNT(*) FROM users WHERE advice_history IS NOT NULL AND advice_history != '[]' AND IFNULL(advice_messages_left, 5) > 0 AND IFNULL(is_vip, 0) = 0 AND bot_blocked = 0")
+    in_trial = c.fetchone()[0]
+
+    # Stage 6: Free trial FINISHED (0 messages left, not VIP, no payment)
+    c.execute("""SELECT COUNT(*) FROM users
+        WHERE IFNULL(advice_messages_left, 5) <= 0
+        AND IFNULL(is_vip, 0) = 0
+        AND bot_blocked = 0
+        AND user_id NOT IN (SELECT DISTINCT user_id FROM payments WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')
+    """)
+    trial_ended = c.fetchone()[0]
+
+    # Stage 7: Paid users (VIP or has payment)
+    c.execute("SELECT COUNT(*) FROM users WHERE IFNULL(is_vip, 0) = 1 AND bot_blocked = 0")
+    vip_users = c.fetchone()[0]
+
+    c.execute("""SELECT COUNT(DISTINCT user_id) FROM payments
+        WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
+    """)
+    paid_users = c.fetchone()[0]
+
+    conn.close()
+    return {
+        "no_lang": no_lang,
+        "no_age": no_age,
+        "no_gender": no_gender,
+        "onboarded_no_chat": onboarded_no_chat,
+        "in_trial": in_trial,
+        "trial_ended": trial_ended,
+        "vip_users": vip_users,
+        "paid_users": paid_users,
+    }

@@ -407,6 +407,9 @@ def get_bottom_markup(lang='am', uid=None):
         m.add(
             KeyboardButton(S(lang, 'menu_support'))
         )
+    m.add(
+        KeyboardButton(S(lang, 'menu_feedback'))
+    )
     return m
 
 # ══════════════════════════════════════════
@@ -801,6 +804,7 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "📊 Loading...")
         stats = database.get_analytics()
+        stages = database.get_user_stage_stats()
         total = stats["male_count"] + stats["female_count"]
         m_pct = f"{stats['male_count']/total*100:.0f}%" if total > 0 else "0%"
         f_pct = f"{stats['female_count']/total*100:.0f}%" if total > 0 else "0%"
@@ -823,6 +827,15 @@ def handle_callback(call):
             f"🚫 Left/Blocked: <b>{stats.get('blocked_users', 0)}</b>\n"
             f"🟢 New Today: <b>{stats['new_today']}</b> | This Week: <b>{stats.get('new_this_week', 0)}</b>\n"
             f"💬 Chatting Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
+            f"━━ 🔽 User Funnel ━━━━━━━━━━━\n"
+            f"  🌐 No language set: <b>{stages['no_lang']}</b>\n"
+            f"  📋 No age confirm: <b>{stages['no_age']}</b>\n"
+            f"  👤 No gender set: <b>{stages['no_gender']}</b>\n"
+            f"  😶 Onboarded, never chatted: <b>{stages['onboarded_no_chat']}</b>\n"
+            f"  💬 In free trial: <b>{stages['in_trial']}</b>\n"
+            f"  ⏰ Trial ended (not paid): <b>{stages['trial_ended']}</b>\n"
+            f"  💳 Paid users: <b>{stages['paid_users']}</b>\n"
+            f"  👑 VIP active: <b>{stages['vip_users']}</b>\n\n"
             f"━━ 💰 Revenue ━━━━━━━━━━━━\n"
             f"  📅 Today: <b>{stats['today_revenue']:,} ETB</b>\n"
             f"  📆 Weekly: <b>{stats['weekly_revenue']:,} ETB</b>\n"
@@ -1066,12 +1079,18 @@ def handle_callback(call):
             for u in all_users:
                 try:
                     bot.send_message(u, f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}", parse_mode="HTML")
+                    # Refresh keyboard for this user
+                    try:
+                        u_lang = database.get_bot_language(u) or 'am'
+                        bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
+                    except Exception:
+                        pass
                     database.mark_user_blocked(u, 0)
                     success += 1
                 except Exception as e:
                     database.mark_user_blocked(u, 1)
                     failed += 1
-                time.sleep(0.05)
+                time.sleep(0.07)
             try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
             except: pass
             
@@ -1287,6 +1306,31 @@ def handle_messages(message):
             bot.send_message(chat_id, "❌ Please enter a valid User ID number.")
         return
 
+    if state == "FEEDBACK":
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        lang = get_lang(uid)
+        user_info = message.from_user
+        admin_id = get_admin_id()
+        feedback_text = message.text or ""
+        # Forward to admin anonymously
+        if admin_id:
+            try:
+                gender_str = "👨 Male" if database.get_onboarding_status(uid)[1] == "male" else "👩 Female"
+                bot.send_message(
+                    admin_id,
+                    f"💬 <b>New Feedback</b>\n━━━━━━━━━━━━━━\n"
+                    f"👤 {user_info.first_name} ({gender_str})\n"
+                    f"🌐 Lang: {lang}\n\n"
+                    f"<i>{feedback_text}</i>",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+        bot.send_message(chat_id, S(lang, 'feedback_thanks'), parse_mode="HTML")
+        clear_state(uid)
+        return
+
     if state == "ADMIN_BROADCAST" and is_admin(message.from_user):
         if message.text == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
@@ -1300,12 +1344,18 @@ def handle_messages(message):
             for u in users:
                 try:
                     bot.copy_message(u, chat_id, msg_id)
+                    # Also refresh keyboard for this user
+                    try:
+                        u_lang = database.get_bot_language(u) or 'am'
+                        bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
+                    except Exception:
+                        pass
                     database.mark_user_blocked(u, 0)
                     success += 1
                 except Exception:
                     database.mark_user_blocked(u, 1)
                     failed += 1
-                time.sleep(0.05)
+                time.sleep(0.07)
             try:
                 bot.send_message(chat_id, f"✅ <b>Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
             except: pass
@@ -1486,6 +1536,12 @@ def handle_messages(message):
 
     if message.text and "⚙️" in message.text and is_admin_uid(uid):
         show_admin_menu(chat_id, message.from_user)
+        return
+
+    if message.text and "💬" in message.text:
+        lang = get_lang(uid)
+        set_state(uid, "FEEDBACK")
+        bot.send_message(chat_id, S(lang, 'feedback_prompt'), parse_mode="HTML")
         return
 
     # ── Advice Chat Mode (All other text) ─────────────────────

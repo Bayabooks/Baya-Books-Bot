@@ -869,3 +869,29 @@ def get_trial_ended_users():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+import json
+import re
+
+def append_bot_message_to_history(user_id, text):
+    """Appends a message sent by the bot to the user's AI history so the AI has context."""
+    try:
+        history_str = get_advice_history(user_id)
+        history = json.loads(history_str) if history_str else []
+    except:
+        history = []
+    
+    # Strip HTML tags so the AI sees clean text
+    clean_text = re.sub(r'<[^>]+>', '', text)
+    
+    # Avoid appending duplicate consecutive bot messages
+    if history and history[-1].get("role") == "model" and history[-1].get("parts") == [clean_text]:
+        return
+        
+    history.append({"role": "model", "parts": [clean_text]})
+    
+    # Keep only the last 20 messages to prevent blob from growing too large
+    if len(history) > 20:
+        history = history[-20:]
+        
+    save_advice_history(user_id, json.dumps(history, ensure_ascii=False))

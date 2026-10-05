@@ -557,6 +557,7 @@ def cmd_nudge(message):
                     InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
                 )
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                database.append_bot_message_to_history(uid, text)
                 sent += 1
             except Exception:
                 failed += 1
@@ -598,6 +599,7 @@ def cmd_icebreaker(message):
                 }
                 text = ice_texts.get(u_lang, ice_texts['am'])
                 bot.send_message(uid, text, parse_mode="HTML")
+                database.append_bot_message_to_history(uid, text)
                 sent += 1
             except Exception:
                 failed += 1
@@ -648,6 +650,7 @@ def cmd_revive(message):
                 markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
                 
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
+                database.append_bot_message_to_history(uid, text)
                 sent += 1
             except Exception:
                 failed += 1
@@ -1224,6 +1227,8 @@ def handle_callback(call):
                     try:
                         u_lang = database.get_bot_language(u) or 'am'
                         bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
+                        # Append the broadcast to the user's AI history so the AI has context!
+                        database.append_bot_message_to_history(u, content)
                     except Exception:
                         pass
                     database.mark_user_blocked(u, 0)
@@ -1478,6 +1483,7 @@ def handle_messages(message):
         
         users = database.get_all_user_ids()
         msg_id = message.message_id
+        broadcast_text = message.text or message.caption
         
         def run_custom_broadcast():
             import time
@@ -1489,6 +1495,9 @@ def handle_messages(message):
                     try:
                         u_lang = database.get_bot_language(u) or 'am'
                         bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
+                        # Append the broadcast to history
+                        if broadcast_text:
+                            database.append_bot_message_to_history(u, broadcast_text)
                     except Exception:
                         pass
                     database.mark_user_blocked(u, 0)

@@ -366,9 +366,7 @@ def check_onboarding(chat_id, user_id, first_name):
             InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"),
             InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f")
         )
-        privacy_note = S(user_lang, 'onboard_privacy')
-        prompt = S(user_lang, 'onboard_age_gender_prompt')
-        bot.send_message(chat_id, f"{privacy_note}\n\n{prompt}", parse_mode="HTML", reply_markup=markup)
+        bot.send_message(chat_id, S(user_lang, 'onboard_age_gender_prompt'), parse_mode="HTML", reply_markup=markup)
         return False
     
     return True

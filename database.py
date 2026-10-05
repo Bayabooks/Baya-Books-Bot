@@ -833,3 +833,19 @@ def get_stuck_users():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_silent_users():
+    """Get users who completed onboarding but never sent a message."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT user_id, first_name, bot_language
+        FROM users
+        WHERE IFNULL(age_verified, 0) = 1 
+        AND gender IS NOT NULL AND gender != '' 
+        AND (advice_history IS NULL OR advice_history = '[]') 
+        AND bot_blocked = 0
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

@@ -567,6 +567,47 @@ def cmd_nudge(message):
     
     threading.Thread(target=run_nudge, daemon=True).start()
 
+# ══════════════════════════════════════════
+#  /icebreaker COMMAND — Nudge silent users
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["icebreaker"])
+def cmd_icebreaker(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!"); return
+    
+    silent = database.get_silent_users()
+    if not silent:
+        bot.reply_to(message, "✅ No silent users! Everyone who onboarded has chatted.")
+        return
+    
+    bot.reply_to(message, f"❄️ Breaking the ice for <b>{len(silent)}</b> users who haven't chatted...", parse_mode="HTML")
+    
+    import threading, time
+    def run_icebreaker():
+        sent, failed = 0, 0
+        for u in silent:
+            uid = u['user_id']
+            name = u['first_name'] or 'there'
+            u_lang = u.get('bot_language') or 'am'
+            try:
+                ice_texts = {
+                    'am': f"👋 ሰላም <b>{name}</b>፣ በሩን ከፍተው ገብተዋል ግን ዝምታን መርጠዋል።\n\nብዙ ጊዜ ከየት መጀመር እንዳለብን ግራ ሲገባን ዝም እንላለን። የተስተካከለ ፅሁፍ ማዘጋጀት አይጠበቅብዎትም — አሁን ላይ የሚሰማዎትን ስሜት በአንድ ቃል፣ ወይም «ሰላም» በማለት ብቻ ይፃፉልኝ።\n\nእኔ እዚህ ያለሁት ላዳምጥዎት ነው። 👇",
+                    'en': f"👋 Hi <b>{name}</b>, you opened the door but stayed silent.\n\nOften we stay quiet because we don't know where to start. You don't need a perfectly crafted message — just type 'Hi', or send a single word about how you feel right now.\n\nI'm here to listen. 👇",
+                    'ti': f"👋 ሰላም <b>{name}</b>፡ ማዕጾ ኸፊጥካ ኣቲኻ ግን ስቕታ መሪጽካ።\n\nመብዛሕትኡ ግዜ ካበይ ከም እንጅምር ምስ ዝጠፍኣና ስቕ ንብል። እተስተኻኸለ ጽሑፍ ምድላው ኣየድልየካን እዩ — ሕጂ ዝስመዓካ ዘሎ ስምዒት ብሓደ ቃል፡ ወይ ድማ «ሰላም» ብምባል ጥራይ ጸሓፈለይ።\n\nኣነ ንዓኻ ንምስማዕ ኣብዚ ኣለኹ። 👇",
+                    'om': f"👋 Akkam <b>{name}</b>, balbala banteet seente garuu cal'isuu filatte.\n\nYeroo baay'ee eessaa akka jalqabnu yeroo nutti bitaacha'u ni cal'isna. Barreeffama sirreeffame qopheessuun sirraa hin eegamu — miira amma sitti dhaga'amu jecha tokkoon, ykn «Akkam» jechuun qofa naaf barreessi.\n\nAni si dhaggeeffachuuf asan jira. 👇",
+                }
+                text = ice_texts.get(u_lang, ice_texts['am'])
+                bot.send_message(uid, text, parse_mode="HTML")
+                sent += 1
+            except Exception:
+                failed += 1
+            time.sleep(0.07)
+        try:
+            bot.send_message(message.chat.id, f"✅ <b>Icebreaker Complete!</b>\n✔️ {sent} sent\n❌ {failed} failed", parse_mode="HTML")
+        except: pass
+    
+    threading.Thread(target=run_icebreaker, daemon=True).start()
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])

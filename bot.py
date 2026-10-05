@@ -545,10 +545,10 @@ def cmd_nudge(message):
             try:
                 # Send a warm, curiosity-inducing re-engagement nudge
                 nudge_texts = {
-                    'am': f"👋 <b>{name}</b>፣ ወደ Baya ተመልሰዋል!\n\nቀደም ብቻ ጀምረው ቆሙ። ቀጣዩ እርምጃ ፈጣን ነው — ጾታዎን ብቻ ይምረጡ እና ወዲያውኑ ወደ AI-ው ይደርሳሉ። 👇",
-                    'en': f"👋 <b>{name}</b>, you're back at Baya!\n\nYou were almost done. One quick step left — just select your gender and you'll be in immediately. 👇",
-                    'ti': f"👋 <b>{name}</b>፣ ናብ Baya ተመሊስካ!\n\nቀዲምካ ጀሚርካ ኣቋሪጽካ። ዝተረፈ ሓደ ቀሊል ስጉምቲ ጥራይ እዩ — ጾታኻ ምረጽ ወዲኡ ናብ AI-ና ኢኻ ትኣቱ። 👇",
-                    'om': f"👋 <b>{name}</b>, gara Bayaatti deebitee!\n\nTurte hin fixne. Tarkaanfii xiqqaa tokko qofa hafe — saala kee filadhu, hatattamaan seenta. 👇",
+                    'am': f"👋 ሰላም <b>{name}</b>፣ በመሃል ተቋርጦብዎት ነው?\n\nመስማት የሚፈልጉትን ሳይሆን፣ አሁን ላይ <b>ሊሰሙት የሚገባዎትን እውነት</b> የሚነግርዎት AI እርስዎን እየጠበቀ ነው።\n\nወደ ሚስጥራዊው የውይይት ገፅ ለመግባት...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                    'en': f"👋 Hi <b>{name}</b>, got interrupted halfway?\n\nThe AI that tells you <b>the truth you need to hear</b> (not just what you want to hear) is waiting for you.\n\nTo enter the confidential chat...\n<b>Please select your gender 👇</b>",
+                    'ti': f"👋 ሰላም <b>{name}</b>፡ ኣብ መንጎ ተቋሪጹካ ድዩ?\n\nክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> ዝነግረካ AI እናተጸበየካ እዩ።\n\nናብቲ ምስጢራዊ ዕላል ንምእታው...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                    'om': f"👋 Akkam <b>{name}</b>, gidduutti si jalaa citee?\n\nAI'n waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti himu si eegaa jira.\n\nMarii iccitii ta'e kana jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>",
                 }
                 text = nudge_texts.get(u_lang, nudge_texts['am'])
                 markup = InlineKeyboardMarkup(row_width=2)

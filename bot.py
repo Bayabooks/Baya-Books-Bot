@@ -2016,12 +2016,6 @@ def main():
     print("=" * 50)
     bot.infinity_polling(timeout=60, long_polling_timeout=60)
 
-if __name__ == "__main__":
-    try:
-        main()
-    except (KeyboardInterrupt, SystemExit):
-        print("\nBot stopped.")
-
 def auto_nudge_daemon():
     import time
     while True:
@@ -2092,3 +2086,9 @@ def auto_nudge_daemon():
         except Exception as e:
             print("Auto-nudge daemon error:", e)
         time.sleep(3600)  # Sleep 1 hour
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (KeyboardInterrupt, SystemExit):
+        print("\\nBot stopped.")

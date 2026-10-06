@@ -617,7 +617,7 @@ def search_users(query):
     return rows
 
 def get_user_details(user_id):
-    """Get comprehensive user info including order count and payment total."""
+    """Get comprehensive user info for the psychology bot."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
@@ -626,29 +626,33 @@ def get_user_details(user_id):
         conn.close()
         return None
     
-    c.execute("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status = 'delivered'", (user_id,))
-    order_count = c.fetchone()[0]
-    
-    c.execute("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status IN ('draft', 'preview_sent')", (user_id,))
-    draft_count = c.fetchone()[0]
-    
-    c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE user_id = ? AND status = 'approved'", (user_id,))
+    # Total paid (approved + webhook confirmed)
+    c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
+        WHERE user_id = ? AND (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')""", (user_id,))
     total_paid = c.fetchone()[0]
+
+    # Payment count
+    c.execute("""SELECT COUNT(*) FROM payments 
+        WHERE user_id = ? AND (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')""", (user_id,))
+    payment_count = c.fetchone()[0]
     
+    # Referral count
     c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ?", (user_id,))
     referral_count = c.fetchone()[0]
-    
-    c.execute("SELECT book_title, status, created_date FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 5", (user_id,))
-    recent_orders = c.fetchall()
+
+    # Recent payments
+    c.execute("""SELECT amount, payment_date, tx_ref FROM payments 
+        WHERE user_id = ? AND (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')
+        ORDER BY id DESC LIMIT 5""", (user_id,))
+    recent_payments = c.fetchall()
     
     conn.close()
     return {
         "user": user,
-        "order_count": order_count,
-        "draft_count": draft_count,
         "total_paid": total_paid,
+        "payment_count": payment_count,
         "referral_count": referral_count,
-        "recent_orders": recent_orders,
+        "recent_payments": recent_payments,
     }
 
 def get_recent_orders(limit=10):

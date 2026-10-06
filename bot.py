@@ -1022,13 +1022,10 @@ def handle_callback(call):
     if data.startswith("adm_view_user_"):
         if not is_admin(call.from_user): return
         target_uid = int(data.split("_")[3])
-        user = database.get_user(target_uid)
-        if not user:
-            bot.answer_callback_query(call.id, "User not found", show_alert=True)
-            return
-        bot.send_message(chat_id, f"👤 <b>User Info</b>\nName: {user['first_name']}\nID: <code>{user['user_id']}</code>\nLang: {user.get('bot_language')}\nGender: {user.get('gender')}\nAge Verified: {user.get('age_verified')}\nMsgs Left: {user.get('advice_messages_left', 5)}\nVIP Expiry: {user.get('vip_expiry')}\nBanned: {user.get('is_banned')}", parse_mode="HTML")
-        bot.answer_callback_query(call.id)
-        return
+        # Redirect to the full profile view
+        call.data = f"adm_lookup_{target_uid}"
+        data = call.data
+        # Fall through to adm_lookup_ handler below
 
     if data.startswith("adm_add_msgs_"):
         if not is_admin(call.from_user): return
@@ -1098,16 +1095,40 @@ def handle_callback(call):
         u = details["user"]
         banned_tag = " 🚫 BANNED" if database.is_banned(target_id) else ""
         admin_tag = " 👑" if database.is_sub_admin(target_id) else ""
+        vip_tag = " 💎 VIP" if database.is_vip(target_id) else ""
         
-        orders_text = ""
-        for o in details["recent_orders"]:
-            orders_text += f"  📕 {o['book_title'][:25]} ({o['status']})\n"
-        if not orders_text:
-            orders_text = "  — No orders\n"
+        # Gender display
+        gender_str = {"male": "👨 Male", "female": "👩 Female"}.get(u.get('gender'), '❓ Unknown')
+        
+        # VIP expiry
+        vip_expiry = u.get('vip_expiry') or 'N/A'
+        if vip_expiry != 'N/A':
+            vip_expiry = vip_expiry[:10]
+        
+        # Advice messages
+        msgs_left = u.get('advice_messages_left', 0)
+        
+        # Recent payments text
+        payments_text = ""
+        for p in details.get("recent_payments", []):
+            tx = p['tx_ref'] or ''
+            ptype = '☕ Tip' if 'TIP' in tx else '🧠 Advice' if 'ADVICE' in tx else '📦 Other'
+            payments_text += f"  {ptype} — <b>{p['amount']:,} ETB</b> ({p['payment_date'][:10] if p['payment_date'] else 'N/A'})\n"
+        if not payments_text:
+            payments_text = "  — No payments yet\n"
         
         markup = InlineKeyboardMarkup(row_width=2)
         markup.add(
-            InlineKeyboardButton("💳 Add Credit", callback_data=f"adm_credit_{target_id}")
+            InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{target_id}"),
+            InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5")
+        )
+        markup.add(
+            InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{target_id}_10"),
+            InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{target_id}_25")
+        )
+        markup.add(
+            InlineKeyboardButton("👑 VIP 7d", callback_data=f"adm_make_vip_{target_id}_7"),
+            InlineKeyboardButton("👑 VIP 30d", callback_data=f"adm_make_vip_{target_id}_30")
         )
         if database.is_banned(target_id):
             markup.add(InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{target_id}"))
@@ -1121,20 +1142,20 @@ def handle_callback(call):
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
-            f"👤 <b>User Profile</b>{banned_tag}{admin_tag}\n"
+            f"👤 <b>User Profile</b>{banned_tag}{admin_tag}{vip_tag}\n"
             f"━━━━━━━━━━━━━━━━━━━━\n\n"
             f"🆔 ID: <code>{target_id}</code>\n"
             f"👤 Name: <b>{u['first_name']}</b>\n"
-            f"📛 Username: @{u['username'] or 'N/A'}\n"
-            f"📅 Joined: {u['joined_date'][:10] if u['joined_date'] else 'N/A'}\n\n"
-            f"━━ Stats ━━━━━━━━━━━━━━━━━━\n"
-            f"  📄 Orders: <b>{details['order_count']}</b> delivered, <b>{details['draft_count']}</b> drafts\n"
-            f"  💰 Total Paid: <b>{details['total_paid']:,} ETB</b>\n"
-            f"  🎫 Credits: <b>{u['credits']}</b>\n"
-            f"  👥 Referrals: <b>{details['referral_count']}</b>\n"
-            f"  🔮 Previews Left: <b>{u['previews_left']}</b>\n"
-            f"  🎁 Free Protocol: {'❌ Used' if u['free_protocol_used'] else '✅ Available'}\n\n"
-            f"━━ Recent Orders ━━━━━━━━━━━\n{orders_text}",
+            f"📛 Username: @{u.get('username') or 'N/A'}\n"
+            f"{gender_str} | 🌐 {u.get('bot_language', 'am').upper()}\n"
+            f"📅 Joined: {u['joined_date'][:10] if u.get('joined_date') else 'N/A'}\n\n"
+            f"━━ 💬 Advice ━━━━━━━━━━━━━━\n"
+            f"  📩 Messages Left: <b>{msgs_left}</b>\n"
+            f"  💎 VIP Until: <b>{vip_expiry}</b>\n\n"
+            f"━━ 💰 Payments ━━━━━━━━━━━━\n"
+            f"  💵 Total Paid: <b>{details['total_paid']:,} ETB</b> ({details['payment_count']} transactions)\n"
+            f"  👥 Referrals: <b>{details['referral_count']}</b>\n\n"
+            f"━━ 💳 Recent Payments ━━━━━━\n{payments_text}",
             parse_mode="HTML", reply_markup=markup,
         )
         return

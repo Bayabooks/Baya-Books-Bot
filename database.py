@@ -116,7 +116,7 @@ def get_user(user_id):
     c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     conn.close()
-    return row
+    return dict(row) if row else None
 
 def is_new_user(user_id):
     return get_user(user_id) is None
@@ -614,7 +614,7 @@ def search_users(query):
         c.execute("SELECT * FROM users WHERE username LIKE ? OR first_name LIKE ? LIMIT 10", (f"%{query}%", f"%{query}%"))
     rows = c.fetchall()
     conn.close()
-    return rows
+    return [dict(r) for r in rows]
 
 def get_user_details(user_id):
     """Get comprehensive user info for the psychology bot."""
@@ -648,11 +648,11 @@ def get_user_details(user_id):
     
     conn.close()
     return {
-        "user": user,
+        "user": dict(user),
         "total_paid": total_paid,
         "payment_count": payment_count,
         "referral_count": referral_count,
-        "recent_payments": recent_payments,
+        "recent_payments": [dict(p) for p in recent_payments],
     }
 
 def get_recent_orders(limit=10):

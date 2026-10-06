@@ -1177,7 +1177,7 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "🚫 User banned!")
         bot.send_message(chat_id, f"🚫 User <code>{target_id}</code> has been <b>BANNED</b>.", parse_mode="HTML")
         try:
-            bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
+            bot.send_message(target_id, S(get_lang(target_id), 'banned'))
         except: pass
         return
     
@@ -1507,7 +1507,7 @@ def handle_messages(message):
             database.ban_user(target_id)
             bot.send_message(chat_id, f"🚫 <b>{target['first_name']}</b> (<code>{target_id}</code>) has been <b>BANNED</b>.", parse_mode="HTML")
             try:
-                bot.send_message(target_id, "🚫 ይህ አካውንት ታግዷል።")
+                bot.send_message(target_id, S(get_lang(target_id), 'banned'))
             except: pass
             clear_state(uid)
         except ValueError:

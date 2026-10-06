@@ -47,19 +47,19 @@ STRINGS = {
     },
 
     "onboard_privacy": {
-        "am": "🔒 ውይይታችን 100% ሚስጥራዊ ነው። ማህደርዎን በ👤 የኔ ገፅ ውስጥ በፈለጉት ጊዜ ማጽዳት ይችላሉ።",
+        "am": "🔒 ውይይታችን 100% ሚስጥራዊ ነው። መረጃዎን በ '👤 የእኔ ገፅ' ውስጥ በፈለጉት ጊዜ ማጽዳት ይችላሉ።",
         "en": "🔒 Our conversation is 100% confidential. You can clear your data anytime from 👤 My Page.",
         "ti": "🔒 ዕላልና 100% ምስጢራዊ እዩ። ሓበሬታኹም ኣብ ዝኾነ እዋን ካብ 👤 ገጸይ ምጽራይ ትኽእሉ ኢኹም።",
         "om": "🔒 Marii keenya 100% iccitii dha. Odeeffannoo keessan yeroo kamiyyuu 👤 Fuula koo irraa haquu dandeessu."
     },
     "onboard_age_gender_prompt": {
-        "am": "🔒 በዚህ 100% ሚስጥራዊ በሆነ የውይይት ገፅ፣ ይህ AI ሰዎችን ለማስደሰት አይሞክርም። መስማት የሚፈልጉትን ሳይሆን፣ <b>አሁን ላይ ሊሰሙት የሚገባዎትን እውነት</b> ነው የሚነግርዎት።\n\nውይይታችንን ለመጀመር...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>\n<i>(ከ18 ዓመት በላይ ለሆኑ ብቻ)</i>",
+        "am": "🔒 በዚህ 100% ሚስጥራዊ በሆነ የውይይት ገፅ፣ ይህ AI ሰዎችን ለማስደሰት አይሞክርም። መስማት የሚፈልጉትን ሳይሆን፣ <b>አሁን ላይ ሊሰሙት የሚገባዎትን እውነት</b> ነው የሚነግርዎት።\n\nውይይታችንን ለመጀመር...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>\n<i>(ዕድሜያቸው ከ18 ዓመት በላይ ለሆኑ ብቻ)</i>",
         "en": "🔒 In this 100% confidential space, this AI doesn't try to please anyone. It won't tell you what you want to hear, but <b>the truth you need to hear right now</b>.\n\nTo start our conversation...\n<b>Please select your gender 👇</b>\n<i>(For adults 18+ only)</i>",
         "ti": "🔒 ኣብዚ 100% ምስጢራዊ ዝኾነ ዕላል፡ እዚ AI ንሰባት ንምሕጓስ ኣይፍተንን እዩ። ክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> እዩ ዝነግረካ።\n\nዕላልና ንምጅማር...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>\n<i>(ካብ 18 ዓመት ንላዕሊ ጥራይ)</i>",
         "om": "🔒 Marii 100% iccitii ta'e kana keessatti, AI kun namoota gammachiisuuf hin yaalu. Waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti hima.\n\nMarii keenya jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>\n<i>(Waggaa 18 ol qofaaf)</i>"
     },
     "onboard_age_btn": {
-        "am": "✅ እኔ ከ 18 ዓመት በላይ ነኝ",
+        "am": "✅ ዕድሜዬ ከ18 ዓመት በላይ ነው",
         "en": "✅ I am over 18 years old",
         "ti": "✅ ኣነ ልዕሊ 18 ዓመት እየ",
         "om": "✅ Ani waggaa 18 oli"
@@ -97,7 +97,7 @@ STRINGS = {
         "om": "🧠 Marii keenya itti haa fufnu"
     },
     "menu_mypage": {
-        "am": "👤 የኔ ገፅ",
+        "am": "👤 የእኔ ገፅ",
         "en": "👤 My Page",
         "ti": "👤 ገጸይ",
         "om": "👤 Fuula koo"
@@ -109,7 +109,7 @@ STRINGS = {
         "om": "🎁 Hiriyyaa afeeraa"
     },
     "menu_support": {
-        "am": "☕ ቡድኑን ያበረታቱ",
+        "am": "☕ ቡድናችንን ያበረታቱ",
         "en": "☕ Support Team",
         "ti": "☕ ጉጅለና ኣበራትዑ",
         "om": "☕ Garee jajjabeessaa"
@@ -127,13 +127,13 @@ STRINGS = {
         "om": "💬 Yaada keessan kennaа"
     },
     "feedback_prompt": {
-        "am": "💬 <b>አስተያየትዎን ይስጡ!</b>\n\nበዚህ ቦት ስላደረጉት ልምዳቸው ምን ያስባሉ? ምን ነገር ቢሻሻል ኖሮ ይፈልጉ ነበር? አስተያየትዎን ያካፍሉን!\n\n<i>(በቻናላችን ላይ ስምዎ ሳይጠቀስ ይለጠፋል)</i>",
+        "am": "💬 <b>አስተያየትዎን ይስጡ!</b>\n\nበዚህ ቦት ስላገኙት አገልግሎት ምን ያስባሉ? ምንስ ቢሻሻል ይወዳሉ? አስተያየትዎን ያካፍሉን!\n\n<i>(ሀሳብዎ በቻናላችን ላይ ስምዎ ሳይጠቀስ ሊለጠፍ ይችላል)</i>",
         "en": "💬 <b>Give Your Feedback!</b>\n\nWhat do you think about your experience with this bot? What would you like to see improved? Share your thoughts with us!\n\n<i>(Your feedback will be posted anonymously on our channel)</i>",
         "ti": "💬 <b>ርእይቶኹም ሃቡ!</b>\n\nብዛዕባ ልምድኹም ኣብዚ ቦት እንታይ ትሓስቡ? እንታይ ዝሻሻል ምደለኹም? ርእይቶኹም ምስና ኣካፍሉ!\n\n<i>(ርእይቶኹም ስምኹም ከይተጠቕሰ ኣብ ቻናልና ክለጠፍ እዩ)</i>",
         "om": "💬 <b>Yaada keessan kennaа!</b>\n\nKana bootiitiin muuxannoo keessan irratti maal yaaddu? Maal fooyyaa'uu akka qabu barbaaddu? Yaada keessan nuuf qoodaa!\n\n<i>(Yaada keessan maqaa keessan osoo hin eeriin channelii keenya irratti maxxanfama)</i>"
     },
     "feedback_thanks": {
-        "am": "✅ <b>አስተያየትዎ ደርሶናል!</b>\n\nጊዜዎን ወስደው ለሰጡን ግብረ-መልስ ከልብ እናመሰግናለን። ቦቱን ለማሻሻል ቀጥለን እንሰራለን! 🙏",
+        "am": "✅ <b>አስተያየትዎ ደርሶናል!</b>\n\nጊዜዎን ወስደው ሀሳብዎን ስላካፈሉን ከልብ እናመሰግናለን። አገልግሎታችንን ይበልጥ ለማሻሻል እንጠቀምበታለን! 🙏",
         "en": "✅ <b>Feedback Received!</b>\n\nThank you so much for taking the time to share your thoughts. We will keep working to improve the bot! 🙏",
         "ti": "✅ <b>ርእይቶኹም ተቐቢልናዮ!</b>\n\nግዜኹም ወሲድኩም ርእይቶኹም ስለዘካፈልኩምና ካብ ልቢ ነመስግነኩም። ቦቱ ንምሻሻል ክንቅጽል ኢና! 🙏",
         "om": "✅ <b>Yaadni keessan nuu geesse!</b>\n\nYaada keessan nuuf qooduu keessaniitiif yeroo fudhattaniif galatoomi. Booticha fooyyeessuu itti fufu tti hojjenna! 🙏"
@@ -170,7 +170,7 @@ STRINGS = {
         "om": "🧹 <b>Kuusaa Qulleessi (Reset):</b> Kana yoo tuqtan mariin iccitii hanga ammaa goone sirna keenya irraa guutumaan guutuutti ni haqama."
     },
     "mypage_reset_warn": {
-        "am": "⚠️ <b>ማሳሰቢያ:</b> በምክክር መሃል ከሆኑ ይህን አይጫኑት! ምክንያቱም AI-ው ያለፈውን ውይይት ስለሚረሳው የጀመሩትን ምክክር መቀጠል አይችልም።",
+        "am": "⚠️ <b>ማሳሰቢያ:</b> በምክክር መሃል ከሆኑ ይህን አይጫኑት! ምክንያቱም AIው ያለፈውን ውይይት ስለሚረሳ የጀመሩትን ምክክር መቀጠል አይችልም።",
         "en": "⚠️ <b>Note:</b> Do not click this if you are in the middle of a session! The AI will forget past conversations and won't be able to continue the ongoing counseling.",
         "ti": "⚠️ <b>መተሓሳሰቢ:</b> ኣብ ማእከል ምኽሪ እንተኾንኩም ነዚ ኣይትጠውቑዎ! ምኽንያቱ እቲ AI ንዝሓለፈ ዕላል ስለዝርስዖ ነቲ ዝጀመርኩምዎ ምይይጥ ክቕጽሎ ኣይክእልን እዩ።",
         "om": "⚠️ <b>Akeekkachiisa:</b> Yoo gorsa jidduu jirtu ta'e kana hin tuqinaa! Sababni isaas AI'n marii darbe waan irraanfatuuf gorsa jalqabdan itti fufuu hin danda'u."
@@ -430,7 +430,7 @@ STRINGS = {
     },
 
     "banned": {
-        "am": "🚫 ይህ አካውንት ታግዧል።",
+        "am": "🚫 ይህ አካውንት ታግዷል።",
         "en": "🚫 This account has been banned.",
         "ti": "🚫 እዚ ኣካውንት ተኣጊዱ ኣሎ።",
         "om": "🚫 Herregni kun uggurameera."

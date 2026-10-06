@@ -1027,6 +1027,14 @@ def handle_callback(call):
         data = call.data
         # Fall through to adm_lookup_ handler below
 
+    if data.startswith("adm_record_pay_"):
+        if not is_admin(call.from_user): return
+        target_uid = int(data.split("_")[3])
+        set_state(uid, f"ADMIN_RECORD_PAY_{target_uid}")
+        bot.send_message(chat_id, f"💵 <b>Record Manual Payment</b>\n\nEnter the amount paid by user <code>{target_uid}</code> in ETB:\n\n<i>(Type /cancel to abort)</i>", parse_mode="HTML")
+        bot.answer_callback_query(call.id)
+        return
+
     if data.startswith("adm_add_msgs_"):
         if not is_admin(call.from_user): return
         parts = data.split("_")
@@ -1120,11 +1128,15 @@ def handle_callback(call):
         markup = InlineKeyboardMarkup(row_width=2)
         markup.add(
             InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{target_id}"),
-            InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5")
+            InlineKeyboardButton("💵 Add Payment", callback_data=f"adm_record_pay_{target_id}")
         )
         markup.add(
-            InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{target_id}_10"),
-            InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{target_id}_25")
+            InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5"),
+            InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{target_id}_10")
+        )
+        markup.add(
+            InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{target_id}_25"),
+            InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{target_id}_75")
         )
         markup.add(
             InlineKeyboardButton("👑 VIP 7d", callback_data=f"adm_make_vip_{target_id}_7"),
@@ -1495,6 +1507,31 @@ def handle_messages(message):
         clear_state(uid)
         return
     
+    # ── Admin: Record Manual Payment ─────────
+    if str(state).startswith("ADMIN_RECORD_PAY_") and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        target_uid = int(state.split("_")[3])
+        try:
+            amount = float(message.text.strip())
+            if amount <= 0:
+                raise ValueError
+            import uuid
+            tx_ref = f"MANUAL_ADVICE_{uuid.uuid4().hex[:8]}"
+            database.record_payment(
+                user_id=target_uid,
+                order_id=None,
+                amount=amount,
+                tx_ref=tx_ref,
+                receipt_file_id="MANUAL_ADMIN",
+                status="approved"
+            )
+            bot.send_message(chat_id, f"✅ Successfully recorded <b>{amount:,.0f} ETB</b> for user <code>{target_uid}</code>.\n\n⚠️ <i>Remember to give them their messages or VIP package using the buttons on their profile!</i>", parse_mode="HTML")
+            clear_state(uid)
+        except ValueError:
+            bot.send_message(chat_id, "❌ Please enter a valid positive number for the amount (e.g. 400).")
+        return
+
     # ── Admin: Ban User (text input) ─────────
     if state == "ADMIN_BAN_USER" and is_admin(message.from_user):
         if message.text == "/cancel":

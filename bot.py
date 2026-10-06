@@ -1585,17 +1585,25 @@ def handle_messages(message):
                     InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{uid}")
                 )
                 
-                bot.send_message(
-                    admin_id,
+                header = (
                     f"💬 <b>New Feedback</b>\n━━━━━━━━━━━━━━\n"
                     f"👤 {user_info.first_name} ({gender_str})\n"
                     f"🌐 Lang: {lang}\n"
-                    f"🆔 ID: <code>{uid}</code>\n\n"
-                    f"<i>{feedback_text}</i>",
-                    parse_mode="HTML",
-                    reply_markup=markup
+                    f"🆔 ID: <code>{uid}</code>"
                 )
-            except Exception:
+                
+                if message.text:
+                    bot.send_message(
+                        admin_id,
+                        f"{header}\n\n<i>{message.text}</i>",
+                        parse_mode="HTML",
+                        reply_markup=markup
+                    )
+                else:
+                    # Send header with buttons, then copy the user's media (photo, etc.)
+                    bot.send_message(admin_id, header, parse_mode="HTML", reply_markup=markup)
+                    bot.copy_message(admin_id, chat_id, message.message_id)
+            except Exception as e:
                 pass
         bot.send_message(chat_id, S(lang, 'feedback_thanks'), parse_mode="HTML")
         clear_state(uid)

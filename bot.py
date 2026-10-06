@@ -1548,8 +1548,12 @@ def handle_messages(message):
                     InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
                 )
                 markup.add(
-                    InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{uid}_10"),
-                    InlineKeyboardButton("🎁 +50 Msgs", callback_data=f"adm_add_msgs_{uid}_50")
+                    InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{uid}_5"),
+                    InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{uid}_10")
+                )
+                markup.add(
+                    InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{uid}_25"),
+                    InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{uid}_75")
                 )
                 markup.add(
                     InlineKeyboardButton("👑 VIP (7 Days)", callback_data=f"adm_make_vip_{uid}_7"),

@@ -423,16 +423,16 @@ STRINGS = {
     },
 
     "tip_title": {
-        "am": "💛 <b>ከእኛ ጀርባ ያሉ ሰዎች</b>",
-        "en": "💛 <b>The People Behind This</b>",
-        "ti": "💛 <b>ኣብ ድሕሪ እዚ ዘለዉ ሰባት</b>",
-        "om": "💛 <b>Namoota Kana Duuba Jiran</b>"
+        "am": "💛 <b>እውነታውን ይደግፉ</b>",
+        "en": "💛 <b>Back the Truth</b>",
+        "ti": "💛 <b>ንሓቂ ደገፍኩም ሃቡ</b>",
+        "om": "💛 <b>Dhugaa Deggeraa</b>"
     },
     "tip_body": {
-        "am": "ይህን ቦት የሚያስተዳድሩት ልክ እንደ እርስዎ ህልም ያላቸው ወጣት ኢትዮጵያውያን ናቸው። እርስዎ የሚሰጡት ድጋፍ ለብዙ ሺህ ሰዎች ነፃ የስነ-ልቦና ምክር ማግኘት እንዲቀጥሉ ያስችላል። ትንሽ ስጦታ ትልቅ ለውጥ ታመጣለች።\n\nከታች ካሉት ውስጥ አንዱን ይምረጡ፦",
-        "en": "This bot is run by young Ethiopians who dream just like you. Your support allows thousands of people to continue accessing free psychological guidance. A small gift makes a big difference.\n\nChoose an amount below:",
-        "ti": "ነዚ ቦት ዝመርሕዎ ልክ ከማኹም ሕልሚ ዘለዎም መንእሰይ ኢትዮጵያውያን እዮም። ደገፍኩም ንብዙሓት ኣሽሓት ሰባት ነጻ ናይ ስነ-ኣእምሮ ምኽሪ ምርካብ ክቕጽሉ የኽእሎም። ንእሽቶ ህያብ ዓቢ ለውጢ ተምጽእ።\n\nካብዞም ኣብ ታሕቲ ዘለዉ ሓደ ምረጹ፦",
-        "om": "Bootiin kun Itoophiyaanota dargaggoota akka keessanii abjuu qaban kan hogganamudha. Deeggarsi keessan namoonni kumaatamaan lakkaa'aman gorsa xiin-sammuu bilisaa argachuu akka itti fufan dandeessisa. Kennaan xiqqaan jijjiirama guddaa fiddi.\n\nHamma armaan gadii keessaa filadhaa:"
+        "am": "ይህንን AI የገነባነው ሰዎች እንዲያድጉ እና ከራሳቸው ጋር እንዲታረቁ የሚያስፈልጋቸው ያልተበረዘ እውነት እንጂ የውሸት ማባበያ አይደለም ብለን ስለምናምን ነው። በየቀኑ በሺዎች የሚቆጠሩ ሰዎችን የሚሞግት እና ጥልቅ የስነ-ልቦና ትንታኔ የሚሰጥ ሲስተም ማስተዳደር ቀላል አይደለም።\n\nበዚህ ውይይት ውስጥ ህይወትዎን የሚቀይር አዲስ እይታ ካገኙ፣ እና ይህ አገልግሎት ለሌሎችም እንዳይቋረጥ ከፈለጉ፣ ከጀርባ ያለውን ቡድን ያበረታቱ።\n\nከታች ካሉት አማራጮች አንዱን ይምረጡ፦",
+        "en": "We built this AI because we believe people need the unfiltered truth to grow—not just comforting lies. Running an uncompromised system that challenges thousands of people daily takes serious resources.\n\nIf these conversations have shifted something inside you, and you want to ensure this system stays sharp and available for those who need to hear the hard truth, back the team that made it possible.\n\nChoose an amount below:",
+        "ti": "እዚ AI ዝሃነጽናዮ፡ ሰባት ንክዓብዩ ዘድልዮም ዘይተበረዘ ሓቂ እምበር ናይ ሓሶት መደዓዓሲ ኣይኮነን ኢልና ስለንኣምን እዩ። ኣብ ነፍሲ ወከፍ መዓልቲ ንኣሽሓት ሰባት ዝሞግትን ዕሙቕ ዝበለ ናይ ስነ-ኣእምሮ ትንታነ ዝህብን ስርዓት ምምሕዳር ቀሊል ኣይኮነን።\n\nኣብዚ ዕላል ህይወትኩም ዝቕይር ሓድሽ ኣረኣእያ እንተረኺብኩም፡ ከምኡ'ውን እዚ ኣገልግሎት ንኻልኦት ከይቋረጽ እንተደሊኹም፡ ነቶም ኣብ ድሕሪ እዚ ዘለዉ ጉጅለ ኣበራትዑዎም።\n\nካብዞም ኣብ ታሕቲ ዘለዉ ኣማራጺታት ሓደ ምረጹ፦",
+        "om": "AI kana kan ijaarre namoonni akka guddattaniif dhugaa qullaa malee soba nama jajjabeessu akka hin barbaadne waan amannuuf. Sirna guyyoota hundumaa namoota kumaatamaan lakkaa'aman qoratu fi qaaccessa xiin-sammuu gadi fago kennu bulchuun salphaa miti.\n\nMarii kana keessatti ilaalcha haaraa jireenya keessan jijjiiru yoo argattan, fi tajaajilli kun warra kaaniif akka hin cinne yoo barbaaddan, garee kana duuba jiru jajjabeessaa.\n\nFilannoowwan armaan gadii keessaa tokko filadhaa:"
     },
     "tip_pay_btn": {
         "am": "💳 {amount} ብር ይሸልሙ",

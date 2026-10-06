@@ -261,6 +261,7 @@ def cmd_topup(message):
     markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
     markup.add(InlineKeyboardButton(S(lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
     markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+    markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited_month'), callback_data="buy_advice_unlimited_month"))
     
     cta_text = (
         S(lang, 'topup_title') + "\n\n" +
@@ -269,7 +270,8 @@ def cmd_topup(message):
         S(lang, 'topup_starter') + "\n" +
         S(lang, 'topup_pro') + "\n" +
         S(lang, 'topup_heavy') + "\n" +
-        S(lang, 'topup_unlimited') + "\n\n" +
+        S(lang, 'topup_unlimited') + "\n" +
+        S(lang, 'topup_unlimited_month') + "\n\n" +
         S(lang, 'topup_cta')
     )
     bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
@@ -646,10 +648,11 @@ def cmd_revive(message):
                 
                 # Attach the Paywall / TopUp buttons directly to the message
                 markup = InlineKeyboardMarkup(row_width=1)
-                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_starter"))
-                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_pro"))
-                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_heavy"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
                 markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+                markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited_month'), callback_data="buy_advice_unlimited_month"))
                 
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
@@ -873,6 +876,8 @@ def handle_callback(call):
         pkg = data.replace("buy_advice_", "")
         if pkg == "unlimited":
             amount = 1800
+        elif pkg == "unlimited_month":
+            amount = 4900
         else:
             msgs = int(pkg)
             amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
@@ -1897,6 +1902,7 @@ def handle_messages(message):
             markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
             markup.add(InlineKeyboardButton(S(lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
             markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited_month'), callback_data="buy_advice_unlimited_month"))
             
             cta_text = (
                 S(lang, 'paywall_title') + "\n\n" +
@@ -1905,7 +1911,8 @@ def handle_messages(message):
                 S(lang, 'topup_starter') + "\n" +
                 S(lang, 'topup_pro') + "\n" +
                 S(lang, 'topup_heavy') + "\n" +
-                S(lang, 'topup_unlimited') + "\n\n" +
+                S(lang, 'topup_unlimited') + "\n" +
+                S(lang, 'topup_unlimited_month') + "\n\n" +
                 S(lang, 'topup_cta')
             )
             bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
@@ -2037,6 +2044,11 @@ def process_chapa_success(tx_ref):
             database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
             database.set_vip(uid, days=7)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
+        elif pkg == "unlimited_month":
+            payment_amount = 4900
+            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
+            database.set_vip(uid, days=30)
+            bot.send_message(chat_id, S(lang, 'payment_success_unlimited_month'), parse_mode="HTML")
         else:
             msgs = int(pkg)
             payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
@@ -2233,10 +2245,11 @@ def auto_nudge_daemon():
                         'om': f"👋 Akkam <b>{name}</b>, marii keenya darbe deebi'een ilaalaa ture.\n\nWaa'ee dhimma irratti mari'annee sana wanta guddaa tokko kanin sitti hin himin jira. Hanga ammaatti kan haasofne fuula rakkinichaa qofa; hundeen rakkinichaa garuu iddoo biraa jira.\n\nFurmaata isaa osoo sitti hin himin mariin keenya addaan cituun isaa na gaddisiiseera. Furmaata isaa beekuu fi waan jalqabne xumuruuf... 👇",
                     }.get(u_lang, "")
                     markup = InlineKeyboardMarkup(row_width=1)
-                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_starter"))
-                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_pro"))
-                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_heavy"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
                     markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+                    markup.add(InlineKeyboardButton(S(u_lang, 'topup_btn_unlimited_month'), callback_data="buy_advice_unlimited_month"))
                     try:
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                         database.append_bot_message_to_history(uid, text)

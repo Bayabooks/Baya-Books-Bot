@@ -280,6 +280,12 @@ STRINGS = {
         "ti": "♾️ <b>Unlimited: 1800 ብር</b> (ብዘይ ደረት ን1 ሰሙን) - ዝኾነ ደረት ዘይብሉ ምሉእ ተበጻሕነት።",
         "om": "♾️ <b>Unlimited: Birrii 1800</b> (Daangaa malee torbee 1f) - Daangaa tokko malee guutumaan guutuutti argachuu."
     },
+    "topup_unlimited_month": {
+        "am": "♾️ <b>Unlimited Monthly: 4900 ብር</b> (ያለ ገደብ ለ1 ወር) - ለአንድ ሙሉ ወር ምንም ገደብ የሌለው መዳረሻ።",
+        "en": "♾️ <b>Unlimited Monthly: 4900 Birr</b> (Unlimited for 1 month) - Full access with no restrictions for an entire month.",
+        "ti": "♾️ <b>Unlimited Monthly: 4900 ብር</b> (ብዘይ ደረት ን1 ወርሒ) - ንሓደ ምሉእ ወርሒ ዝኾነ ደረት ዘይብሉ ተበጻሕነት።",
+        "om": "♾️ <b>Unlimited Monthly: Birrii 4900</b> (Daangaa malee ji'a 1f) - Daangaa tokko malee ji'a guutuu argachuu."
+    },
     "topup_cta": {
         "am": "ወዲያውኑ ክፍያ ፈፅመው የጀመርነውን ውይይት ለመቀጠል ከታች ያለውን የክፍያ አማራጭ ይጫኑ። 👇",
         "en": "To make a payment immediately and continue our conversation, click on a payment option below. 👇",
@@ -309,6 +315,12 @@ STRINGS = {
         "en": "♾️ Unlimited: 1800 Birr (For 1 Week)",
         "ti": "♾️ Unlimited: 1800 ብር (ን1 ሰሙን)",
         "om": "♾️ Unlimited: Birrii 1800 (Torbee 1f)"
+    },
+    "topup_btn_unlimited_month": {
+        "am": "♾️ Unlimited: 4900 ብር (ለ1 ወር)",
+        "en": "♾️ Unlimited: 4900 Birr (For 1 Month)",
+        "ti": "♾️ Unlimited: 4900 ብር (ን1 ወርሒ)",
+        "om": "♾️ Unlimited: Birrii 4900 (Ji'a 1f)"
     },
     
     "paywall_title": {
@@ -359,6 +371,12 @@ STRINGS = {
         "en": "✅ <b>Payment Confirmed!</b>\nYou have gained unlimited access for 1 week.\nWe can now continue our conversation...",
         "ti": "✅ <b>ክፍሊትኩም ተረጋጊጹ ኣሎ!</b>\nን1 ሰሙን ዝኣክል ዘይተደረተ (Unlimited) ተበጻሕነት ረኺብኩም ኣለኹም።\nዕላልና ክንቅጽል ንኽእል ኢና...",
         "om": "✅ <b>Kaffaltiin keessan mirkanaa'eera!</b>\nTorbee 1f argannoo daangaa hin qabne (Unlimited) argattaniittu.\nMarii keenya itti fufuu ni dandeenya..."
+    },
+    "payment_success_unlimited_month": {
+        "am": "✅ <b>ክፍያዎ ተረጋግጧል!</b>\nለ1 ወር ያህል ያልተገደበ (Unlimited) መዳረሻ አግኝተዋል።\nውይይታችንን መቀጠል እንችላለን...",
+        "en": "✅ <b>Payment Confirmed!</b>\nYou have gained unlimited access for 1 month.\nWe can now continue our conversation...",
+        "ti": "✅ <b>ክፍሊትኩም ተረጋጊጹ ኣሎ!</b>\nን1 ወርሒ ዝኣክል ዘይተደረተ (Unlimited) ተበጻሕነት ረኺብኩም ኣለኹም።\nዕላልና ክንቅጽል ንኽእል ኢና...",
+        "om": "✅ <b>Kaffaltiin keessan mirkanaa'eera!</b>\nJi'a 1f argannoo daangaa hin qabne (Unlimited) argattaniittu.\nMarii keenya itti fufuu ni dandeenya..."
     },
     "tip_received": {
         "am": "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።",

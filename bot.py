@@ -1333,6 +1333,15 @@ def handle_callback(call):
 
         # Create broadcast thread
         all_users = database.get_all_user_ids()
+        
+        # Post to Telegram channel
+        try:
+            channel_msg = f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}\n\n👇\nhttps://t.me/bayabooks_bot"
+            bot.send_message("@BAYABOOKS1", channel_msg, parse_mode="HTML")
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to post to channel: {e}")
+
         def background_broadcast():
             import time
             success = 0

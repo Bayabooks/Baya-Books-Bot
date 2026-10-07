@@ -573,6 +573,56 @@ def cmd_nudge(message):
     threading.Thread(target=run_nudge, daemon=True).start()
 
 # ══════════════════════════════════════════
+#  /investigate COMMAND — Check last users
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["investigate"])
+def cmd_investigate(message):
+    if not is_admin(message.from_user): return
+    
+    conn = database.get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT user_id, first_name, username, joined_date, advice_messages_left, referred_by 
+        FROM users 
+        ORDER BY joined_date DESC 
+        LIMIT 3
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    
+    if not rows:
+        bot.reply_to(message, "No users found in database.")
+        return
+        
+    res = "🔍 **Investigation of Last 3 Users:**\n\n"
+    for r in rows:
+        uid = r['user_id']
+        name = r['first_name']
+        msgs = r['advice_messages_left']
+        ref = r['referred_by']
+        date = r['joined_date']
+        
+        # Check if they have payment records
+        conn = database.get_connection()
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM payments WHERE user_id = ?", (uid,))
+        payments = c.fetchone()[0]
+        
+        # Check received credits/gifts (if any)
+        c.execute("SELECT credits FROM users WHERE user_id = ?", (uid,))
+        credits = c.fetchone()[0]
+        conn.close()
+        
+        res += f"👤 <b>{name}</b> (<code>{uid}</code>)\n"
+        res += f"📅 Joined: {date}\n"
+        res += f"💬 Msgs Left: <b>{msgs}</b>\n"
+        res += f"🔗 Referred By: {ref if ref else 'None'}\n"
+        res += f"💳 Payments: {payments} | 🎁 Credits: {credits}\n"
+        res += "━━━━━━━━━━━━━━━━\n"
+        
+    bot.reply_to(message, res, parse_mode="HTML")
+
+# ══════════════════════════════════════════
 #  /clean COMMAND — Rapidly purge ghost users
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["clean"])

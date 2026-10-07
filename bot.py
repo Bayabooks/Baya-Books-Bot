@@ -563,6 +563,7 @@ def cmd_nudge(message):
                 database.mark_nudge_sent(uid, "nudge_onboard_sent")
                 sent += 1
             except Exception:
+                database.mark_user_blocked(uid, 1)
                 failed += 1
             time.sleep(0.07)
         try:
@@ -606,6 +607,7 @@ def cmd_icebreaker(message):
                 database.mark_nudge_sent(uid, "nudge_silent_sent")
                 sent += 1
             except Exception:
+                database.mark_user_blocked(uid, 1)
                 failed += 1
             time.sleep(0.07)
         try:
@@ -659,6 +661,7 @@ def cmd_revive(message):
                 database.mark_nudge_sent(uid, "nudge_revive_sent")
                 sent += 1
             except Exception:
+                database.mark_user_blocked(uid, 1)
                 failed += 1
             time.sleep(0.07)
         try:
@@ -2254,7 +2257,8 @@ def auto_nudge_daemon():
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                         database.append_bot_message_to_history(uid, text)
                         database.mark_nudge_sent(uid, "nudge_onboard_sent")
-                    except: pass
+                    except:
+                        database.mark_user_blocked(uid, 1)
                     time.sleep(0.1)
 
                 # 2. Silent Users Nudge (Icebreaker)
@@ -2271,7 +2275,8 @@ def auto_nudge_daemon():
                         bot.send_message(uid, text, parse_mode="HTML")
                         database.append_bot_message_to_history(uid, text)
                         database.mark_nudge_sent(uid, "nudge_silent_sent")
-                    except: pass
+                    except:
+                        database.mark_user_blocked(uid, 1)
                     time.sleep(0.1)
 
                 # 3. Trial Ended Nudge (Revive)
@@ -2294,7 +2299,8 @@ def auto_nudge_daemon():
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                         database.append_bot_message_to_history(uid, text)
                         database.mark_nudge_sent(uid, "nudge_revive_sent")
-                    except: pass
+                    except:
+                        database.mark_user_blocked(uid, 1)
                     time.sleep(0.1)
 
         except Exception as e:

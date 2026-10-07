@@ -573,6 +573,38 @@ def cmd_nudge(message):
     threading.Thread(target=run_nudge, daemon=True).start()
 
 # ══════════════════════════════════════════
+#  /clean COMMAND — Rapidly purge ghost users
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["clean"])
+def cmd_clean(message):
+    if not is_admin(message.from_user): return
+    
+    conn = database.get_connection()
+    c = conn.cursor()
+    c.execute("SELECT user_id FROM users WHERE bot_blocked = 0 AND (gender IS NULL OR gender = '')")
+    stuck = [r[0] for r in c.fetchall()]
+    conn.close()
+    
+    bot.reply_to(message, f"🧹 Starting background ghost clean on <b>{len(stuck)}</b> stuck users...", parse_mode="HTML")
+    
+    import threading, time
+    def run_clean():
+        cleaned = 0
+        for uid in stuck:
+            try:
+                # Silently test if bot is blocked without sending a message
+                bot.send_chat_action(uid, "typing")
+            except Exception:
+                database.mark_user_blocked(uid, 1)
+                cleaned += 1
+            time.sleep(0.05) # Prevent rate limits
+        try:
+            bot.send_message(message.chat.id, f"✅ <b>Cleanup Complete!</b>\n🗑 Filtered out <b>{cleaned}</b> ghost users from the dashboard.", parse_mode="HTML")
+        except: pass
+        
+    threading.Thread(target=run_clean, daemon=True).start()
+
+# ══════════════════════════════════════════
 #  /icebreaker COMMAND — Nudge silent users
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["icebreaker"])

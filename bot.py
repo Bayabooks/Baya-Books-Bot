@@ -601,7 +601,7 @@ def cmd_investigate(message):
         SELECT user_id, first_name, username, joined_date, advice_messages_left, referred_by 
         FROM users 
         ORDER BY joined_date DESC 
-        LIMIT 3
+        LIMIT 20
     ''')
     rows = c.fetchall()
     conn.close()
@@ -610,7 +610,7 @@ def cmd_investigate(message):
         bot.reply_to(message, "No users found in database.")
         return
         
-    res = "🔍 **Investigation of Last 3 Users:**\n\n"
+    res = "🔍 **Investigation of Last 20 Users:**\n\n"
     for r in rows:
         uid = r['user_id']
         name = r['first_name']

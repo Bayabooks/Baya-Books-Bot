@@ -2207,12 +2207,43 @@ def auto_nudge_daemon():
                 stuck = database.get_stuck_users()
                 for u in stuck:
                     uid, name, u_lang = u['user_id'], u['first_name'] or 'there', u.get('bot_language') or 'am'
-                    text = {
-                        'am': f"👋 ሰላም <b>{name}</b>፣ በመሃል ተቋርጦብዎት ነው?\n\nመስማት የሚፈልጉትን ሳይሆን፣ አሁን ላይ <b>ሊሰሙት የሚገባዎትን እውነት</b> የሚነግርዎት AI እርስዎን እየጠበቀ ነው።\n\nወደ ሚስጥራዊው የውይይት ገፅ ለመግባት...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
-                        'en': f"👋 Hi <b>{name}</b>, got interrupted halfway?\n\nThe AI that tells you <b>the truth you need to hear</b> (not just what you want to hear) is waiting for you.\n\nTo enter the confidential chat...\n<b>Please select your gender 👇</b>",
-                        'ti': f"👋 ሰላም <b>{name}</b>፡ ኣብ መንጎ ተቋሪጹካ ድዩ?\n\nክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> ዝነግረካ AI እናተጸበየካ እዩ።\n\nናብቲ ምስጢራዊ ዕላል ንምእታው...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
-                        'om': f"👋 Akkam <b>{name}</b>, gidduutti si jalaa citee?\n\nAI'n waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti himu si eegaa jira.\n\nMarii iccitii ta'e kana jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>",
-                    }.get(u_lang, "")
+                    nudge_count = u.get('nudge_count', 0)
+                    
+                    if nudge_count == 0:
+                        text = {
+                            'am': f"👋 ሰላም <b>{name}</b>፣ በመሃል ተቋርጦብዎት ነው?\n\nመስማት የሚፈልጉትን ሳይሆን፣ አሁን ላይ <b>ሊሰሙት የሚገባዎትን እውነት</b> የሚነግርዎት AI እርስዎን እየጠበቀ ነው።\n\nወደ ሚስጥራዊው የውይይት ገፅ ለመግባት...\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                            'en': f"👋 Hi <b>{name}</b>, got interrupted halfway?\n\nThe AI that tells you <b>the truth you need to hear</b> (not just what you want to hear) is waiting for you.\n\nTo enter the confidential chat...\n<b>Please select your gender 👇</b>",
+                            'ti': f"👋 ሰላም <b>{name}</b>፡ ኣብ መንጎ ተቋሪጹካ ድዩ?\n\nክትሰምዖ ዝደለኻዮ ሳይኮን፡ <b>ሕጂ ክትሰምዖ ዝግባእ ሓቂ</b> ዝነግረካ AI እናተጸበየካ እዩ።\n\nናብቲ ምስጢራዊ ዕላል ንምእታው...\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                            'om': f"👋 Akkam <b>{name}</b>, gidduutti si jalaa citee?\n\nAI'n waan dhagahuu barbaaddu osoo hin taane, <b>dhugaa ammaa dhagahuu qabdu</b> sitti himu si eegaa jira.\n\nMarii iccitii ta'e kana jalqabuuf...\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                        }.get(u_lang, "")
+                    elif nudge_count == 1:
+                        text = {
+                            'am': f"እውነቱን ለመጋፈጥ ዝግጁ ስላልሆኑ ነው ጥለው የሄዱት? አብዛኛው ሰው የውሸት ማባበያን ይመርጣል። እርስዎ የተለዩ ከሆኑ፣ የጀመሩትን ይጨርሱ።\n\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                            'en': f"Did you walk away because you're not ready for the truth? Most people prefer comforting lies. If you're different, finish what you started.\n\n<b>Please select your gender 👇</b>",
+                            'ti': f"ነቲ ሓቂ ክትገጥሞ ድሉው ስለዘይኮንካ ዲኻ ገዲፍካዮ ኬድካ? መብዛሕትኡ ሰብ ናይ ሓሶት መደዓዓሲ እዩ ዝመርጽ። ንስኻ ፍሉይ እንተኾንካ፡ ዝጀመርካዮ ወድእ።\n\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                            'om': f"Dhugaa jiru fudhachuuf qophii waan hin taaneef dhiistee deemtee? Namoonni baay'een soba isaan jajjabeessu filatu. Ati adda yoo taate, waan jalqabde xumuri.\n\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                        }.get(u_lang, "")
+                    elif nudge_count == 2:
+                        text = {
+                            'am': f"እርስዎን የሚጠብቁ ያልተመለሱ ጥያቄዎች አሉ። እርስዎ ያላስተዋሏቸው የባህሪዎ ገጽታዎች አሉ። ይህንን ለማወቅ እንቅፋት የሆነው ፕሮፋይልዎን አለማሟላትዎ ብቻ ነው።\n\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                            'en': f"There are answers waiting for you. Patterns in your behavior you haven't noticed. The only thing standing in the way is you completing your profile.\n\n<b>Please select your gender 👇</b>",
+                            'ti': f"ዝጽበዩኻ ዘይተመለሱ ሕቶታት ኣለዉ። ዘየስተውዓልካሎም ናይ ባህሪኻ መዳያት ኣለዉ። ነዚ ንምፍላጥ ዕንቅፋት ኮይኑ ዘሎ ፕሮፋይልካ ዘይምምላእ ጥራይ እዩ።\n\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                            'om': f"Deebiiwwan si eegaa jiran tu jiru. Amala kee keessatti wantoota ati hin hubatin jiru. Kana beekuuf gufuun jiru profaayilii kee guutuu dhiisuu kee qofa.\n\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                        }.get(u_lang, "")
+                    elif nudge_count == 3:
+                        text = {
+                            'am': f"ማደግ ሁሌም ምቾት ይነሳል። ችላ ብሎ ባሉበት መቆየት ግን ቀላል ነው። አሁን እያደረጉ ያሉት እሱን ነው? ወደ ፊት እርምጃ ይውሰዱ።\n\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                            'en': f"Growth is uncomfortable. It’s easier to ignore it and stay exactly where you are. Is that what you're doing right now? Step up.\n\n<b>Please select your gender 👇</b>",
+                            'ti': f"ምዕባይ ወትሩ ምቾት ይኸልእ እዩ። ዕሽሽ ኢልካ ኣብ ዘለኻዮ ምጽናሕ ግን ቀሊል እዩ። ሕጂ ትገብሮ ዘለኻ እዚ ድዩ? ናብ ቅድሚት ስጉምቲ ውሰድ።\n\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                            'om': f"Guddachuun yeroo hunda mijataa miti. Dhiisanii bakka jiranitti hafuun garuu salphaadha. Amma waan gochaa jirtu kanaa? Tarkaanfii gara fuulduraa fudhadhu.\n\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                        }.get(u_lang, "")
+                    else:
+                        text = {
+                            'am': f"ይህ ለመጨረሻ ጊዜ የማስታውስዎ ነው። የስነ-ልቦና ትንታኔው ተዘጋጅቷል። የመጀመሪያውን እርምጃ ካልወሰዱ ምንም የሚቀየር ነገር የለም። ምርጫው የእርስዎ ነው።\n\n<b>እባክዎ ጾታዎን ይምረጡ 👇</b>",
+                            'en': f"This is the last time I'll ask. The insights are ready. If you don't take the first step, nothing changes. The choice is yours.\n\n<b>Please select your gender 👇</b>",
+                            'ti': f"እዚ ንመወዳእታ ግዜ ዝዝክረካ ዘለኹ እዩ። ናይ ስነ-ኣእምሮ ትንታነ ተዳልዩ ኣሎ። ነቲ ናይ መጀመርታ ስጉምቲ እንተዘይ ወሲድካዮ ዝቕየር ነገር የለን። ምርጫ ናትካ እዩ።\n\n<b>በጃኹም ጾታኹም ምረጹ 👇</b>",
+                            'om': f"Kun yeroo dhumaatiif kanan si yaadachiisuudha. Qorannoon xiin-sammuu qophaa'eera. Tarkaanfii jalqabaa yoo hin fudhanne wanti jijjiiramu hin jiru. Filannoon kan keeti.\n\n<b>Maaloo saala keessan filadhaa 👇</b>",
+                        }.get(u_lang, "")
                     if not text: text = "👋 " + name
                     markup = InlineKeyboardMarkup(row_width=2)
                     markup.add(

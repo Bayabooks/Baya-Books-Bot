@@ -835,15 +835,31 @@ def get_stuck_users():
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
-        SELECT user_id, first_name, bot_language
+        SELECT user_id, first_name, bot_language, joined_date, IFNULL(nudge_onboard_sent, 0) as nudge_count
         FROM users
         WHERE (IFNULL(age_verified, 0) = 0 OR gender IS NULL OR gender = '')
         AND bot_blocked = 0
-        AND IFNULL(nudge_onboard_sent, 0) = 0
+        AND IFNULL(nudge_onboard_sent, 0) < 5
     """)
     rows = c.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    
+    valid_users = []
+    from datetime import datetime
+    for r in rows:
+        try:
+            joined_dt = datetime.strptime(r['joined_date'], "%Y-%m-%d %H:%M:%S") if r['joined_date'] else datetime.now()
+        except:
+            joined_dt = datetime.now()
+        
+        days_since_joined = (datetime.now() - joined_dt).days
+        # For nudge 0, days >= 0 (immediate)
+        # For nudge 1, days >= 1 (after 24h)
+        # For nudge 2, days >= 2 (after 48h)
+        if days_since_joined >= r['nudge_count']:
+            valid_users.append(dict(r))
+            
+    return valid_users
 
 def get_silent_users():
     """Get users who completed onboarding but never sent a message."""
@@ -929,7 +945,7 @@ def mark_nudge_sent(user_id, nudge_type):
     """Marks a user as having received a specific nudge (nudge_onboard_sent, nudge_silent_sent, nudge_revive_sent)"""
     conn = get_connection()
     c = conn.cursor()
-    c.execute(f"UPDATE users SET {nudge_type} = 1 WHERE user_id = ?", (user_id,))
+    c.execute(f"UPDATE users SET {nudge_type} = IFNULL({nudge_type}, 0) + 1 WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
 

@@ -573,6 +573,22 @@ def cmd_nudge(message):
     threading.Thread(target=run_nudge, daemon=True).start()
 
 # ══════════════════════════════════════════
+#  /fix_msgs COMMAND — Reset strange message counts
+# ══════════════════════════════════════════
+@bot.message_handler(commands=["fix_msgs"])
+def cmd_fix_msgs(message):
+    if not is_admin(message.from_user): return
+    
+    conn = database.get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET advice_messages_left = 5 WHERE advice_messages_left > 5 AND advice_messages_left <= 15 AND user_id NOT IN (SELECT user_id FROM payments)")
+    fixed = c.rowcount
+    conn.commit()
+    conn.close()
+    
+    bot.reply_to(message, f"✅ Fixed {fixed} users who had abnormally high message counts back to 5 free messages.")
+
+# ══════════════════════════════════════════
 #  /investigate COMMAND — Check last users
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["investigate"])

@@ -103,8 +103,8 @@ def setup_database():
 def add_user(user_id, username, first_name, referred_by=None):
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''INSERT INTO users (user_id, username, first_name, joined_date, referred_by, credits)
-        VALUES (?, ?, ?, ?, ?, 0)
+    c.execute('''INSERT INTO users (user_id, username, first_name, joined_date, referred_by, credits, advice_messages_left)
+        VALUES (?, ?, ?, ?, ?, 0, 5)
         ON CONFLICT(user_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name
     ''', (user_id, username, first_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), referred_by))
     conn.commit()

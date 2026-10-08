@@ -329,9 +329,13 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
         # Append current user message to history
         clean_history.append({"role": "user", "parts": [str(user_message)]})
         
+        # TRUNCATE HISTORY to prevent 504 Deadline Exceeded (keep last 40 messages = 20 turns)
+        if len(clean_history) > 40:
+            clean_history = clean_history[-40:]
+            
         response = model.generate_content(
             contents=clean_history,
-            request_options={"timeout": 60}
+            request_options={"timeout": 120}
         )
         logging.info(f"chat_with_mentor got response, length={len(response.text)}")
         # Convert any markdown to HTML manually if needed

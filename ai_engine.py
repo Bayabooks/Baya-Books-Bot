@@ -328,10 +328,6 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
         
         # Append current user message to history
         clean_history.append({"role": "user", "parts": [str(user_message)]})
-        
-        # TRUNCATE HISTORY to prevent 504 Deadline Exceeded (keep last 40 messages = 20 turns)
-        if len(clean_history) > 40:
-            clean_history = clean_history[-40:]
             
         response = model.generate_content(
             contents=clean_history,

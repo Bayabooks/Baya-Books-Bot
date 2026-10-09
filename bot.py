@@ -1461,8 +1461,13 @@ def handle_callback(call):
                     "message": fb_msg,
                     "access_token": fb_token
                 }
-                requests.post(fb_url, data=payload, timeout=10)
+                res = requests.post(fb_url, data=payload, timeout=10)
+                if res.status_code != 200:
+                    bot.send_message(chat_id, f"⚠️ <b>Facebook Post Failed:</b>\n<code>{res.text}</code>", parse_mode="HTML")
+                else:
+                    bot.send_message(chat_id, "✅ Successfully posted to Facebook Page!")
         except Exception as e:
+            bot.send_message(chat_id, f"⚠️ <b>Facebook Error:</b> {str(e)}")
             import logging
             logging.error(f"Failed to post to Facebook: {e}")
 

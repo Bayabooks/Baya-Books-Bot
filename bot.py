@@ -1443,6 +1443,29 @@ def handle_callback(call):
             import logging
             logging.error(f"Failed to post to channel: {e}")
 
+        # Post to Facebook Page (if configured)
+        try:
+            import os
+            fb_token = os.environ.get("FB_PAGE_ACCESS_TOKEN")
+            fb_page_id = os.environ.get("FB_PAGE_ID")
+            
+            if fb_token and fb_page_id:
+                import requests
+                import re
+                # Facebook uses plain text, so strip HTML tags
+                clean_content = re.sub('<[^<]+>', '', content)
+                fb_msg = f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n{clean_content}\n\n👇\nhttps://t.me/bayabooks_bot"
+                
+                fb_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/feed"
+                payload = {
+                    "message": fb_msg,
+                    "access_token": fb_token
+                }
+                requests.post(fb_url, data=payload, timeout=10)
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to post to Facebook: {e}")
+
         def background_broadcast():
             import time
             success = 0

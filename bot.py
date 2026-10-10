@@ -2457,7 +2457,7 @@ def auto_nudge_daemon():
 
         except Exception as e:
             print("Auto-nudge daemon error:", e)
-        time.sleep(300)  # Sleep 5 minutes
+        time.sleep(60)  # Sleep 1 minute to check for carts faster
 
 if __name__ == '__main__':
     try:

@@ -294,6 +294,19 @@ def record_payment(user_id, order_id, amount, tx_ref, receipt_file_id, status='p
     conn.close()
     return payment_id
 
+def get_latest_pending_payment(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT id, amount, tx_ref, order_id 
+        FROM payments 
+        WHERE user_id = ? AND status = 'pending' 
+        ORDER BY id DESC LIMIT 1
+    ''', (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row
+
 def get_abandoned_checkouts():
     """Get pending payments older than 1 hour that haven't been nudged yet."""
     conn = get_connection()

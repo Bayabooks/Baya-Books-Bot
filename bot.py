@@ -985,7 +985,8 @@ def handle_callback(call):
             
         bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
         purpose = f"ADVICE_{pkg}"
-        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, purpose)
+        import shegerpay
+        checkout_url, tx_ref, err = shegerpay.generate_shegerpay_link(amount, uid, purpose)
         if not checkout_url:
             bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
             return
@@ -1035,7 +1036,8 @@ def handle_callback(call):
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
         
-        checkout_url, tx_ref, err = chapa.generate_chapa_link(amount, uid, "TIP")
+        import shegerpay
+        checkout_url, tx_ref, err = shegerpay.generate_shegerpay_link(amount, uid, "TIP")
         if not checkout_url:
             bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
             return
@@ -2167,7 +2169,54 @@ def handle_messages(message):
         return
 
     # ── Book Input (title or photo) ──────────
-    if message.photo or message.document:
+    if message.photo:
+        lang = get_lang(uid)
+        
+        # Check if they have a pending checkout
+        pending = database.get_latest_pending_payment(uid)
+        if not pending:
+            bot.reply_to(message, "⚠️ የክፍያ ፓኬጅ አልመረጡም። እባክዎ /topup ን ተጭነው ፓኬጅ ይምረጡ። (Please select a package first.)")
+            return
+            
+        pending_id, amount, tx_ref, order_id = pending
+        
+        msg = bot.reply_to(message, "⏳ ደረሰኝዎን በማረጋገጥ ላይ ነን... (Verifying receipt...)")
+        
+        try:
+            file_id = message.photo[-1].file_id
+            file_info = bot.get_file(file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            
+            import shegerpay
+            success, ref_id, err = shegerpay.verify_receipt_image(downloaded_file, amount)
+            
+            if success:
+                # Same logic as webhook success
+                database.approve_payment(tx_ref, order_id)
+                # Figure out package from tx_ref
+                parts = tx_ref.split("-")
+                purpose = parts[2] if len(parts) >= 3 else ""
+                
+                if purpose.startswith("ADVICE_"):
+                    pkg = purpose.split("_")[1]
+                    if pkg == "unlimited":
+                        database.set_vip(uid, days=7)
+                        bot.edit_message_text(S(lang, 'payment_success_unlimited'), chat_id, msg.message_id, parse_mode="HTML")
+                    elif pkg == "unlimited_month":
+                        database.set_vip(uid, days=30)
+                        bot.edit_message_text(S(lang, 'payment_success_unlimited_month'), chat_id, msg.message_id, parse_mode="HTML")
+                    else:
+                        msgs = int(pkg)
+                        database.add_advice_messages(uid, msgs)
+                        bot.edit_message_text(S(lang, 'payment_success_msgs', msgs=msgs), chat_id, msg.message_id, parse_mode="HTML")
+            else:
+                bot.edit_message_text(f"❌ ማረጋገጥ አልተቻለም (Failed): {err}", chat_id, msg.message_id)
+                
+        except Exception as e:
+            bot.edit_message_text(f"⚠️ የቴክኒክ ችግር: {e}", chat_id, msg.message_id)
+        return
+
+    if message.document:
         bot.reply_to(message, S(get_lang(uid), 'text_only'))
         return
 
@@ -2215,9 +2264,10 @@ def process_chapa_success(tx_ref):
             database.add_advice_messages(uid, msgs)
             bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
     elif purpose == "TIP":
-        # Verify the actual amount from the Chapa transaction
+        # Verify the actual amount from the transaction
         lang = get_lang(uid)
-        tip_success, tip_data = chapa.verify_chapa_payment(tx_ref)
+        import shegerpay
+        tip_success, tip_data = shegerpay.verify_shegerpay_payment(tx_ref)
         tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
         database.approve_payment(tx_ref, order_id)
         bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
@@ -2301,6 +2351,19 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header('Location', f'https://t.me/{bot_username}')
             self.end_headers()
+            return
+            
+        if self.path.startswith('/auto-verify-shegerpay/'):
+            tx_ref = self.path.split('/')[-1]
+            import shegerpay
+            success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
+            if success:
+                process_chapa_success(tx_ref) # We reuse the same success processor since it just reads tx_ref
+                
+            bot_username = bot.get_me().username
+            self.send_response(302)
+            self.send_header('Location', f'https://t.me/{bot_username}')
+            self.end_headers()
         else:
             self.send_response(200)
             self.send_header("Content-type", "text/plain")
@@ -2325,6 +2388,23 @@ class DummyHandler(BaseHTTPRequestHandler):
                         process_chapa_success(tx_ref)
             except Exception as e:
                 logging.error(f"Webhook error: {e}")
+        elif self.path == '/shegerpay-webhook':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            self.send_response(200)
+            self.end_headers()
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                tx_ref = data.get('reference_id')
+                if not tx_ref and 'metadata' in data:
+                    tx_ref = data['metadata'].get('tx_ref')
+                if tx_ref:
+                    import shegerpay
+                    success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
+                    if success:
+                        process_chapa_success(tx_ref)
+            except Exception as e:
+                logging.error(f"ShegerPay Webhook error: {e}")
         else:
             self.send_response(404)
             self.end_headers()

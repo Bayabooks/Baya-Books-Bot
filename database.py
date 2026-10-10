@@ -42,6 +42,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN gender TEXT",
         "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN bot_blocked INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN last_paywall_nudge TEXT",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -1012,3 +1013,32 @@ def auto_migrate_nudge_columns():
     conn.close()
 
 auto_migrate_nudge_columns()
+
+
+def get_paywall_users():
+    conn = get_connection()
+    c = conn.cursor()
+    from datetime import datetime, timedelta
+    threshold = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        SELECT user_id, first_name, bot_language
+        FROM users
+        WHERE advice_messages_left <= 0 
+        AND age_verified = 1
+        AND bot_blocked = 0
+        AND (vip_expiry IS NULL OR vip_expiry < ?)
+        AND (last_paywall_nudge IS NULL OR last_paywall_nudge <= ?)
+    ''', (now, threshold))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def mark_paywall_nudged(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    from datetime import datetime
+    c.execute('UPDATE users SET last_paywall_nudge = ? WHERE user_id = ?', 
+             (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_id))
+    conn.commit()
+    conn.close()

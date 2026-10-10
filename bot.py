@@ -1438,7 +1438,28 @@ def handle_callback(call):
         try:
             channel_msg = f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}\n\n👇\nhttps://t.me/bayabooks_bot"
             bot.send_message("@BAYABOOKS1", channel_msg, parse_mode="HTML")
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             import logging
             logging.error(f"Failed to post to channel: {e}")
 
@@ -1465,7 +1486,28 @@ def handle_callback(call):
                     bot.send_message(chat_id, f"⚠️ <b>Facebook Post Failed:</b>\n<code>{res.text}</code>", parse_mode="HTML")
                 else:
                     bot.send_message(chat_id, "✅ Successfully posted to Facebook Page!")
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             bot.send_message(chat_id, f"⚠️ <b>Facebook Error:</b> {str(e)}")
             import logging
             logging.error(f"Failed to post to Facebook: {e}")
@@ -1487,7 +1529,28 @@ def handle_callback(call):
                         pass
                     database.mark_user_blocked(u, 0)
                     success += 1
-                except Exception as e:
+        
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                     database.mark_user_blocked(u, 1)
                     failed += 1
                 time.sleep(0.07)
@@ -1800,7 +1863,28 @@ def handle_messages(message):
                     # Send header with buttons, then copy the user's media (photo, etc.)
                     bot.send_message(admin_id, header, parse_mode="HTML", reply_markup=markup)
                     bot.copy_message(admin_id, chat_id, message.message_id)
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 pass
         bot.send_message(chat_id, S(lang, 'feedback_thanks'), parse_mode="HTML")
         clear_state(uid)
@@ -1813,7 +1897,28 @@ def handle_messages(message):
         try:
             bot.copy_message(target_uid, chat_id, message.message_id)
             bot.send_message(chat_id, f"✅ Message sent to user {target_uid}.")
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             bot.send_message(chat_id, f"❌ Failed to send: {e}")
         clear_state(uid)
         return
@@ -2129,7 +2234,28 @@ def handle_messages(message):
                 history.append({"role": "model", "parts": [ai_response]})
                 try:
                     database.save_advice_history(uid, json.dumps(history, ensure_ascii=False))
-                except Exception as e:
+        
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                     logging.error(f"Failed to save advice history: {e}")
                 
                 # Send response
@@ -2145,7 +2271,28 @@ def handle_messages(message):
                     clean_chunks = [clean[i:i+4000] for i in range(0, len(clean), 4000)]
                     for chunk in clean_chunks:
                         bot.send_message(chat_id, chunk)
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 stop_typing.set()
                 logging.error(f"ADVICE THREAD CRASH: {e}")
                 import traceback
@@ -2157,7 +2304,28 @@ def handle_messages(message):
                 
         try:
             threading.Thread(target=process_advice_chat, daemon=True).start()
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             logging.error(f"Failed to start thread: {e}")
             bot.send_message(chat_id, S(get_lang(uid), 'tech_error', err=str(e)))
         return
@@ -2206,7 +2374,28 @@ def handle_messages(message):
             else:
                 bot.edit_message_text(f"❌ ማረጋገጥ አልተቻለም (Failed): {err}", chat_id, msg.message_id)
                 
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             bot.edit_message_text(f"⚠️ የቴክኒክ ችግር: {e}", chat_id, msg.message_id)
         return
 
@@ -2278,7 +2467,28 @@ class DummyHandler(BaseHTTPRequestHandler):
             try:
                 with open('admin_dashboard.html', 'rb') as f:
                     self.wfile.write(f.read())
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 self.wfile.write(b"Admin Dashboard not found.")
             return
 
@@ -2319,7 +2529,28 @@ class DummyHandler(BaseHTTPRequestHandler):
                     html_out += f"<li class='mb-2'><strong class='text-{color}-600'>{role.upper()}:</strong> {html.escape(text)}</li>"
                 html_out += "</ul>"
                 self.wfile.write(html_out.encode('utf-8'))
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 self.wfile.write(f"Error: {e}".encode('utf-8'))
             return
 
@@ -2330,7 +2561,28 @@ class DummyHandler(BaseHTTPRequestHandler):
             try:
                 with open('webapp.html', 'rb') as f:
                     self.wfile.write(f.read())
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 self.wfile.write(b"App UI not found.")
             return
 
@@ -2368,7 +2620,28 @@ class DummyHandler(BaseHTTPRequestHandler):
                     success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
                     if success:
                         process_payment_success(tx_ref)
-            except Exception as e:
+    
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
+        except Exception as e:
+
                 logging.error(f"ShegerPay Webhook error: {e}")
         else:
             self.send_response(404)
@@ -2518,7 +2791,28 @@ def auto_nudge_daemon():
                         database.mark_checkout_nudged(payment_id)
                     time.sleep(0.1)
 
+
+                # 3. Paywall / Zero Quota Daily Nudge
+                paywall_users = database.get_paywall_users()
+                for p in paywall_users:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                    }.get(u_lang, "")
+
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_paywall_nudged(uid)
+                    except:
+                        database.mark_paywall_nudged(uid)
+                    time.sleep(0.1)
+
         except Exception as e:
+
             print("Auto-nudge daemon error:", e)
         time.sleep(60)  # Sleep 1 minute to check for carts faster
 

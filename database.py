@@ -294,6 +294,31 @@ def record_payment(user_id, order_id, amount, tx_ref, receipt_file_id, status='p
     conn.close()
     return payment_id
 
+def get_abandoned_checkouts():
+    """Get pending payments older than 1 hour that haven't been nudged yet."""
+    conn = get_connection()
+    c = conn.cursor()
+    from datetime import datetime, timedelta
+    threshold = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        SELECT id, user_id, amount, tx_ref, bot_language, first_name
+        FROM payments
+        JOIN users ON payments.user_id = users.user_id
+        WHERE status = 'pending' 
+        AND receipt_file_id = 'PENDING_CHECKOUT'
+        AND payment_date <= ?
+    ''', (threshold,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def mark_checkout_nudged(payment_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE payments SET status = 'abandoned_nudged' WHERE id = ?", (payment_id,))
+    conn.commit()
+    conn.close()
+
 def approve_payment(payment_id):
     conn = get_connection()
     c = conn.cursor()

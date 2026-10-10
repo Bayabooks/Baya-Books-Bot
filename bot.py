@@ -990,6 +990,9 @@ def handle_callback(call):
             bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
             return
             
+        # Log the intent (Abandoned Cart tracking)
+        database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
+            
         markup = InlineKeyboardMarkup()
         from telebot.types import WebAppInfo
         markup.add(InlineKeyboardButton(S(lang, 'btn_pay_now'), web_app=WebAppInfo(url=checkout_url)))
@@ -2427,6 +2430,29 @@ def auto_nudge_daemon():
                         database.mark_nudge_sent(uid, "nudge_revive_sent")
                     except:
                         database.mark_user_blocked(uid, 1)
+                    time.sleep(0.1)
+
+                    time.sleep(0.1)
+
+                # 4. Abandoned Checkout Nudge
+                abandoned = database.get_abandoned_checkouts()
+                for p in abandoned:
+                    uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
+                    payment_id = p['id']
+                    
+                    text = {
+                        'am': f"👋 ሰላም <b>{name}</b>፣ ክፍያዎን ለመፈጸም ተቸግረዋል?\n\nየክፍያ መንገዱ ግራ ካጋባዎት፣ በቀጥታ በሚከተሉት አማራጮች መክፈል ይችላሉ፡\n🏦 CBE (ንግድ ባንክ): <code>1000073164765</code>\n📱 ቴሌብር (Telebirr): <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nከከፈሉ በኋላ፣ አካውንትዎን ለማስከፈት ከታች ባለው ሜኑ <b>'💬 አስተያየትዎን ይስጡ'</b> የሚለውን በመጫን ደረሰኝዎን ይላኩልን።",
+                        'en': f"👋 Hi <b>{name}</b>, did you have trouble completing your payment?\n\nIf the payment gateway was confusing, you can pay directly via:\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nAfter paying, just send your receipt using the <b>'💬 Give Feedback'</b> button on the bottom menu to activate your account.",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ክፍሊትኩም ንምፍጻም ተጸጊምኩም ዶ?\n\nእቲ ናይ ክፍሊት መንገዲ እንተደኣ ኣደናጊሩኩም፡ ብቐጥታ በዞም ዝስዕቡ ኣማራጺታት ክትከፍሉ ትኽእሉ ኢኹም፡\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nምስ ከፈልኩም፡ ካብ ታሕቲ ዘሎ ሜኑ <b>'💬 ርእይቶኹም ሃቡ'</b> ዝብል ብምጥዋቕ ቅዳሕ (ደረሰኝ) ስደዱልና።",
+                        'om': f"👋 Akkam <b>{name}</b>, Kaffaltii keessan raawwachuuf rakkattanii?\n\nTarsiimoon kaffaltii yoo isin burjaajesse, kallattiin filannoowwan kanaan kaffaluu dandeessu:\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nErga kaffaltanii booda, akkawuntii keessan banuuf baafata armaan gadii irraa <b>'💬 Yaada keessan kennaa'</b> kan jedhu tuquun nagahee (receipt) keessan nuuf ergaa.",
+                    }.get(u_lang, "")
+                    
+                    try:
+                        bot.send_message(uid, text, parse_mode="HTML")
+                        database.mark_checkout_nudged(payment_id)
+                    except:
+                        # If blocked, we still mark it so we don't try again
+                        database.mark_checkout_nudged(payment_id)
                     time.sleep(0.1)
 
         except Exception as e:

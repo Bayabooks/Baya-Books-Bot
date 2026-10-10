@@ -1457,7 +1457,7 @@ def handle_callback(call):
                 import re
                 # Facebook uses plain text, so strip HTML tags
                 clean_content = re.sub('<[^<]+>', '', content)
-                fb_msg = f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n{clean_content}\n\n👇\nhttps://t.me/bayabooks_bot"
+                fb_msg = f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n{clean_content}"
                 
                 fb_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/feed"
                 payload = {

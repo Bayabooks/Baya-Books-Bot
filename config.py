@@ -16,4 +16,5 @@ CBE_ACCOUNT = os.getenv("CBE_ACCOUNT", "1000326477878")
 CBE_NAME = os.getenv("CBE_NAME", "Behailu Getachew")
 
 CHAPA_SECRET_KEY = os.getenv("CHAPA_SECRET_KEY", "CHASECK_TEST_xyz")
+SHEGERPAY_API_KEY = os.getenv("SHEGERPAY_API_KEY", "")
 BASE_URL = os.getenv("BASE_URL", "https://your-bot-url.onrender.com")

@@ -6,7 +6,6 @@ if os.environ.get("DEV_MODE"):
 
 import logging
 import uuid
-import chapa
 import json
 from urllib.parse import urlparse, parse_qs
 import threading
@@ -2228,7 +2227,7 @@ def handle_messages(message):
 #  WEBHOOK HTTP SERVER (Render & Chapa)
 # ══════════════════════════════════════════
 
-def process_chapa_success(tx_ref):
+def process_payment_success(tx_ref):
     if database.is_tx_ref_used(tx_ref):
         return
     parts = tx_ref.split("-")
@@ -2340,25 +2339,13 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"App UI not found.")
             return
 
-        if self.path.startswith('/auto-verify/'):
-            tx_ref = self.path.split('/')[-1]
-            success, _ = chapa.verify_chapa_payment(tx_ref)
-            if success:
-                process_chapa_success(tx_ref)
-            
-            # Redirect user back to bot
-            bot_username = bot.get_me().username
-            self.send_response(302)
-            self.send_header('Location', f'https://t.me/{bot_username}')
-            self.end_headers()
-            return
             
         if self.path.startswith('/auto-verify-shegerpay/'):
             tx_ref = self.path.split('/')[-1]
             import shegerpay
             success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
             if success:
-                process_chapa_success(tx_ref) # We reuse the same success processor since it just reads tx_ref
+                process_payment_success(tx_ref) # We reuse the same success processor since it just reads tx_ref
                 
             bot_username = bot.get_me().username
             self.send_response(302)
@@ -2371,24 +2358,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"Baya Books Bot is running!")
             
     def do_POST(self):
-        if self.path == '/chapa-webhook':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            
-            self.send_response(200)
-            self.end_headers()
-            
-            try:
-                data = json.loads(post_data.decode('utf-8'))
-                tx_ref = data.get('tx_ref')
-                if tx_ref:
-                    # Double check via API to prevent spoofing
-                    success, _ = chapa.verify_chapa_payment(tx_ref)
-                    if success:
-                        process_chapa_success(tx_ref)
-            except Exception as e:
-                logging.error(f"Webhook error: {e}")
-        elif self.path == '/shegerpay-webhook':
+        if self.path == '/shegerpay-webhook':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             self.send_response(200)
@@ -2402,7 +2372,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                     import shegerpay
                     success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
                     if success:
-                        process_chapa_success(tx_ref)
+                        process_payment_success(tx_ref)
             except Exception as e:
                 logging.error(f"ShegerPay Webhook error: {e}")
         else:

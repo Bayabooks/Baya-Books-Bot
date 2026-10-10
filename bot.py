@@ -2200,18 +2200,18 @@ def process_chapa_success(tx_ref):
         lang = get_lang(uid)
         if pkg == "unlimited":
             payment_amount = 1800
-            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
+            database.approve_payment(tx_ref, order_id)
             database.set_vip(uid, days=7)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
         elif pkg == "unlimited_month":
             payment_amount = 4900
-            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
+            database.approve_payment(tx_ref, order_id)
             database.set_vip(uid, days=30)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited_month'), parse_mode="HTML")
         else:
             msgs = int(pkg)
             payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
-            database.record_payment(uid, order_id, payment_amount, tx_ref, "CHAPA_WEBHOOK", status='approved')
+            database.approve_payment(tx_ref, order_id)
             database.add_advice_messages(uid, msgs)
             bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
     elif purpose == "TIP":
@@ -2219,7 +2219,7 @@ def process_chapa_success(tx_ref):
         lang = get_lang(uid)
         tip_success, tip_data = chapa.verify_chapa_payment(tx_ref)
         tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
-        database.record_payment(uid, order_id, tip_amount, tx_ref, "CHAPA_WEBHOOK_TIP", status='approved')
+        database.approve_payment(tx_ref, order_id)
         bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
 
 class DummyHandler(BaseHTTPRequestHandler):

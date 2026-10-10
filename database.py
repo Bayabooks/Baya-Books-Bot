@@ -341,6 +341,17 @@ def get_payment(payment_id):
     conn.close()
     return row
 
+def approve_payment(tx_ref, order_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''UPDATE payments 
+                 SET status = 'approved', order_id = ?, receipt_file_id = 'CHAPA_WEBHOOK'
+                 WHERE tx_ref = ?''', (order_id, tx_ref))
+    updated = c.rowcount
+    conn.commit()
+    conn.close()
+    return updated > 0
+
 def is_tx_ref_used(tx_ref):
     conn = get_connection()
     c = conn.cursor()

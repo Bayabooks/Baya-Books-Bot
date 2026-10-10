@@ -982,28 +982,15 @@ def handle_callback(call):
             msgs = int(pkg)
             amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
             
-        bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
+        bot.answer_callback_query(call.id)
         purpose = f"ADVICE_{pkg}"
-        import shegerpay
-        checkout_url, tx_ref, err = shegerpay.generate_shegerpay_link(amount, uid, purpose)
-        if not checkout_url:
-            bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
-            return
-            
-        # Log the intent (Abandoned Cart tracking)
-        database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
-            
-        markup = InlineKeyboardMarkup()
-        from telebot.types import WebAppInfo
-        markup.add(InlineKeyboardButton(S(lang, 'btn_pay_now'), web_app=WebAppInfo(url=checkout_url)))
+        tx_ref = f"BAYA-{uid}-{purpose}-MANUAL"
         
-        bot.send_message(
-            chat_id,
-            S(lang, 'payment_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
-            S(lang, 'payment_instructions', amount=amount),
-            parse_mode="HTML",
-            reply_markup=markup
-        )
+        database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
+
+        text = f"📱 <b>ክፍያ - {amount} ብር (Payment)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ አካውንትዎን ይከፍትልዎታል! (Send the screenshot here to unlock instantly!)"
+
+        bot.send_message(chat_id, text, parse_mode="HTML")
         return
 
     if data == "reset_account":
@@ -1034,23 +1021,14 @@ def handle_callback(call):
         lang = get_lang(uid)
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
+        bot.answer_callback_query(call.id)
+        tx_ref = f"BAYA-{uid}-TIP-MANUAL"
         
-        import shegerpay
-        checkout_url, tx_ref, err = shegerpay.generate_shegerpay_link(amount, uid, "TIP")
-        if not checkout_url:
-            bot.send_message(chat_id, S(lang, 'payment_error', err=err), parse_mode="HTML")
-            return
-            
-        markup = InlineKeyboardMarkup()
-        from telebot.types import WebAppInfo
-        markup.add(InlineKeyboardButton(S(lang, 'tip_pay_btn', amount=amount), web_app=WebAppInfo(url=checkout_url)))
-        
-        bot.send_message(
-            chat_id,
-            S(lang, 'tip_payment_text', amount=amount),
-            parse_mode="HTML",
-            reply_markup=markup
-        )
+        database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
+
+        text = f"☕ <b>ስጦታ - {amount} ብር (Tip)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን አረጋግጦ ስጦታዎን ይቀበላል! (Send the screenshot here!)"
+
+        bot.send_message(chat_id, text, parse_mode="HTML")
         return
 
     # ══════════════════════════════════════════

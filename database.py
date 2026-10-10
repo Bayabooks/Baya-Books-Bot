@@ -299,7 +299,7 @@ def get_abandoned_checkouts():
     conn = get_connection()
     c = conn.cursor()
     from datetime import datetime, timedelta
-    threshold = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+    threshold = (datetime.now() - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
         SELECT id, user_id, amount, tx_ref, bot_language, first_name
         FROM payments

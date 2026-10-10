@@ -2457,7 +2457,7 @@ def auto_nudge_daemon():
 
         except Exception as e:
             print("Auto-nudge daemon error:", e)
-        time.sleep(3600)  # Sleep 1 hour
+        time.sleep(300)  # Sleep 5 minutes
 
 if __name__ == '__main__':
     try:

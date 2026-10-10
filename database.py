@@ -1022,13 +1022,16 @@ def get_paywall_users():
     threshold = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        SELECT user_id, first_name, bot_language
+        SELECT users.user_id, users.first_name, users.bot_language
         FROM users
-        WHERE advice_messages_left <= 0 
-        AND age_verified = 1
-        AND bot_blocked = 0
-        AND (vip_expiry IS NULL OR vip_expiry < ?)
-        AND (last_paywall_nudge IS NULL OR last_paywall_nudge <= ?)
+        JOIN payments ON users.user_id = payments.user_id
+        WHERE users.advice_messages_left <= 0 
+        AND payments.status = 'pending'
+        AND users.age_verified = 1
+        AND users.bot_blocked = 0
+        AND (users.vip_expiry IS NULL OR users.vip_expiry < ?)
+        AND (users.last_paywall_nudge IS NULL OR users.last_paywall_nudge <= ?)
+        GROUP BY users.user_id
     ''', (now, threshold))
     rows = c.fetchall()
     conn.close()

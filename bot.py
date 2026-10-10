@@ -984,7 +984,8 @@ def handle_callback(call):
             
         bot.answer_callback_query(call.id)
         purpose = f"ADVICE_{pkg}"
-        tx_ref = f"BAYA-{uid}-{purpose}-MANUAL"
+        import uuid
+        tx_ref = f"BAYA-{uid}-{purpose}-MANUAL-{uuid.uuid4().hex[:6]}"
         
         database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
 
@@ -1022,7 +1023,8 @@ def handle_callback(call):
         amount = int(data.split("_")[1])
         bot.answer_callback_query(call.id, S(lang, 'payment_preparing'))
         bot.answer_callback_query(call.id)
-        tx_ref = f"BAYA-{uid}-TIP-MANUAL"
+        import uuid
+        tx_ref = f"BAYA-{uid}-TIP-MANUAL-{uuid.uuid4().hex[:6]}"
         
         database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
 

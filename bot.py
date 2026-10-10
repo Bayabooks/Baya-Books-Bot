@@ -772,7 +772,7 @@ def cmd_del_last(message):
     if not is_admin(message.from_user): return
     conn = database.get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, amount, status FROM payments ORDER BY id DESC LIMIT 1")
+    c.execute("SELECT id, amount, status FROM payments WHERE status = 'approved' ORDER BY id DESC LIMIT 1")
     row = c.fetchone()
     if row:
         c.execute("DELETE FROM payments WHERE id = ?", (row['id'],))

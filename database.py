@@ -301,11 +301,11 @@ def get_abandoned_checkouts():
     from datetime import datetime, timedelta
     threshold = (datetime.now() - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
-        SELECT id, user_id, amount, tx_ref, bot_language, first_name
+        SELECT payments.id, payments.user_id, payments.amount, payments.tx_ref, users.bot_language, users.first_name
         FROM payments
         JOIN users ON payments.user_id = users.user_id
-        WHERE status = 'pending' 
-        AND receipt_file_id = 'PENDING_CHECKOUT'
+        WHERE payments.status = 'pending' 
+        AND payments.receipt_file_id = 'PENDING_CHECKOUT'
         AND payment_date <= ?
     ''', (threshold,))
     rows = c.fetchall()

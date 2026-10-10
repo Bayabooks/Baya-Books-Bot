@@ -1634,6 +1634,24 @@ def handle_messages(message):
         bot.reply_to(message, S(get_lang(uid), 'banned'))
         return
 
+    if message.text == "/debug_carts" and is_admin(message.from_user):
+        conn = database.get_connection()
+        c = conn.cursor()
+        c.execute("SELECT status, count(*) FROM payments WHERE receipt_file_id = 'PENDING_CHECKOUT' GROUP BY status")
+        rows = c.fetchall()
+        c.execute("SELECT payment_date FROM payments WHERE receipt_file_id = 'PENDING_CHECKOUT' ORDER BY id DESC LIMIT 1")
+        last = c.fetchone()
+        conn.close()
+        msg = "<b>Cart Diagnostics:</b>\n"
+        for r in rows:
+            msg += f"- {r[0]}: {r[1]}\n"
+        if last:
+            msg += f"\nLast recorded time: {last[0]}"
+            from datetime import datetime
+            msg += f"\nServer time now: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        bot.send_message(chat_id, msg or "No checkouts found.", parse_mode="HTML")
+        return
+
     # ── Admin States ─────────────────────────
     # ── Admin: Search User (text input) ──────
     if state == "ADMIN_SEARCH_USER" and is_admin(message.from_user):

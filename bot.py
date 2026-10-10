@@ -1004,7 +1004,7 @@ def handle_callback(call):
         
         database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
 
-        text = f"📱 <b>ክፍያ - {amount} ብር (Payment)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ አካውንትዎን ይከፍትልዎታል! (Send the screenshot here to unlock instantly!)"
+        text = f"📱 <b>ክፍያ - {amount} ብር (Payment)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n🏦 <b>CBE Birr (ሲቢኢ ብር):</b> <code>0912689900</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ አካውንትዎን ይከፍትልዎታል! (Send the screenshot here to unlock instantly!)"
 
         bot.send_message(chat_id, text, parse_mode="HTML")
         return
@@ -1043,7 +1043,7 @@ def handle_callback(call):
         
         database.record_payment(uid, None, amount, tx_ref, 'PENDING_CHECKOUT', status='pending')
 
-        text = f"☕ <b>ስጦታ - {amount} ብር (Tip)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን አረጋግጦ ስጦታዎን ይቀበላል! (Send the screenshot here!)"
+        text = f"☕ <b>ስጦታ - {amount} ብር (Tip)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nእባክዎ <b>{amount} ብር</b> በቀጥታ በሚከተሉት አማራጮች ያስገቡ (Please transfer to):\n\n🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n🏦 <b>CBE Birr (ሲቢኢ ብር):</b> <code>0912689900</code>\n📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n👤 <b>ስም:</b> በኃይሉ ጌታቸው (Behailu Getachew)\n\n✅ <b>ከከፈሉ በኋላ (After Paying)፡</b>\nየከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን። ሲስተማችን አረጋግጦ ስጦታዎን ይቀበላል! (Send the screenshot here!)"
 
         bot.send_message(chat_id, text, parse_mode="HTML")
         return
@@ -2504,10 +2504,10 @@ def auto_nudge_daemon():
                     payment_id = p['id']
                     
                     text = {
-                        'am': f"👋 ሰላም <b>{name}</b>፣ ክፍያዎን ለመፈጸም ተቸግረዋል?\n\nየክፍያ መንገዱ ግራ ካጋባዎት፣ በቀጥታ በሚከተሉት አማራጮች መክፈል ይችላሉ፡\n🏦 CBE (ንግድ ባንክ): <code>1000073164765</code>\n📱 ቴሌብር (Telebirr): <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nከከፈሉ በኋላ፣ አካውንትዎን ለማስከፈት ከታች ባለው ሜኑ <b>'💬 አስተያየትዎን ይስጡ'</b> የሚለውን በመጫን ደረሰኝዎን ይላኩልን።",
-                        'en': f"👋 Hi <b>{name}</b>, did you have trouble completing your payment?\n\nIf the payment gateway was confusing, you can pay directly via:\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nAfter paying, just send your receipt using the <b>'💬 Give Feedback'</b> button on the bottom menu to activate your account.",
-                        'ti': f"👋 ሰላም <b>{name}</b>፡ ክፍሊትኩም ንምፍጻም ተጸጊምኩም ዶ?\n\nእቲ ናይ ክፍሊት መንገዲ እንተደኣ ኣደናጊሩኩም፡ ብቐጥታ በዞም ዝስዕቡ ኣማራጺታት ክትከፍሉ ትኽእሉ ኢኹም፡\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nምስ ከፈልኩም፡ ካብ ታሕቲ ዘሎ ሜኑ <b>'💬 ርእይቶኹም ሃቡ'</b> ዝብል ብምጥዋቕ ቅዳሕ (ደረሰኝ) ስደዱልና።",
-                        'om': f"👋 Akkam <b>{name}</b>, Kaffaltii keessan raawwachuuf rakkattanii?\n\nTarsiimoon kaffaltii yoo isin burjaajesse, kallattiin filannoowwan kanaan kaffaluu dandeessu:\n🏦 CBE: <code>1000073164765</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nErga kaffaltanii booda, akkawuntii keessan banuuf baafata armaan gadii irraa <b>'💬 Yaada keessan kennaa'</b> kan jedhu tuquun nagahee (receipt) keessan nuuf ergaa.",
+                        'am': f"👋 ሰላም <b>{name}</b>፣ ክፍያዎን ለመፈጸም ተቸግረዋል?\n\nየክፍያ መንገዱ ግራ ካጋባዎት፣ በቀጥታ በሚከተሉት አማራጮች መክፈል ይችላሉ፡\n🏦 CBE (ንግድ ባንክ): <code>1000073164765</code>\n🏦 CBE Birr (ሲቢኢ ብር): <code>0912689900</code>\n📱 ቴሌብር (Telebirr): <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nከከፈሉ በኋላ፣ አካውንትዎን ለማስከፈት ከታች ባለው ሜኑ <b>'💬 አስተያየትዎን ይስጡ'</b> የሚለውን በመጫን ደረሰኝዎን ይላኩልን።",
+                        'en': f"👋 Hi <b>{name}</b>, did you have trouble completing your payment?\n\nIf the payment gateway was confusing, you can pay directly via:\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nAfter paying, just send your receipt using the <b>'💬 Give Feedback'</b> button on the bottom menu to activate your account.",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ክፍሊትኩም ንምፍጻም ተጸጊምኩም ዶ?\n\nእቲ ናይ ክፍሊት መንገዲ እንተደኣ ኣደናጊሩኩም፡ ብቐጥታ በዞም ዝስዕቡ ኣማራጺታት ክትከፍሉ ትኽእሉ ኢኹም፡\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>\n👤 በኃይሉ ጌታቸው (Behailu Getachew)\n\nምስ ከፈልኩም፡ ካብ ታሕቲ ዘሎ ሜኑ <b>'💬 ርእይቶኹም ሃቡ'</b> ዝብል ብምጥዋቕ ቅዳሕ (ደረሰኝ) ስደዱልና።",
+                        'om': f"👋 Akkam <b>{name}</b>, Kaffaltii keessan raawwachuuf rakkattanii?\n\nTarsiimoon kaffaltii yoo isin burjaajesse, kallattiin filannoowwan kanaan kaffaluu dandeessu:\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>\n👤 Behailu Getachew\n\nErga kaffaltanii booda, akkawuntii keessan banuuf baafata armaan gadii irraa <b>'💬 Yaada keessan kennaa'</b> kan jedhu tuquun nagahee (receipt) keessan nuuf ergaa.",
                     }.get(u_lang, "")
                     
                     try:

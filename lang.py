@@ -343,10 +343,10 @@ STRINGS = {
         "om": "📱 <b>Kaffaltii</b>"
     },
     "payment_instructions": {
-        "am": "እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\nክፍያዎ እንደተጠናቀቀ ሲስተሙ በራስ-ሰር ይከፈትልዎታል!",
-        "en": "Please click the <b>Pay Now</b> button below to pay <b>{amount} Birr</b>.\nOnce your payment is complete, the system will automatically unlock for you!",
-        "ti": "በጃኹም ኣብ ታሕቲ ዘሎ <b>ሕጂ ኽፈሉ</b> ዝብል መርገጺ ብምጥዋቕ <b>{amount} ብር</b> ክፈሉ ።\nክፍሊትኩም ምስ ተዛዘመ እቲ ስርዓት ብኣውቶማቲክ ክኽፈተልኩም እዩ!",
-        "om": "Maaloo cuqqaallii <b>Amma Kaffalaa</b> armaan gadii tuquun <b>Birrii {amount}</b> kaffalaa.\nKaffaltiin keessan akkuma xumurameen sirnichii of-umaan isiniif banama!"
+        "am": "እባክዎ ከታች ያለውን <b>Pay Now</b> ቁልፍ በመጫን <b>{amount} ብር</b> ይክፈሉ።\nክፍያዎ እንደተጠናቀቀ ሲስተሙ በራስ-ሰር ይከፈትልዎታል!\n\n⚠️ <i>ማሳሰቢያ: ይህ የክፍያ ሊንክ ለአንድ ጊዜ ብቻ የሚያገለግል ነው። ክፍያዎ ካልተሳካ ወይም ገጹን ከዘጉት፣ አዲስ ሊንክ ለማግኘት እባክዎ ፓኬጅዎን እንደገና ይምረጡ።</i>",
+        "en": "Please click the <b>Pay Now</b> button below to pay <b>{amount} Birr</b>.\nOnce your payment is complete, the system will automatically unlock for you!\n\n⚠️ <i>Note: This checkout link is for one-time use. If your payment fails or you close the page, please select your package again to generate a new link.</i>",
+        "ti": "በጃኹም ኣብ ታሕቲ ዘሎ <b>ሕጂ ኽፈሉ</b> ዝብል መርገጺ ብምጥዋቕ <b>{amount} ብር</b> ክፈሉ ።\nክፍሊትኩም ምስ ተዛዘመ እቲ ስርዓት ብኣውቶማቲክ ክኽፈተልኩም እዩ!\n\n⚠️ <i>መተሓሳሰቢ: እዚ ናይ ክፍሊት ሊንክ ንሓደ ግዜ ጥራይ ዘገልግል እዩ። ክፍሊትኩም እንተዘይተዓዊቱ ወይ ነቲ ገጽ እንተዓጺኹሞ፡ ሓዱሽ ሊንክ ንምርካብ በጃኹም ፓኬጅኩም እንደገና ምረጹ።</i>",
+        "om": "Maaloo cuqqaallii <b>Amma Kaffalaa</b> armaan gadii tuquun <b>Birrii {amount}</b> kaffalaa.\nKaffaltiin keessan akkuma xumurameen sirnichii of-umaan isiniif banama!\n\n⚠️ <i>Hubachiisa: Liinkiin kaffaltii kun yeroo tokkoof qofa kan tajaajiludha. Kaffaltiin keessan yoo milkaa'uu baate ykn fuulicha yoo cuftani, liinkii haaraa argachuuf maaloo paakeejii keessan irra deebi'uun filadhaa.</i>"
     },
     "payment_preparing": {
         "am": "እየተዘጋጀ ነው...",

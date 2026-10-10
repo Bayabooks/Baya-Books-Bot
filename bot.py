@@ -767,6 +767,21 @@ def cmd_revive(message):
     
     threading.Thread(target=run_revive, daemon=True).start()
 
+@bot.message_handler(commands=["del_last"])
+def cmd_del_last(message):
+    if not is_admin(message.from_user): return
+    conn = database.get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, amount, status FROM payments ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    if row:
+        c.execute("DELETE FROM payments WHERE id = ?", (row['id'],))
+        conn.commit()
+        bot.reply_to(message, f"✅ Removed last payment from dashboard! (Amount: {row['amount']}, Status: {row['status']})")
+    else:
+        bot.reply_to(message, "No payments found to delete.")
+    conn.close()
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])

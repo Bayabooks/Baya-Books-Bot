@@ -83,9 +83,9 @@
         body.light-theme header { background: rgba(248, 250, 252, 0.9); }
         body.sepia-theme header { background: rgba(246, 239, 226, 0.9); }
 
-        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding-right: 8px; }
         .brand-icon {
-            width: 40px; height: 40px; border-radius: 10px;
+            width: 42px; height: 42px; border-radius: 10px;
             overflow: hidden; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
             border: 1.5px solid rgba(99, 102, 241, 0.45);
@@ -94,12 +94,12 @@
         .brand-icon img {
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
-        .brand-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
-        .brand-text p { font-size: 11px; color: var(--text-muted); }
+        .brand-text h1 { font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.25; }
+        .brand-text p { font-size: 11px; color: var(--text-muted); line-height: 1.35; margin-top: 2px; }
 
         .btn-icon {
             background: var(--bg-secondary); border: 1px solid var(--border);
-            color: var(--text-primary); width: 36px; height: 36px;
+            color: var(--text-primary); width: 36px; height: 36px; flex-shrink: 0;
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.2s;
         }
@@ -416,10 +416,10 @@
     <div id="view-home">
         <header>
             <div class="brand">
-                <div class="brand-icon"><img src="/static/covers/baya_logo.jpg" alt="Baya Library"></div>
+                <div class="brand-icon"><img src="/static/covers/baya_logo.jpg" alt="Baya Books"></div>
                 <div class="brand-text">
-                    <h1>Baya Library</h1>
-                    <p>ዲጂታል መጽሐፍት ቤት</p>
+                    <h1>የአዕምሮ ምግቦች &amp; Baya books</h1>
+                    <p>እያንዳንዱ የሚያነቡት ገጽ ከፍ ወዳለ ማንነት እንዲወስድዎት ተመኘን</p>
                 </div>
             </div>
             <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>

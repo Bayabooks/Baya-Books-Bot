@@ -96,8 +96,42 @@ def setup_database():
         date_added TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS user_books (
+        user_id INTEGER,
+        book_key TEXT,
+        purchased_at TEXT,
+        PRIMARY KEY (user_id, book_key)
+    )''')
+
     conn.commit()
     conn.close()
+
+def unlock_book(user_id, book_key):
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at)
+        VALUES (?, ?, ?)
+    ''', (user_id, book_key, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    conn.commit()
+    conn.close()
+
+def get_user_books(user_id):
+    if not user_id:
+        return []
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return []
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT book_key FROM user_books WHERE user_id = ?", (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [r['book_key'] for r in rows]
 
 # ─── User Functions ────────────────────────
 

@@ -420,7 +420,7 @@ def get_bottom_markup(lang='am', uid=None):
             KeyboardButton("⚙️ Dashboard")
         )
         m.add(
-            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app"))
+            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}"))
         )
     else:
         m.add(
@@ -803,6 +803,45 @@ def cmd_del_last(message):
     else:
         bot.reply_to(message, "No payments found to delete.")
     conn.close()
+
+@bot.message_handler(commands=["unlock_book"])
+def cmd_unlock_book(message):
+    if not is_admin(message.from_user):
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        bot.reply_to(
+            message,
+            "Usage: <code>/unlock_book @username narcissist</code> or <code>/unlock_book @username buyback</code>\n(Or pass your own ID/username to test 'My Books')",
+            parse_mode="HTML"
+        )
+        return
+    target = args[1].strip()
+    book_key = args[2].strip().lower()
+    try:
+        uid = int(target)
+    except ValueError:
+        u_rec = database.get_user_by_username(target.lstrip('@'))
+        uid = u_rec['user_id'] if u_rec else None
+    if not uid:
+        bot.reply_to(message, f"❌ User <code>{target}</code> not found.", parse_mode="HTML")
+        return
+    database.unlock_book(uid, book_key)
+    book_titles = {
+        "narcissist": "የናርሲሲስቶች ወጥመድ",
+        "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
+        "boundaries": "ድንበርህን አብጅ (Set Boundaries, Find Peace)"
+    }
+    b_title = book_titles.get(book_key, book_key)
+    bot.reply_to(message, f"✅ Unlocked <b>{b_title}</b> for user <code>{uid}</code>!", parse_mode="HTML")
+    try:
+        bot.send_message(
+            uid,
+            f"🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ ተከፍቶልዎታል!\nአሁን ከታች ባለው <b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+            parse_mode="HTML"
+        )
+    except:
+        pass
 
 @bot.message_handler(commands=["add_subadmin"])
 def cmd_add_subadmin(message):
@@ -2284,7 +2323,20 @@ def handle_messages(message):
                 parts = tx_ref.split("-")
                 purpose = parts[2] if len(parts) >= 3 else ""
                 
-                if purpose.startswith("ADVICE_"):
+                if purpose.startswith("BOOK_"):
+                    book_key = purpose.replace("BOOK_", "")
+                    database.unlock_book(uid, book_key)
+                    book_titles = {
+                        "narcissist": "የናርሲሲስቶች ወጥመድ",
+                        "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
+                        "boundaries": "ድንበርህን አብጅ (Set Boundaries, Find Peace)"
+                    }
+                    b_title = book_titles.get(book_key, book_key)
+                    bot.edit_message_text(
+                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ ተከፍቶልዎታል!\nአሁን ከታች ባለው <b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+                        chat_id, msg.message_id, parse_mode="HTML"
+                    )
+                elif purpose.startswith("ADVICE_"):
                     pkg = purpose.split("_")[1]
                     if pkg == "unlimited":
                         database.set_vip(uid, days=7)
@@ -2420,10 +2472,17 @@ class DummyHandler(BaseHTTPRequestHandler):
             filepath = self.path.lstrip('/').split('?')[0]
             if os.path.exists(filepath) and os.path.isfile(filepath):
                 ext = filepath.split('.')[-1].lower()
-                mime = 'image/jpeg' if ext in ['jpg', 'jpeg'] else ('image/png' if ext == 'png' else 'application/octet-stream')
+                if ext in ['jpg', 'jpeg']:
+                    mime = 'image/jpeg'
+                elif ext == 'png':
+                    mime = 'image/png'
+                elif ext == 'json':
+                    mime = 'application/json; charset=utf-8'
+                else:
+                    mime = 'application/octet-stream'
                 self.send_response(200)
                 self.send_header("Content-type", mime)
-                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Cache-Control", "public, max-age=3600")
                 self.end_headers()
                 with open(filepath, 'rb') as f:
                     self.wfile.write(f.read())
@@ -2433,9 +2492,41 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-        if self.path == '/app':
+        if self.path.startswith('/api/user_books'):
+            parsed_url = urlparse(self.path)
+            qs = parse_qs(parsed_url.query)
+            uid = qs.get('uid', [''])[0]
+            books = database.get_user_books(uid)
             self.send_response(200)
-            self.send_header("Content-type", "text/html")
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(json.dumps({"books": books}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/api/select_book'):
+            parsed_url = urlparse(self.path)
+            qs = parse_qs(parsed_url.query)
+            uid = qs.get('uid', [''])[0]
+            book_key = qs.get('book', [''])[0]
+            if uid and book_key:
+                try:
+                    uid_int = int(uid)
+                    rand_suffix = uuid.uuid4().hex[:6].upper()
+                    tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
+                    database.record_payment(uid_int, 0, 299, tx_ref, "PENDING_CHECKOUT", status="pending")
+                except Exception as e:
+                    logging.error(f"Failed to record book checkout: {e}")
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            return
+
+        if self.path == '/app' or self.path.startswith('/app?'):
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             try:
                 with open('webapp.html', 'rb') as f:

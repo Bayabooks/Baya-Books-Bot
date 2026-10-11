@@ -2523,7 +2523,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                     uid_int = int(uid)
                     rand_suffix = uuid.uuid4().hex[:6].upper()
                     tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
-                    database.record_payment(uid_int, 0, 299, tx_ref, "PENDING_CHECKOUT", status="pending")
+                    database.record_payment(uid_int, 0, 499, tx_ref, "PENDING_CHECKOUT", status="pending")
                 except Exception as e:
                     logging.error(f"Failed to record book checkout: {e}")
             self.send_response(200)

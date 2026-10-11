@@ -400,6 +400,10 @@ def record_payment(user_id, order_id, amount, tx_ref, receipt_file_id, status='p
     conn = get_connection()
     c = conn.cursor()
     try:
+        if status == 'pending' and receipt_file_id == 'PENDING_CHECKOUT':
+            c.execute('''DELETE FROM payments 
+                         WHERE user_id = ? AND status IN ('pending', 'abandoned_nudged') 
+                         AND receipt_file_id = 'PENDING_CHECKOUT' ''', (user_id,))
         c.execute('''INSERT INTO payments (user_id, order_id, amount, tx_ref, receipt_file_id, status, payment_date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, order_id, amount, tx_ref, receipt_file_id, status, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -416,7 +420,7 @@ def get_latest_pending_payment(user_id):
     c.execute('''
         SELECT id, amount, tx_ref, order_id 
         FROM payments 
-        WHERE user_id = ? AND status = 'pending' 
+        WHERE user_id = ? AND status IN ('pending', 'abandoned_nudged') 
         ORDER BY id DESC LIMIT 1
     ''', (user_id,))
     row = c.fetchone()
@@ -424,7 +428,7 @@ def get_latest_pending_payment(user_id):
     return row
 
 def get_abandoned_checkouts():
-    """Get pending payments older than 1 hour that haven't been nudged yet."""
+    """Get pending payments older than 5 minutes that haven't been nudged yet."""
     conn = get_connection()
     c = conn.cursor()
     from datetime import datetime, timedelta
@@ -448,13 +452,6 @@ def mark_checkout_nudged(payment_id):
     conn.commit()
     conn.close()
 
-def approve_payment(payment_id):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE payments SET status = 'approved' WHERE id = ?", (payment_id,))
-    conn.commit()
-    conn.close()
-
 def reject_payment(payment_id):
     conn = get_connection()
     c = conn.cursor()
@@ -470,16 +467,39 @@ def get_payment(payment_id):
     conn.close()
     return row
 
-def approve_payment(tx_ref, order_id):
+def approve_payment(tx_ref, order_id=None, receipt_ref=None):
     conn = get_connection()
     c = conn.cursor()
+    receipt_tag = f"WEBHOOK_OCR_{str(receipt_ref).strip().upper()}" if receipt_ref else "CHAPA_WEBHOOK"
+    c.execute("SELECT user_id FROM payments WHERE tx_ref = ?", (tx_ref,))
+    prow = c.fetchone()
     c.execute('''UPDATE payments 
-                 SET status = 'approved', order_id = ?, receipt_file_id = 'CHAPA_WEBHOOK'
-                 WHERE tx_ref = ?''', (order_id, tx_ref))
+                 SET status = 'approved', order_id = ?, receipt_file_id = ?
+                 WHERE tx_ref = ?''', (order_id, receipt_tag, tx_ref))
     updated = c.rowcount
+    if prow and prow['user_id']:
+        c.execute('''DELETE FROM payments 
+                     WHERE user_id = ? AND status IN ('pending', 'abandoned_nudged') 
+                     AND tx_ref != ?''', (prow['user_id'], tx_ref))
     conn.commit()
     conn.close()
     return updated > 0
+
+def is_receipt_ref_used(receipt_ref):
+    if not receipt_ref:
+        return False
+    clean_ref = str(receipt_ref).strip().upper()
+    if len(clean_ref) < 5 or clean_ref in ("NONE", "NULL", "N/A", "UNKNOWN"):
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''SELECT id FROM payments 
+                 WHERE status = 'approved' 
+                 AND (receipt_file_id = ? OR receipt_file_id = ?)''',
+              (f"WEBHOOK_OCR_{clean_ref}", clean_ref))
+    row = c.fetchone()
+    conn.close()
+    return row is not None
 
 def is_tx_ref_used(tx_ref):
     conn = get_connection()
@@ -545,6 +565,13 @@ def get_analytics():
     c.execute("SELECT COUNT(*) FROM users WHERE gender = 'female' AND bot_blocked = 0")
     female_count = c.fetchone()[0]
 
+    # Book stats
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("SELECT COUNT(*) FROM user_books WHERE expires_at IS NULL OR expires_at > ?", (now_str,))
+    total_books_unlocked = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM user_books WHERE expires_at IS NOT NULL AND expires_at > ?", (now_str,))
+    active_book_rentals = c.fetchone()[0]
+
     # Recent payments (include all successful)
     c.execute('''
         SELECT u.first_name, p.amount, p.payment_date, p.tx_ref
@@ -556,7 +583,7 @@ def get_analytics():
     recent_payments = []
     for r in c.fetchall():
         tx = r['tx_ref'] or ''
-        ptype = 'Tip' if 'TIP' in tx else 'Advice' if 'ADVICE' in tx else 'Other'
+        ptype = 'Tip' if 'TIP' in tx else 'Advice' if 'ADVICE' in tx else 'Book' if 'BOOK' in tx else 'Other'
         recent_payments.append({
             "name": r['first_name'] or 'Unknown', 
             "amount": r['amount'], 
@@ -575,6 +602,8 @@ def get_analytics():
         "new_today": new_today,
         "new_this_week": new_this_week,
         "active_advice_users": active_advice_users,
+        "total_books_unlocked": total_books_unlocked,
+        "active_book_rentals": active_book_rentals,
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
         "weekly_revenue": weekly_revenue,
@@ -676,7 +705,7 @@ def is_vip(user_id):
 
 def set_vip(user_id, days=30):
     from datetime import datetime, timedelta
-    expiry = (datetime.now() + timedelta(days=days)).isoformat()
+    expiry = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -1176,7 +1205,7 @@ def get_paywall_users():
         FROM users
         JOIN payments ON users.user_id = payments.user_id
         WHERE users.advice_messages_left <= 0 
-        AND payments.status = 'pending'
+        AND payments.status IN ('pending', 'abandoned_nudged')
         AND users.age_verified = 1
         AND users.bot_blocked = 0
         AND (users.vip_expiry IS NULL OR users.vip_expiry < ?)

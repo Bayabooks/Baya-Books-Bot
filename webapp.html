@@ -505,6 +505,9 @@
                 <h3 class="paywall-title">ሙሉውን መጽሐፍ ዛሬውኑ ማንበብ ይጀምሩ!</h3>
                 <p class="paywall-desc" id="paywallDesc"></p>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    <button id="paywallBtnExtend" class="btn btn-primary" style="display: none; width: 100%; padding: 13px; font-size: 14px; background: linear-gradient(135deg, #10b981, #059669);" onclick="openPayModal(activeBookKey, 'extend')">
+                        <span>➕ ተጨማሪ 5 ቀናት ጨምር — 99 ብር</span>
+                    </button>
                     <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey, 'buy')">
                         <span>💎 ሙሉውን መጽሐፍ ለዘላለም ግዛ — 499 ብር</span>
                     </button>
@@ -596,14 +599,18 @@
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) { tg.ready(); tg.expand(); }
 
-        // Determine User ID from query param or Telegram WebApp initData
+        // Determine User ID from query param, Telegram WebApp initData, or localStorage
         function getUserId() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('uid')) return params.get('uid');
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-                return String(tg.initDataUnsafe.user.id);
+            let uid = params.get('uid') || '';
+            if (!uid && tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                uid = String(tg.initDataUnsafe.user.id);
             }
-            return '';
+            if (uid) {
+                try { localStorage.setItem('baya_uid', uid); } catch (e) {}
+                return uid;
+            }
+            try { return localStorage.getItem('baya_uid') || ''; } catch (e) { return ''; }
         }
 
         const USER_ID = getUserId();
@@ -939,6 +946,10 @@
             }
 
             const nextCh = chapters[idx + 1];
+            const pwExtBtn = document.getElementById('paywallBtnExtend');
+            if (pwExtBtn) {
+                pwExtBtn.style.display = expiredBooks.includes(targetBookKey) ? 'inline-flex' : 'none';
+            }
             if (nextCh && (isOwned || nextCh.free)) {
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'btn btn-primary';
@@ -1035,7 +1046,13 @@
         function closePayModal() {
             document.getElementById('modal-pay').style.display = 'none';
         }
-        function returnToBot() {
+        async function returnToBot() {
+            const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
+            if (b && USER_ID) {
+                try {
+                    await fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode) + '&notify=1');
+                } catch (e) {}
+            }
             if (tg) tg.close();
             else closePayModal();
         }

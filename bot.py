@@ -455,28 +455,42 @@ def cmd_help(message):
 
 @bot.message_handler(commands=["mylibrary"])
 def cmd_library(message):
-    if not check_channel_member(message.from_user.id):
-        send_join_channel_msg(message.chat.id, message.from_user.id); return
+    uid = message.from_user.id
+    if not check_channel_member(uid):
+        send_join_channel_msg(message.chat.id, uid); return
 
-    orders = database.get_user_orders(message.from_user.id)
-    if not orders:
-        bot.send_message(message.chat.id, "📚 ገና ምንም PDF አልተዘጋጀልዎም።\n\n/new ይጫኑ ለመጀመር!")
-        return
+    ubooks, urentals, uexpired = database.get_user_books_state(uid)
+    orders = database.get_user_orders(uid)
 
     lines = []
+    for bk in ubooks:
+        bt = BOOK_TITLES.get(bk, bk)
+        if bk in urentals:
+            lines.append(f"  ⏳ <b>{bt}</b> (ኪራይ — ቀሪ {urentals[bk]} ቀናት)")
+        else:
+            lines.append(f"  ✅ <b>{bt}</b> (ሙሉ መጽሐፍ)")
+    for bk in uexpired:
+        bt = BOOK_TITLES.get(bk, bk)
+        lines.append(f"  ⏰ <b>{bt}</b> (የኪራይ ጊዜው ያለፈ)")
     for i, o in enumerate(orders, 1):
         date = o["delivered_date"][:10] if o["delivered_date"] else "N/A"
-        lines.append(f"  {i}. 📕 {o['book_title']} ({date})")
+        lines.append(f"  📕 {o['book_title']} ({date})")
 
     markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton(
+            "📚 መጻሕፍት ቤት ክፈት (Open Library)",
+            web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+        )
+    )
     for i, o in enumerate(orders, 1):
         if o["pdf_file_id"]:
             markup.add(InlineKeyboardButton(f"📥 {i}. {o['book_title']}", callback_data=f"redownload_{o['id']}"))
 
+    body = "\n".join(lines) if lines else "📚 ገና የገዙት ወይም የተከራዩት መጽሐፍ የለም። ከታች ያለውን ቁልፍ ተጭነው መጻሕፍት ቤቱን ይጎብኙ!"
     bot.send_message(
         message.chat.id,
-        f"📚 <b>ቤተ-መጻሕፍትዎ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        + "\n".join(lines) + "\n\n📥 ለማውረድ ከታች ይጫኑ",
+        f"📚 <b>ቤተ-መጻሕፍትዎ (My Library)</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{body}",
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -846,7 +860,7 @@ def cmd_unlock_book(message):
     if len(args) < 3:
         bot.reply_to(
             message,
-            "Usage: <code>/unlock_book @username narcissist</code> (permanent) or <code>/unlock_book @username narcissist 15</code> (15-day rental)",
+            "Usage: <code>/unlock_book @username narcissist</code> (permanent) or <code>/unlock_book @username narcissist 10</code> (10-day rental)",
             parse_mode="HTML"
         )
         return
@@ -1211,7 +1225,7 @@ def handle_callback(call):
         # Recent payments summary
         recent_pay_text = ""
         for p in stats.get("recent_payments", [])[:5]:
-            ptype = {"Tip": "☕", "Advice": "🧠", "Other": "📦"}.get(p.get("type", ""), "📦")
+            ptype = {"Tip": "☕", "Advice": "🧠", "Book": "📚", "Other": "📦"}.get(p.get("type", ""), "📦")
             recent_pay_text += f"  {ptype} {p['name']} — <b>{p['amount']:,} ብር</b> ({p['date'][:10] if p['date'] else 'N/A'})\n"
         if not recent_pay_text:
             recent_pay_text = "  — No payments yet\n"
@@ -1231,7 +1245,8 @@ def handle_callback(call):
             f"👥 Active Users: <b>{stats['total_users']}</b>\n"
             f"🚫 Left/Blocked: <b>{stats.get('blocked_users', 0)}</b>\n"
             f"🟢 New Today: <b>{stats['new_today']}</b> | This Week: <b>{stats.get('new_this_week', 0)}</b>\n"
-            f"💬 Chatting Users: <b>{stats.get('active_advice_users', 0)}</b>\n\n"
+            f"💬 Chatting Users: <b>{stats.get('active_advice_users', 0)}</b>\n"
+            f"📚 Books Unlocked: <b>{stats.get('total_books_unlocked', 0)}</b> (⏳ Active Rentals: <b>{stats.get('active_book_rentals', 0)}</b>)\n\n"
             f"━━ 🔽 User Funnel ━━━━━━━━━━━\n"
             f"  🚧 Stuck in onboarding: <b>{stages['stuck_onboarding']}</b>\n"
             f"  😶 Onboarded, never chatted: <b>{stages['onboarded_no_chat']}</b>\n"
@@ -1302,11 +1317,7 @@ def handle_callback(call):
         parts = data.split("_")
         target_uid = int(parts[3])
         days = int(parts[4])
-        from datetime import datetime, timedelta
-        expiry = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
-        conn = database.get_connection(); c = conn.cursor()
-        c.execute("UPDATE users SET vip_expiry = ? WHERE user_id = ?", (expiry, target_uid))
-        conn.commit(); conn.close()
+        database.set_vip(target_uid, days=days)
         bot.answer_callback_query(call.id, f"Made VIP for {days} days", show_alert=True)
         bot.send_message(target_uid, f"🎉 <b>እንኳን ደስ አለዎት!</b>\nለ {days} ቀናት VIP ሆነዋል!", parse_mode="HTML")
         return
@@ -1315,6 +1326,8 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         target_uid = int(data.replace("adm_push_book_menu_", ""))
         bot.answer_callback_query(call.id)
+        ubooks, _, uexpired = database.get_user_books_state(target_uid)
+        active_or_exp = set(ubooks + uexpired)
         markup = InlineKeyboardMarkup(row_width=3)
         for bkey, btitle in BOOK_TITLES.items():
             short_t = btitle.split("(")[0].strip()
@@ -1323,6 +1336,11 @@ def handle_callback(call):
                 InlineKeyboardButton(f"⏳ 10d Rent", callback_data=f"adm_pushbook_{target_uid}_{bkey}_10"),
                 InlineKeyboardButton(f"➕ +5d Ext", callback_data=f"adm_pushbook_{target_uid}_{bkey}_5")
             )
+            if bkey in active_or_exp:
+                markup.add(
+                    InlineKeyboardButton(f"⏰ Expire {short_t}", callback_data=f"adm_pushbook_{target_uid}_{bkey}_-1"),
+                    InlineKeyboardButton(f"🗑 Revoke {short_t}", callback_data=f"adm_pushbook_{target_uid}_{bkey}_-99")
+                )
         markup.add(InlineKeyboardButton("🔙 Back to User", callback_data=f"adm_lookup_{target_uid}"))
         bot.send_message(
             chat_id,
@@ -1343,9 +1361,19 @@ def handle_callback(call):
         target_uid = int(parts[2])
         bkey = parts[3]
         days = int(parts[4]) if len(parts) > 4 else 0
+        b_title = BOOK_TITLES.get(bkey, bkey)
+        if days == -99:
+            database.remove_user_book(target_uid, bkey)
+            bot.answer_callback_query(call.id, f"🗑 Revoked {b_title}!", show_alert=True)
+            bot.send_message(chat_id, f"🗑 <b>Book Revoked!</b>\n📖 <b>{b_title}</b> removed from user <code>{target_uid}</code>.", parse_mode="HTML")
+            return
+        elif days < 0:
+            database.unlock_book(target_uid, bkey, days=-1)
+            bot.answer_callback_query(call.id, f"⏰ Marked {b_title} as Expired Rental!", show_alert=True)
+            bot.send_message(chat_id, f"⏰ <b>Rental Expired!</b>\n📖 <b>{b_title}</b> set to expired state for user <code>{target_uid}</code>.", parse_mode="HTML")
+            return
         rent_days = days if days != 0 else None
         database.unlock_book(target_uid, bkey, days=rent_days)
-        b_title = BOOK_TITLES.get(bkey, bkey)
         mode_label = f"{days}-Day Rental" if rent_days else "Full Permanent"
         bot.answer_callback_query(call.id, f"✅ Pushed {b_title} ({mode_label})!", show_alert=True)
         bot.send_message(
@@ -1354,24 +1382,6 @@ def handle_callback(call):
             parse_mode="HTML"
         )
         notify_user_book_unlocked(target_uid, bkey, days=rent_days)
-        return
-
-    if data.startswith("adm_ban_"):
-        if not is_admin(call.from_user): return
-        target_uid = int(data.split("_")[2])
-        conn = database.get_connection(); c = conn.cursor()
-        c.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (target_uid,))
-        conn.commit(); conn.close()
-        bot.answer_callback_query(call.id, f"User {target_uid} banned", show_alert=True)
-        return
-
-    if data.startswith("adm_unban_"):
-        if not is_admin(call.from_user): return
-        target_uid = int(data.split("_")[2])
-        conn = database.get_connection(); c = conn.cursor()
-        c.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (target_uid,))
-        conn.commit(); conn.close()
-        bot.answer_callback_query(call.id, f"User {target_uid} unbanned", show_alert=True)
         return
 
     if data == "adm_back":
@@ -2191,7 +2201,29 @@ def handle_messages(message):
             msgs_display = f"<b>{msgs}</b>"
             
         count = database.get_uncredited_referral_count(uid)
+        ubooks, urentals, uexpired = database.get_user_books_state(uid)
+        books_section = ""
+        if ubooks or uexpired:
+            blines = []
+            for bk in ubooks:
+                bt = BOOK_TITLES.get(bk, bk)
+                if bk in urentals:
+                    blines.append(f"  ⏳ <b>{bt}</b> (ቀሪ {urentals[bk]} ቀናት)")
+                else:
+                    blines.append(f"  ✅ <b>{bt}</b> (ሙሉ መጽሐፍ)")
+            for bk in uexpired:
+                bt = BOOK_TITLES.get(bk, bk)
+                blines.append(f"  ⏰ <b>{bt}</b> (የኪራይ ጊዜው ያለፈ)")
+            books_section = "📚 <b>የእርስዎ መጻሕፍት:</b>\n" + "\n".join(blines) + "\n\n"
+
         markup = InlineKeyboardMarkup()
+        if ubooks or uexpired:
+            markup.add(
+                InlineKeyboardButton(
+                    "📚 የኔ መጻሕፍት (Open Library)",
+                    web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+                )
+            )
         if count >= 10:
             markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
         markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
@@ -2201,6 +2233,7 @@ def handle_messages(message):
             chat_id,
             S(lang, 'mypage_title') + "\n━━━━━━━━━━━━━━━━━━━━\n" +
             S(lang, 'mypage_msgs_left', msgs=msgs_display) + "\n\n" +
+            books_section +
             S(lang, 'mypage_referrals', count=count) + "\n" +
             S(lang, 'mypage_referral_hint') + "\n\n" +
             S(lang, 'mypage_reset_info') + "\n" +
@@ -2394,7 +2427,7 @@ def handle_messages(message):
         # Check if they have a pending checkout
         pending = database.get_latest_pending_payment(uid)
         if not pending:
-            bot.reply_to(message, "⚠️ የክፍያ ፓኬጅ አልመረጡም። እባክዎ /topup ን ተጭነው ፓኬጅ ይምረጡ። (Please select a package first.)")
+            bot.reply_to(message, "⚠️ የክፍያ ፓኬጅ አልመረጡም። እባክዎ በመጻሕፍት ቤቱ ውስጥ መጽሐፍ ይምረጡ ወይም /topup ን ተጭነው ፓኬጅ ይምረጡ። (Please select a book or package first.)")
             return
             
         pending_id, amount, tx_ref, order_id = pending
@@ -2410,16 +2443,23 @@ def handle_messages(message):
             success, ref_id, err = shegerpay.verify_receipt_image(downloaded_file, amount)
             
             if success:
-                # Same logic as webhook success
-                database.approve_payment(tx_ref, order_id)
-                # Figure out package from tx_ref
+                if database.is_receipt_ref_used(ref_id):
+                    bot.edit_message_text(
+                        "❌ ይህ የክፍያ ደረሰኝ ከዚህ በፊት ጥቅም ላይ ውሏል! እባክዎ አዲስ የክፍያ ደረሰኝ (Screenshot) ይላኩ። (This receipt has already been used.)",
+                        chat_id, msg.message_id
+                    )
+                    return
+
+                database.approve_payment(tx_ref, order_id, receipt_ref=ref_id)
                 parts = tx_ref.split("-")
                 purpose = parts[2] if len(parts) >= 3 else ""
+                item_summary = purpose
                 
                 if purpose.startswith("BOOKRENT_"):
                     book_key = purpose.replace("BOOKRENT_", "")
                     database.unlock_book(uid, book_key, days=10)
                     b_title = BOOK_TITLES.get(book_key, book_key)
+                    item_summary = f"⏳ Book 10d Rental: {b_title}"
                     markup = InlineKeyboardMarkup()
                     markup.add(
                         InlineKeyboardButton(
@@ -2435,6 +2475,7 @@ def handle_messages(message):
                     book_key = purpose.replace("BOOKEXT_", "")
                     database.unlock_book(uid, book_key, days=5)
                     b_title = BOOK_TITLES.get(book_key, book_key)
+                    item_summary = f"➕ Book +5d Extension: {b_title}"
                     markup = InlineKeyboardMarkup()
                     markup.add(
                         InlineKeyboardButton(
@@ -2450,6 +2491,7 @@ def handle_messages(message):
                     book_key = purpose.replace("BOOK_", "")
                     database.unlock_book(uid, book_key, days=None)
                     b_title = BOOK_TITLES.get(book_key, book_key)
+                    item_summary = f"💎 Book Full Purchase: {b_title}"
                     markup = InlineKeyboardMarkup()
                     markup.add(
                         InlineKeyboardButton(
@@ -2463,6 +2505,7 @@ def handle_messages(message):
                     )
                 elif purpose.startswith("ADVICE_"):
                     pkg = purpose.split("_")[1]
+                    item_summary = f"🧠 Advice Package ({pkg})"
                     if pkg == "unlimited":
                         database.set_vip(uid, days=7)
                         bot.edit_message_text(S(lang, 'payment_success_unlimited'), chat_id, msg.message_id, parse_mode="HTML")
@@ -2473,6 +2516,20 @@ def handle_messages(message):
                         msgs = int(pkg)
                         database.add_advice_messages(uid, msgs)
                         bot.edit_message_text(S(lang, 'payment_success_msgs', msgs=msgs), chat_id, msg.message_id, parse_mode="HTML")
+                elif purpose == "TIP":
+                    item_summary = "☕ Tip / Support"
+                    bot.edit_message_text(S(lang, 'tip_received'), chat_id, msg.message_id, parse_mode="HTML")
+
+                uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+                notify_admin(
+                    f"💰 <b>New Verified Payment!</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"👤 User: <b>{html.escape(message.from_user.first_name or 'User')}</b> ({uname})\n"
+                    f"🆔 ID: <code>{uid}</code>\n"
+                    f"📦 Item: <b>{item_summary}</b>\n"
+                    f"💵 Amount: <b>{amount:,} ETB</b>\n"
+                    f"🧾 Ref: <code>{ref_id}</code>"
+                )
             else:
                 bot.edit_message_text(f"❌ ማረጋገጥ አልተቻለም (Failed): {err}", chat_id, msg.message_id)
                 
@@ -2508,31 +2565,39 @@ def process_payment_success(tx_ref):
     chat_id = uid
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
     
-    if purpose.startswith("ADVICE_"):
+    if purpose.startswith("BOOKRENT_"):
+        book_key = purpose.replace("BOOKRENT_", "")
+        database.approve_payment(tx_ref, order_id)
+        database.unlock_book(uid, book_key, days=10)
+        notify_user_book_unlocked(uid, book_key, days=10)
+    elif purpose.startswith("BOOKEXT_"):
+        book_key = purpose.replace("BOOKEXT_", "")
+        database.approve_payment(tx_ref, order_id)
+        database.unlock_book(uid, book_key, days=5)
+        notify_user_book_unlocked(uid, book_key, days=5)
+    elif purpose.startswith("BOOK_"):
+        book_key = purpose.replace("BOOK_", "")
+        database.approve_payment(tx_ref, order_id)
+        database.unlock_book(uid, book_key, days=None)
+        notify_user_book_unlocked(uid, book_key, days=None)
+    elif purpose.startswith("ADVICE_"):
         pkg = purpose.split("_")[1]
         lang = get_lang(uid)
         if pkg == "unlimited":
-            payment_amount = 1800
             database.approve_payment(tx_ref, order_id)
             database.set_vip(uid, days=7)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
         elif pkg == "unlimited_month":
-            payment_amount = 4900
             database.approve_payment(tx_ref, order_id)
             database.set_vip(uid, days=30)
             bot.send_message(chat_id, S(lang, 'payment_success_unlimited_month'), parse_mode="HTML")
         else:
             msgs = int(pkg)
-            payment_amount = {25: 200, 75: 400, 225: 1200}.get(msgs, 200)
             database.approve_payment(tx_ref, order_id)
             database.add_advice_messages(uid, msgs)
             bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
     elif purpose == "TIP":
-        # Verify the actual amount from the transaction
         lang = get_lang(uid)
-        import shegerpay
-        tip_success, tip_data = shegerpay.verify_shegerpay_payment(tx_ref)
-        tip_amount = int(float(tip_data.get("amount", 0))) if tip_success and tip_data else 0
         database.approve_payment(tx_ref, order_id)
         bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
 
@@ -2657,19 +2722,44 @@ class DummyHandler(BaseHTTPRequestHandler):
             uid = qs.get('uid', [''])[0]
             book_key = qs.get('book', [''])[0]
             mode = qs.get('mode', ['buy'])[0]
+            notify = qs.get('notify', ['0'])[0] == '1'
             if uid and book_key:
                 try:
                     uid_int = int(uid)
                     rand_suffix = uuid.uuid4().hex[:6].upper()
+                    b_title = BOOK_TITLES.get(book_key, book_key)
                     if mode == 'rent':
+                        amount = 199
+                        plan_label = "የ 10 ቀናት ኪራይ (199 ብር)"
                         tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, 199, tx_ref, "PENDING_CHECKOUT", status="pending")
                     elif mode == 'extend':
+                        amount = 99
+                        plan_label = "ተጨማሪ 5 ቀናት ኪራይ (99 ብር)"
                         tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, 99, tx_ref, "PENDING_CHECKOUT", status="pending")
                     else:
+                        amount = 499
+                        plan_label = "ሙሉ መጽሐፍ ግዢ — ለዘላለም (499 ብር)"
                         tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, 499, tx_ref, "PENDING_CHECKOUT", status="pending")
+                    if notify:
+                        try:
+                            bot.send_message(
+                                uid_int,
+                                f"📚 <b>የመጽሐፍ ክፍያ ማረጋገጫ</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━\n"
+                                f"📖 <b>መጽሐፍ:</b> «{b_title}»\n"
+                                f"💳 <b>ምርጫ:</b> {plan_label}\n\n"
+                                f"🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n"
+                                f"🏦 <b>CBE Birr (ሲቢኢ ብር):</b> <code>0912689900</code>\n"
+                                f"📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n"
+                                f"👤 <b>ስም:</b> በኃይሉ ጌታቸው\n\n"
+                                f"📸 <b>የከፈሉበትን የ{amount} ብር ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን!</b> ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ መጽሐፉን ይከፍትልዎታል።",
+                                parse_mode="HTML"
+                            )
+                        except Exception as ne:
+                            logging.error(f"Failed to send checkout prompt to {uid_int}: {ne}")
                 except Exception as e:
                     logging.error(f"Failed to record book checkout: {e}")
             self.send_response(200)

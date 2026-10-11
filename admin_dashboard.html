@@ -213,13 +213,14 @@
 
         const TYPE_BADGES = {
             'Advice': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">🧠 Advice</span>',
+            'Book':   '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">📚 Book</span>',
             'Tip':    '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400">☕ Tip</span>',
             'Other':  '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400">📦 Other</span>',
         };
 
         async function fetchData() {
             try {
-                const response = await fetch('/admin/data');
+                const response = await fetch('/admin/data' + window.location.search);
                 if (response.status === 403) {
                     document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl">🔒 Access Denied</div>';
                     return;

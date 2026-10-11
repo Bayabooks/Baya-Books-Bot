@@ -3,10 +3,10 @@ import os, json
 books_meta = {
     "narcissist": {
         "key": "narcissist",
-        "title": "የናርሲሲስቶች ወጥመድ",
+        "title": "የናርስሲስቶች ወጥመድ",
         "subtitle": "ከመርዛማ ግንኙነት የማምለጫ ጥበብ",
         "author": "ዶ/ር ራማኒ ዱርቫሱላ | ትርጉም፦ የአዕምሮ ምግቦች & Baya Books",
-        "short_author": "ዶ/ር ራማኒ",
+        "short_author": "ዶ/ር ራማኒ ዱርቫሱላ",
         "cover": "/static/covers/narcissist_trap.jpg",
         "pages": "274 ገጾች",
         "rating": "⭐ 4.9 (1.2k)",
@@ -14,7 +14,7 @@ books_meta = {
         "badge_style": "",
         "category": "psychology",
         "data_url": "/static/books_data/narcissist_full.json",
-        "paywall_desc": "የመጀመሪያዎቹን 3 ክፍሎች በነፃ አንብበዋል። ሙሉውን 274 ገጽ መጽሐፍ (ከምዕራፍ 2 እስከ 9) ለመክፈት እና ከመርዛማ ግንኙነት ራስዎን ነጻ ለማውጣት አሁኑኑ ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 274 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ከመርዛማ ግንኙነት ራስሽን ነጻ የምታወጪበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም አግኚ።"
     },
     "boundaries": {
         "key": "boundaries",
@@ -29,7 +29,7 @@ books_meta = {
         "badge_style": "color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);",
         "category": "psychology",
         "data_url": "/static/books_data/boundaries_full.json",
-        "paywall_desc": "የመጀመሪያዎቹን 3 ክፍሎች በነፃ አንብበዋል። ሙሉውን 216 ገጽ መጽሐፍ (ሁሉንም 15 ምዕራፎች) ለመክፈት እና በሕይወትዎ ጤናማ ድንበር ለማበጀት አሁኑኑ ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 216 ገጽ መጽሐፍ (ሁሉንም 17 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ምንም የጥፋተኝነት ስሜት ሳይሰማዎት ጤናማ ድንበር የሚያበጁበትን ሙሉ መመሪያ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
     },
     "buyback": {
         "key": "buyback",
@@ -44,20 +44,52 @@ books_meta = {
         "badge_style": "color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);",
         "category": "productivity",
         "data_url": "/static/books_data/buyback_full.json",
-        "paywall_desc": "የመግቢያ እና የምዕራፍ 1 ክፍሎችን በነፃ አንብበዋል። ሙሉውን 213 ገጽ መጽሐፍ (ሁሉንም 14 ምዕራፎች) ለመክፈት፣ ጊዜህን ለማስመለስና ገቢህን በእጥፍ ለማሳደግ አሁኑኑ ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 213 ገጽ መጽሐፍ (ሁሉንም 16 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ጊዜዎን መልሰው የሚገዙበትን እና ገቢዎን በእጥፍ የሚያሳድጉበትን ሙሉ ቀመር በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
+    },
+    "meaning": {
+        "key": "meaning",
+        "title": "የህይወት ትርጉም",
+        "subtitle": "በባዶነት ዘመን ውስጥ የሕይወት ዓላማን የማግኘት ጥበብ",
+        "author": "አርተር ሲ. ብሩክስ (Arthur C. Brooks) | ትርጉም፦ Baya Books",
+        "short_author": "አርተር ብሩክስ",
+        "cover": "/static/covers/meaning.jpg",
+        "pages": "176 ገጾች",
+        "rating": "⭐ 4.9 (1.1k)",
+        "badge": "🌟 #1 NYT Bestseller | 176 ገጾች",
+        "badge_style": "color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3);",
+        "category": "psychology",
+        "data_url": "/static/books_data/meaning_full.json",
+        "paywall_desc": "ይህን ሙሉ የ 176 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ እውነተኛ የሕይወት ትርጉምና ዓላማን የሚያገኙበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
     }
 }
 
-books_meta_js = json.dumps(books_meta, ensure_ascii=False)
+books_meta_js = json.dumps(books_meta, ensure_ascii=False, separators=(',', ':'))
+
+initial_preview = {}
+for b_key, b_info in books_meta.items():
+    json_path = b_info["data_url"].lstrip("/")
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as jf:
+            ch_list = json.load(jf)
+            if isinstance(ch_list, dict):
+                ch_list = ch_list.get("chapters", [])
+            initial_preview[b_key] = [
+                {
+                    "id": c["id"],
+                    "label": c["label"],
+                    "name": c["name"],
+                    "free": c["free"],
+                    "blocks": c["blocks"] if idx == 0 else None
+                }
+                for idx, c in enumerate(ch_list)
+            ]
+initial_preview_js = json.dumps(initial_preview, ensure_ascii=False, separators=(',', ':'))
 
 html_content = f'''<!DOCTYPE html>
 <html lang="am">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>Baya Books — Digital Library</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,19 +170,23 @@ html_content = f'''<!DOCTYPE html>
         body.light-theme header {{ background: rgba(248, 250, 252, 0.9); }}
         body.sepia-theme header {{ background: rgba(246, 239, 226, 0.9); }}
 
-        .brand {{ display: flex; align-items: center; gap: 10px; }}
+        .brand {{ display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding-right: 8px; }}
         .brand-icon {{
-            width: 34px; height: 34px; border-radius: 10px;
-            background: var(--accent-gradient);
+            width: 42px; height: 42px; border-radius: 10px;
+            overflow: hidden; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+            border: 1.5px solid rgba(99, 102, 241, 0.45);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
         }}
-        .brand-text h1 {{ font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }}
-        .brand-text p {{ font-size: 11px; color: var(--text-muted); }}
+        .brand-icon img {{
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }}
+        .brand-text h1 {{ font-size: 15px; font-weight: 800; letter-spacing: -0.2px; line-height: 1.25; }}
+        .brand-text p {{ font-size: 11px; color: var(--text-muted); line-height: 1.35; margin-top: 2px; }}
 
         .btn-icon {{
             background: var(--bg-secondary); border: 1px solid var(--border);
-            color: var(--text-primary); width: 36px; height: 36px;
+            color: var(--text-primary); width: 36px; height: 36px; flex-shrink: 0;
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.2s;
         }}
@@ -212,11 +248,11 @@ html_content = f'''<!DOCTYPE html>
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }}
         .book-cover-wrap {{
-            flex-shrink: 0; width: 112px; align-self: flex-start; border-radius: 10px;
+            flex-shrink: 0; width: 112px; height: auto; align-self: flex-start; border-radius: 10px;
             overflow: hidden; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.12); background: transparent;
         }}
-        .book-cover {{ width: 100%; height: auto; object-fit: contain; display: block; }}
+        .book-cover {{ width: 100%; height: auto; object-fit: contain; display: block; border-radius: 10px; }}
 
         .book-details {{ display: flex; flex-direction: column; justify-content: space-between; flex: 1; }}
         .book-badge {{
@@ -467,10 +503,10 @@ html_content = f'''<!DOCTYPE html>
     <div id="view-home">
         <header>
             <div class="brand">
-                <div class="brand-icon">📚</div>
+                <div class="brand-icon"><img src="/static/covers/baya_logo.jpg" alt="Baya Books"></div>
                 <div class="brand-text">
-                    <h1>Baya Library</h1>
-                    <p>ዲጂታል መጽሐፍት ቤት</p>
+                    <h1>የአዕምሮ ምግቦች &amp; Baya books</h1>
+                    <p>እያንዳንዱ የሚያነቡት ገጽ ከፍ ወዳለ ማንነት እንዲወስድዎት ተመኘን</p>
                 </div>
             </div>
             <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
@@ -479,15 +515,15 @@ html_content = f'''<!DOCTYPE html>
         <div class="container">
             <div class="hero-banner">
                 <div class="hero-tag">✨ የዕለቱ ምርጥ ስጦታ</div>
-                <h2 class="hero-title">የዓለማችን ተፅዕኖ ፈጣሪ የስነ-ልቦና መጽሐፍት</h2>
-                <p class="hero-desc">ጥልቅ ግንዛቤ፣ የተግባር መመሪያ እና የህይወት ለውጥ የሚያመጡ መጽሐፍትን በደቂቃዎች ውስጥ ያንብቡ።</p>
+                <h2 class="hero-title">የዓለማችን ተፅዕኖ ፈጣሪ የስነ-ልቦና መጻሕፍት</h2>
+                <p class="hero-desc">ጥልቅ ግንዛቤ፣ የተግባር መመሪያ እና የህይወት ለውጥ የሚያመጡ መጻሕፍትን በደቂቃዎች ውስጥ ያንብቡ።</p>
             </div>
 
             <!-- Dedicated My Books Section (Auto-shows when customer owns >= 1 book) -->
             <div id="my-books-section">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="font-size: 15px; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 6px;">
-                        <span>📖 የኔ መጽሐፍት (My Purchased Books)</span>
+                        <span>📖 የኔ መጻሕፍት (My Purchased Books)</span>
                     </div>
                 </div>
                 <div class="book-list" id="my-books-list" style="margin-bottom: 0;"></div>
@@ -497,7 +533,7 @@ html_content = f'''<!DOCTYPE html>
             <div class="filter-scroll">
                 <div class="filter-pill active" id="pill-all" onclick="filterCategory('all', this)">🔥 ሁሉም (All)</div>
                 <div class="filter-pill" id="pill-mybooks" onclick="filterCategory('mybooks', this)">
-                    <span>📖 የኔ መጽሐፍት</span>
+                    <span>📖 የኔ መጻሕፍት</span>
                     <span class="count-badge" id="mybooks-count">0</span>
                 </div>
                 <div class="filter-pill" onclick="filterCategory('psychology', this)">🧠 ግንኙነት & ስነ-ልቦና</div>
@@ -505,7 +541,7 @@ html_content = f'''<!DOCTYPE html>
             </div>
 
             <div class="section-header" id="catalog-header" style="margin-bottom: 12px; font-size: 15px; font-weight: 700;">
-                <span>📚 የሚገኙ መጽሐፍት (Available Books)</span>
+                <span>📚 የሚገኙ መጻሕፍት (Available Books)</span>
             </div>
 
             <!-- Dynamic Catalog List -->
@@ -516,10 +552,10 @@ html_content = f'''<!DOCTYPE html>
                 <div style="font-size: 36px; margin-bottom: 10px;">📚</div>
                 <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 6px;">ገና የገዙት መጽሐፍ የለም</h3>
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-                    ከመጽሐፍት መደብሩ ውስጥ የሚፈልጉትን መጽሐፍ በ 299 ብር ሲገዙ፣ ሙሉው መጽሐፍ እዚህ <b>«የኔ መጽሐፍት»</b> ስር ለዘላለም ይቀመጥልዎታል።
+                    ከመጻሕፍት መደብሩ ውስጥ የሚፈልጉትን መጽሐፍ በ 499 ብር ሲገዙ፣ ሙሉው መጽሐፍ እዚህ <b>«የኔ መጻሕፍት»</b> ስር ለዘላለም ይቀመጥልዎታል።
                 </p>
                 <button class="btn btn-primary" onclick="filterCategory('all', document.getElementById('pill-all'))">
-                    <span>🔥 መጽሐፍትን ተመልከት</span>
+                    <span>🔥 መጻሕፍትን ተመልከት</span>
                 </button>
             </div>
         </div>
@@ -552,28 +588,50 @@ html_content = f'''<!DOCTYPE html>
 
             <!-- Paywall Card (shown on last free chapter if not owned) -->
             <div class="paywall-box" id="readerPaywall" style="display: none;">
-                <div class="paywall-icon">🔒</div>
-                <h3 class="paywall-title">ቀጣዮቹን ምዕራፎች ማንበብ ይፈልጋሉ?</h3>
+                <div class="paywall-icon">🔥</div>
+                <h3 class="paywall-title">ሙሉውን መጽሐፍ ዛሬውኑ ማንበብ ይጀምሩ!</h3>
                 <p class="paywall-desc" id="paywallDesc"></p>
-                <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey)">
-                    <span>💎 ሙሉውን መጽሐፍ በ 299 ብር ክፈት</span>
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    <button id="paywallBtnExtend" class="btn btn-primary" style="display: none; width: 100%; padding: 13px; font-size: 14px; background: linear-gradient(135deg, #10b981, #059669);" onclick="openPayModal(activeBookKey, 'extend')">
+                        <span>➕ ተጨማሪ 5 ቀናት ጨምር — 99 ብር</span>
+                    </button>
+                    <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey, 'buy')">
+                        <span>💎 ሙሉውን መጽሐፍ ለዘላለም ግዛ — 499 ብር</span>
+                    </button>
+                    <button class="btn btn-outline" style="width: 100%; padding: 12px; font-size: 14px; border-color: rgba(245, 158, 11, 0.45); color: #fbbf24; background: rgba(245, 158, 11, 0.1);" onclick="openPayModal(activeBookKey, 'rent')">
+                        <span>⏳ ለ 10 ቀናት ተከራይ — 199 ብር (ኪራይ)</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
 
     <!-- ══════════════════════════════════════════
-         MODAL: PAYMENT (299 Birr)
+         MODAL: PAYMENT (499 Buy / 199 10d Rent / 99 +5d Extend)
     ══════════════════════════════════════════ -->
     <div id="modal-pay" class="modal-overlay" onclick="closePayModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ — 299 ብር</h3>
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ</h3>
                 <button class="btn-icon" onclick="closePayModal()">✕</button>
             </div>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-                እባክዎ <b>299 ብር</b> በሚከተሉት አማራጮች ያስገቡ፦
+
+            <!-- Plan Toggle (Full Purchase vs 10-Day Rental vs +5-Day Extension) -->
+            <div id="planGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+                <button id="planBtnBuy" onclick="selectPayPlan('buy')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid #6366f1; background: rgba(99, 102, 241, 0.18); color: #fff; font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
+                    💎 ሙሉ ግዢ<br><span style="font-size: 13.5px; color: #a5b4fc;">499 ብር (ለዘላለም)</span>
+                </button>
+                <button id="planBtnRent" onclick="selectPayPlan('rent')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
+                    ⏳ የ 10 ቀን ኪራይ<br><span style="font-size: 13.5px; color: #fbbf24;">199 ብር (10 ቀናት)</span>
+                </button>
+                <button id="planBtnExtend" onclick="selectPayPlan('extend')" style="display: none; grid-column: span 2; padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
+                    ➕ ተጨማሪ 5 ቀናት ኪራይ — <span style="font-size: 13.5px; color: #34d399;">99 ብር (+5 ቀናት)</span>
+                </button>
+            </div>
+
+            <p id="modalPayInstruction" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+                እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦
             </p>
 
             <div class="bank-item">
@@ -601,7 +659,7 @@ html_content = f'''<!DOCTYPE html>
             </div>
 
             <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px; margin: 14px 0; font-size: 12px; line-height: 1.5;">
-                ✅ <b>ከከፈሉ በኋላ፦</b> የከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ በቦቱ ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ ሙሉውን መጽሐፍ <b>«📖 የኔ መጽሐፍት»</b> ውስጥ ይከፍትልዎታል!
+                ✅ <b>ከከፈሉ በኋላ፦</b> የከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ በቦቱ ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ መጽሐፉን <b>«📖 የኔ መጻሕፍት»</b> ውስጥ ይከፍትልዎታል!
             </div>
 
             <button class="btn btn-primary" style="width: 100%;" onclick="returnToBot()">
@@ -612,73 +670,123 @@ html_content = f'''<!DOCTYPE html>
 
 
     <script>
-        const WEBAPP_VERSION = "__WEBAPP_VERSION__";
         const BOOKS_META = {books_meta_js};
-        const LOADED_CHAPTERS = {{}};
+        const LOADED_CHAPTERS = {initial_preview_js};
+        const FULL_LOADED_FLAG = {{}};
+        const INFLIGHT_FETCHES = {{}};
         let ownedBooks = [];
+        let rentedBooks = {{}};
+        let expiredBooks = [];
         let activeBookKey = 'narcissist';
+        let activePayBookKey = 'narcissist';
+        let activePayMode = 'buy';
         let activeChapterIdx = 0;
         let currentCategory = 'all';
 
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) {{ tg.ready(); tg.expand(); }}
 
-        // Determine User ID from query param or Telegram WebApp initData
+        // Determine User ID from query param, Telegram WebApp initData, or localStorage
         function getUserId() {{
             const params = new URLSearchParams(window.location.search);
-            if (params.get('uid')) return params.get('uid');
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {{
-                return String(tg.initDataUnsafe.user.id);
+            let uid = params.get('uid') || '';
+            if (!uid && tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {{
+                uid = String(tg.initDataUnsafe.user.id);
             }}
-            return '';
+            if (uid) {{
+                try {{ localStorage.setItem('baya_uid', uid); }} catch (e) {{}}
+                return uid;
+            }}
+            try {{ return localStorage.getItem('baya_uid') || ''; }} catch (e) {{ return ''; }}
         }}
 
         const USER_ID = getUserId();
 
         async function loadUserBooks() {{
-            try {{
-                const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID) + '&_t=' + Date.now(), {{ cache: 'no-store' }});
-                const data = await res.json();
-                if (data && data.version && WEBAPP_VERSION !== '__WEBAPP_VERSION__' && data.version !== WEBAPP_VERSION) {{
-                    const nextUrl = '/app?_v=' + encodeURIComponent(data.version) + (USER_ID ? '&uid=' + encodeURIComponent(USER_ID) : '');
-                    window.location.replace(nextUrl);
-                    return;
+            if (USER_ID) {{
+                try {{
+                    const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID));
+                    const data = await res.json();
+                    if (data && Array.isArray(data.books)) {{
+                        ownedBooks = data.books;
+                    }}
+                    if (data && data.rentals) {{
+                        rentedBooks = data.rentals;
+                    }}
+                    if (data && Array.isArray(data.expired)) {{
+                        expiredBooks = data.expired;
+                    }}
+                }} catch (e) {{
+                    console.error('Error loading user books:', e);
                 }}
-                if (data && Array.isArray(data.books)) {{
-                    ownedBooks = data.books;
-                }}
-            }} catch (e) {{
-                console.error('Error loading user books:', e);
             }}
             renderStore();
-            if (document.getElementById('view-reader').style.display === 'block') {{
-                renderChapter(activeChapterIdx);
+        }}
+
+        async function finishRental(bookKey) {{
+            expiredBooks = expiredBooks.filter(k => k !== bookKey);
+            renderStore();
+            if (USER_ID) {{
+                try {{
+                    await fetch('/api/finish_rental?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(bookKey));
+                }} catch (e) {{}}
             }}
         }}
 
         function createBookCardHTML(b, isOwned) {{
+            const rentDays = rentedBooks[b.key];
+            const isExpired = !isOwned && expiredBooks.includes(b.key);
             const badgeHTML = isOwned
-                ? `<div class="book-badge owned">✅ የተገዛ (ሙሉ መጽሐፍ) | ${{b.pages}}</div>`
-                : `<div class="book-badge" style="${{b.badge_style}}">${{b.badge}}</div>`;
+                ? (rentDays
+                    ? `<div class="book-badge owned" style="background: rgba(245, 158, 11, 0.16); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);">⏳ የተከራየ (ቀሪ ${{rentDays}} ቀናት) | ${{b.pages}}</div>`
+                    : `<div class="book-badge owned">✅ የተገዛ (ሙሉ መጽሐፍ) | ${{b.pages}}</div>`)
+                : (isExpired
+                    ? `<div class="book-badge" style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);">⏰ የ 10 ቀን ኪራይ ጊዜው አልቋል | ${{b.pages}}</div>`
+                    : `<div class="book-badge" style="${{b.badge_style}}">${{b.badge}}</div>`);
 
-            const buttonsHTML = isOwned
-                ? `<div class="btn-group">
-                       <button class="btn btn-success" onclick="openReader('${{b.key}}', 0)">
+            const startChIdx = isOwned ? 1 : 0;
+
+            let buttonsHTML = '';
+            if (isOwned) {{
+                buttonsHTML = `<div class="btn-group">
+                       <button class="btn btn-success" onclick="openReader('${{b.key}}', 1)">
                            <span>📖 ሙሉውን መጽሐፍ አንብብ</span>
                        </button>
-                   </div>`
-                : `<div class="btn-group">
-                       <button class="btn btn-primary" onclick="openReader('${{b.key}}', 0)">
-                           <span>📖 በነፃ አንብብ</span>
+                   </div>`;
+            }} else if (isExpired) {{
+                buttonsHTML = `
+                   <div style="margin-top: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 10px 12px;">
+                       <div style="font-size: 12px; font-weight: 700; color: #fbbf24; margin-bottom: 8px; text-align: center; line-height: 1.4;">
+                           ⏰ የኪራይ ጊዜዎ ተጠናቋል! መጽሐፉን ጨርሰውታል ወይስ ቀን መጨመር ይፈልጋሉ?
+                       </div>
+                       <div class="btn-group" style="margin-top: 0;">
+                           <button class="btn btn-outline" style="flex: 1; border-color: rgba(16, 185, 129, 0.45); color: #34d399; background: rgba(16, 185, 129, 0.1);" onclick="finishRental('${{b.key}}')">
+                               <span>✅ ጨርሻለሁ</span>
+                           </button>
+                           <button class="btn btn-primary" style="flex: 1.35; background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: none;" onclick="openPayModal('${{b.key}}', 'extend')">
+                               <span>➕ 5 ቀን ጨምር (99 ብር)</span>
+                           </button>
+                       </div>
+                   </div>`;
+            }} else {{
+                buttonsHTML = `<div class="btn-group" style="flex-wrap: wrap;">
+                       <button class="btn btn-primary" style="flex: 1 1 100%;" onclick="openReader('${{b.key}}', 0)">
+                           <span>📖 ስለ መጽሐፉ</span>
                        </button>
-                       <button class="btn btn-outline" onclick="openPayModal('${{b.key}}')">
-                           <span>💎 299 ብር</span>
+                       <button class="btn btn-outline" style="flex: 1; flex-direction: column; gap: 2px; padding: 8px 6px; line-height: 1.25; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;" onclick="openPayModal('${{b.key}}', 'rent')">
+                           <span style="font-size: 13px; font-weight: 800;">⏳ 199 ብር</span>
+                           <span style="font-size: 11px; opacity: 0.9;">(10 ቀን ኪራይ)</span>
+                       </button>
+                       <button class="btn btn-outline" style="flex: 1; flex-direction: column; gap: 2px; padding: 8px 6px; line-height: 1.25;" onclick="openPayModal('${{b.key}}', 'buy')">
+                           <span style="font-size: 13px; font-weight: 800;">💎 499 ብር</span>
+                           <span style="font-size: 11px; opacity: 0.85;">(ግዢ)</span>
                        </button>
                    </div>`;
+            }}
 
             return `
                 <div class="featured-card" data-category="${{b.category}}" data-owned="${{isOwned ? 'true' : 'false'}}">
-                    <div class="book-cover-wrap" onclick="openReader('${{b.key}}', 0)" style="cursor:pointer;">
+                    <div class="book-cover-wrap" onclick="openReader('${{b.key}}', ${{startChIdx}})" style="cursor:pointer;">
                         <img src="${{b.cover}}" alt="${{b.title}}" class="book-cover">
                     </div>
                     <div class="book-details">
@@ -698,16 +806,17 @@ html_content = f'''<!DOCTYPE html>
         }}
 
         function renderStore() {{
-            document.getElementById('mybooks-count').innerText = ownedBooks.length;
+            const myBookKeys = [...new Set([...ownedBooks, ...expiredBooks])];
+            document.getElementById('mybooks-count').innerText = myBookKeys.length;
 
-            // Top My Books Highlight Box (shown on 'all' view when user owns at least 1 book)
+            // Top My Books Highlight Box (shown on 'all' view when user has owned or expired-rental books)
             const mySection = document.getElementById('my-books-section');
             const myList = document.getElementById('my-books-list');
-            if (ownedBooks.length > 0 && currentCategory === 'all') {{
+            if (myBookKeys.length > 0 && currentCategory === 'all') {{
                 mySection.style.display = 'block';
-                myList.innerHTML = ownedBooks
+                myList.innerHTML = myBookKeys
                     .filter(k => BOOKS_META[k])
-                    .map(k => createBookCardHTML(BOOKS_META[k], true))
+                    .map(k => createBookCardHTML(BOOKS_META[k], ownedBooks.includes(k)))
                     .join('');
             }} else {{
                 mySection.style.display = 'none';
@@ -722,13 +831,13 @@ html_content = f'''<!DOCTYPE html>
             let filteredKeys = allKeys;
 
             if (currentCategory === 'mybooks') {{
-                filteredKeys = allKeys.filter(k => ownedBooks.includes(k));
-                catalogHeader.innerHTML = '<span>📖 የገዟቸው መጽሐፍት (My Purchased Books)</span>';
+                filteredKeys = allKeys.filter(k => myBookKeys.includes(k));
+                catalogHeader.innerHTML = '<span>📖 የኔ መጻሕፍት እና ኪራይ (My Books & Rentals)</span>';
             }} else if (currentCategory !== 'all') {{
                 filteredKeys = allKeys.filter(k => BOOKS_META[k].category === currentCategory);
-                catalogHeader.innerHTML = '<span>📚 የሚገኙ መጽሐፍት (Available Books)</span>';
+                catalogHeader.innerHTML = '<span>📚 የሚገኙ መጻሕፍት (Available Books)</span>';
             }} else {{
-                catalogHeader.innerHTML = '<span>📚 ሁሉም መጽሐፍት (All Books)</span>';
+                catalogHeader.innerHTML = '<span>📚 ሁሉም መጻሕፍት (All Books)</span>';
             }}
 
             if (currentCategory === 'mybooks' && filteredKeys.length === 0) {{
@@ -757,46 +866,68 @@ html_content = f'''<!DOCTYPE html>
             if (bar) bar.style.width = scrolled + "%";
         }});
 
+        function ensureFullBookLoaded(bookKey) {{
+            if (FULL_LOADED_FLAG[bookKey]) return Promise.resolve(LOADED_CHAPTERS[bookKey]);
+            if (INFLIGHT_FETCHES[bookKey]) return INFLIGHT_FETCHES[bookKey];
+            const meta = BOOKS_META[bookKey];
+            if (!meta) return Promise.resolve([]);
+            INFLIGHT_FETCHES[bookKey] = fetch(meta.data_url)
+                .then(res => res.json())
+                .then(data => {{
+                    const arr = Array.isArray(data) ? data : (data.chapters || []);
+                    LOADED_CHAPTERS[bookKey] = arr;
+                    FULL_LOADED_FLAG[bookKey] = true;
+                    delete INFLIGHT_FETCHES[bookKey];
+                    return arr;
+                }})
+                .catch(err => {{
+                    delete INFLIGHT_FETCHES[bookKey];
+                    throw err;
+                }});
+            return INFLIGHT_FETCHES[bookKey];
+        }}
+
         async function openReader(bookKey, chIdx) {{
-            activeBookKey = bookKey;
             const meta = BOOKS_META[bookKey];
             if (!meta) return;
 
+            activeBookKey = bookKey;
+            const targetIdx = chIdx || 0;
+
+            // Immediately clear previous book DOM so another book's content is NEVER shown
             document.getElementById('readerBookTitle').innerText = meta.title;
             document.getElementById('paywallDesc').innerText = meta.paywall_desc;
+            document.getElementById('chapterTabs').innerHTML = '';
+            document.getElementById('readerChapterContent').innerHTML = '';
+            document.getElementById('chapterNavFooter').innerHTML = '';
+            document.getElementById('readerPaywall').style.display = 'none';
 
             document.getElementById('view-home').style.display = 'none';
             document.getElementById('view-reader').style.display = 'block';
 
-            if (!LOADED_CHAPTERS[bookKey]) {{
-                document.getElementById('readerChapterContent').innerHTML = '<div style="text-align:center; padding: 60px 20px; color: var(--text-secondary);">⏳ መጽሐፉን በመክፈት ላይ...</div>';
-                try {{
-                    const res = await fetch(meta.data_url + '?_t=' + Date.now(), {{ cache: 'no-store' }});
-                    LOADED_CHAPTERS[bookKey] = await res.json();
-                }} catch (e) {{
-                    document.getElementById('readerChapterContent').innerHTML = '<div style="text-align:center; padding: 60px 20px; color: #ef4444;">⚠️ መጽሐፉን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።</div>';
-                    return;
-                }}
-            }}
+            // Kick off background fetch of full chapters immediately
+            ensureFullBookLoaded(bookKey).catch(() => {{}});
 
-            renderChapter(chIdx || 0);
+            // Render requested chapter (Chapter 0 is already embedded so it opens in 0ms!)
+            await renderChapter(targetIdx);
         }}
 
-        function renderChapter(idx) {{
-            const chapters = LOADED_CHAPTERS[activeBookKey] || [];
-            const isOwned = ownedBooks.includes(activeBookKey);
-            const ch = chapters[idx];
+        async function renderChapter(idx) {{
+            const targetBookKey = activeBookKey;
+            let chapters = LOADED_CHAPTERS[targetBookKey] || [];
+            const isOwned = ownedBooks.includes(targetBookKey);
+            let ch = chapters[idx];
             if (!ch) return;
 
             // If user clicked a locked chapter and doesn't own the book, trigger payment modal!
             if (!isOwned && !ch.free) {{
-                openPayModal(activeBookKey);
+                openPayModal(targetBookKey);
                 return;
             }}
 
             activeChapterIdx = idx;
 
-            // Render Chapter Tabs
+            // Render Chapter Tabs immediately
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
             chapters.forEach((c, i) => {{
@@ -808,8 +939,26 @@ html_content = f'''<!DOCTYPE html>
                 tabsEl.appendChild(btn);
             }});
 
-            // Render Content Blocks
             const contentEl = document.getElementById('readerChapterContent');
+
+            // If this chapter's blocks haven't finished downloading yet, wait for background fetch
+            if (!ch.blocks) {{
+                contentEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; color: var(--text-secondary);">⏳ ምዕራፉን በመክፈት ላይ...</div>';
+                try {{
+                    await ensureFullBookLoaded(targetBookKey);
+                }} catch (e) {{
+                    if (activeBookKey === targetBookKey) {{
+                        contentEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; color: #ef4444;">⚠️ መጽሐፉን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።</div>';
+                    }}
+                    return;
+                }}
+                if (activeBookKey !== targetBookKey || activeChapterIdx !== idx) return;
+                chapters = LOADED_CHAPTERS[targetBookKey] || [];
+                ch = chapters[idx];
+                if (!ch || !ch.blocks) return;
+            }}
+
+            // Render Content Blocks
             contentEl.innerHTML = '';
 
             const headerCard = document.createElement('div');
@@ -884,6 +1033,10 @@ html_content = f'''<!DOCTYPE html>
             }}
 
             const nextCh = chapters[idx + 1];
+            const pwExtBtn = document.getElementById('paywallBtnExtend');
+            if (pwExtBtn) {{
+                pwExtBtn.style.display = expiredBooks.includes(targetBookKey) ? 'inline-flex' : 'none';
+            }}
             if (nextCh && (isOwned || nextCh.free)) {{
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'btn btn-primary';
@@ -920,30 +1073,79 @@ html_content = f'''<!DOCTYPE html>
             document.body.className = themes[themeIdx];
         }}
 
-        function openPayModal(bookKey) {{
+        function selectPayPlan(mode) {{
+            activePayMode = (mode === 'rent' || mode === 'extend') ? mode : 'buy';
+            const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
+            const btnBuy = document.getElementById('planBtnBuy');
+            const btnRent = document.getElementById('planBtnRent');
+            const btnExt = document.getElementById('planBtnExtend');
+            const inst = document.getElementById('modalPayInstruction');
+
+            const showExt = (activePayMode === 'extend') || (b && (expiredBooks.includes(b.key) || rentedBooks[b.key]));
+            if (btnExt) {{
+                btnExt.style.display = showExt ? 'block' : 'none';
+            }}
+
+            // Reset all styles
+            [btnBuy, btnRent, btnExt].forEach(el => {{
+                if (!el) return;
+                el.style.border = '1.5px solid rgba(255,255,255,0.12)';
+                el.style.background = 'rgba(255,255,255,0.04)';
+                el.style.color = 'var(--text-secondary)';
+            }});
+
+            if (activePayMode === 'rent') {{
+                btnRent.style.border = '1.5px solid #f59e0b';
+                btnRent.style.background = 'rgba(245, 158, 11, 0.18)';
+                btnRent.style.color = '#fff';
+                inst.innerHTML = 'እባክዎ <b>199 ብር (ለ 10 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '⏳ ' + b.title + ' — 199 ብር (10 ቀን ኪራይ)';
+            }} else if (activePayMode === 'extend') {{
+                if (btnExt) {{
+                    btnExt.style.border = '1.5px solid #10b981';
+                    btnExt.style.background = 'rgba(16, 185, 129, 0.18)';
+                    btnExt.style.color = '#fff';
+                }}
+                inst.innerHTML = 'እባክዎ <b>99 ብር (ለተጨማሪ 5 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '➕ ' + b.title + ' — 99 ብር (+5 ቀን)';
+            }} else {{
+                btnBuy.style.border = '1.5px solid #6366f1';
+                btnBuy.style.background = 'rgba(99, 102, 241, 0.18)';
+                btnBuy.style.color = '#fff';
+                inst.innerHTML = 'እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '💎 ' + b.title + ' — 499 ብር (ግዢ)';
+            }}
+
+            if (b && USER_ID) {{
+                fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode)).catch(() => {{}});
+            }}
+        }}
+
+        function openPayModal(bookKey, mode) {{
             const b = BOOKS_META[bookKey] || BOOKS_META[activeBookKey];
             if (b) {{
-                document.getElementById('modalBookTitle').innerText = '📱 ' + b.title + ' — 299 ብር';
-                if (USER_ID) {{
-                    fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key)).catch(() => {{}});
-                }}
+                activePayBookKey = b.key;
             }}
+            const defaultMode = mode || (b && expiredBooks.includes(b.key) ? 'extend' : 'buy');
+            selectPayPlan(defaultMode);
             document.getElementById('modal-pay').style.display = 'flex';
         }}
         function closePayModal() {{
             document.getElementById('modal-pay').style.display = 'none';
         }}
-        function returnToBot() {{
+        async function returnToBot() {{
+            const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
+            if (b && USER_ID) {{
+                try {{
+                    await fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode) + '&notify=1');
+                }} catch (e) {{}}
+            }}
             if (tg) tg.close();
             else closePayModal();
         }}
 
-        // Initialize Store on Load & Auto-Refresh on Re-Focus / Visibility
+        // Initialize Store on Load
         loadUserBooks();
-        window.addEventListener('focus', loadUserBooks);
-        document.addEventListener('visibilitychange', () => {{
-            if (!document.hidden) loadUserBooks();
-        }});
     </script>
 </body>
 </html>

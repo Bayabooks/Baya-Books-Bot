@@ -210,11 +210,40 @@ def get_user_books(user_id):
 def add_user(user_id, username, first_name, referred_by=None):
     conn = get_connection()
     c = conn.cursor()
+    clean_uname = (username or "").lstrip('@').strip() or "Unknown"
+    clean_name = (first_name or "").strip() or "User"
     c.execute('''INSERT INTO users (user_id, username, first_name, joined_date, referred_by, credits, advice_messages_left)
         VALUES (?, ?, ?, ?, ?, 0, 5)
-        ON CONFLICT(user_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name
-    ''', (user_id, username, first_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), referred_by))
+        ON CONFLICT(user_id) DO UPDATE SET
+            username = CASE WHEN excluded.username != 'Unknown' AND excluded.username != '' THEN excluded.username ELSE users.username END,
+            first_name = CASE WHEN excluded.first_name != 'User' AND excluded.first_name != '' THEN excluded.first_name ELSE users.first_name END
+    ''', (user_id, clean_uname, clean_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), referred_by))
     conn.commit()
+    conn.close()
+
+def sync_user_profile(user_id, username=None, full_name=None):
+    if not user_id:
+        return
+    clean_uname = (username or "").lstrip('@').strip()
+    clean_name = (full_name or "").strip()
+    if not clean_uname and not clean_name:
+        return
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        if clean_uname and clean_name:
+            c.execute("UPDATE users SET username = ?, first_name = ? WHERE user_id = ? AND (IFNULL(username, '') != ? OR IFNULL(first_name, '') != ?)",
+                      (clean_uname, clean_name, user_id, clean_uname, clean_name))
+        elif clean_name:
+            c.execute("UPDATE users SET first_name = ? WHERE user_id = ? AND IFNULL(first_name, '') != ?",
+                      (clean_name, user_id, clean_name))
+        elif clean_uname:
+            c.execute("UPDATE users SET username = ? WHERE user_id = ? AND IFNULL(username, '') != ?",
+                      (clean_uname, user_id, clean_uname))
+        if c.rowcount > 0:
+            conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 def get_user(user_id):
@@ -226,11 +255,24 @@ def get_user(user_id):
     return dict(row) if row else None
 
 def get_user_by_username(username):
+    if not username:
+        return None
+    cleaned = str(username).strip()
+    for prefix in ("https://t.me/", "http://t.me/", "t.me/"):
+        if cleaned.lower().startswith(prefix):
+            cleaned = cleaned[len(prefix):].split("?")[0].strip("/")
+            break
+    uname = cleaned.lstrip('@').strip().lower()
+    if not uname:
+        return None
     conn = get_connection()
     c = conn.cursor()
-    uname = str(username).lstrip('@').lower()
     c.execute("SELECT * FROM users WHERE LOWER(username) = ?", (uname,))
     row = c.fetchone()
+    if not row:
+        # Fallback: exact case-insensitive match on first_name (Telegram display name)
+        c.execute("SELECT * FROM users WHERE LOWER(first_name) = ? ORDER BY user_id DESC LIMIT 1", (uname,))
+        row = c.fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -833,17 +875,94 @@ def get_all_sub_admins():
 # ─── User Lookup & Search ─────────────────
 
 def search_users(query):
-    """Search users by ID, username, or first_name."""
+    """Search users by User ID, @username, t.me link, or Telegram display name (first/last/full name, Unicode-aware)."""
+    if not query:
+        return []
+    raw = str(query).strip()
+    if not raw:
+        return []
+
+    # Strip t.me links and leading @
+    cleaned = raw
+    for prefix in ("https://t.me/", "http://t.me/", "t.me/"):
+        if cleaned.lower().startswith(prefix):
+            cleaned = cleaned[len(prefix):].split("?")[0].strip("/")
+            break
+    cleaned_no_at = cleaned.lstrip("@").strip()
+    if not cleaned_no_at:
+        return []
+
     conn = get_connection()
     c = conn.cursor()
-    try:
-        uid = int(query)
+
+    results = []
+    seen_ids = set()
+
+    # 1. Exact User ID match if numeric
+    if cleaned_no_at.isdigit():
+        uid = int(cleaned_no_at)
         c.execute("SELECT * FROM users WHERE user_id = ?", (uid,))
-    except ValueError:
-        c.execute("SELECT * FROM users WHERE username LIKE ? OR first_name LIKE ? LIMIT 10", (f"%{query}%", f"%{query}%"))
-    rows = c.fetchall()
+        row = c.fetchone()
+        if row:
+            d = dict(row)
+            results.append(d)
+            seen_ids.add(d["user_id"])
+
+    # 2. Unicode case-insensitive search across first_name (full display name) & username
+    q_fold = cleaned_no_at.casefold()
+    q_tokens = [t for t in q_fold.split() if t]
+
+    c.execute("SELECT * FROM users ORDER BY user_id DESC")
+    all_rows = c.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+
+    scored = []
+    for r in all_rows:
+        uid = r["user_id"]
+        if uid in seen_ids:
+            continue
+        fname_raw = (r["first_name"] or "").strip()
+        uname_raw = (r["username"] or "").strip().lstrip("@")
+        if uname_raw.lower() == "unknown":
+            uname_raw = ""
+
+        fname = fname_raw.casefold()
+        uname = uname_raw.casefold()
+        combined = f"{fname} {uname}".strip()
+
+        score = 0
+        if uname and uname == q_fold:
+            score = 100
+        elif fname and fname == q_fold:
+            score = 98
+        elif uname and uname.startswith(q_fold):
+            score = 88
+        elif fname and fname.startswith(q_fold):
+            score = 85
+        elif uname and q_fold in uname:
+            score = 75
+        elif fname and q_fold in fname:
+            score = 72
+        elif len(q_tokens) > 1 and all(tok in combined for tok in q_tokens):
+            score = 60
+        else:
+            # Check individual word/token matches for multi-word queries or partial names
+            name_words = fname.split()
+            matched_tokens = [tok for tok in q_tokens if len(tok) >= 2 and (tok in fname or tok in uname)]
+            if matched_tokens:
+                if any(any(w.startswith(tok) for w in name_words) for tok in matched_tokens):
+                    score = 40 + len(matched_tokens) * 5
+                else:
+                    score = 25 + len(matched_tokens) * 5
+
+        if score > 0:
+            scored.append((score, uid, dict(r)))
+
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    for _, _, user_dict in scored[:25 - len(results)]:
+        results.append(user_dict)
+
+    return results
 
 def get_user_details(user_id):
     """Get comprehensive user info for the psychology bot."""

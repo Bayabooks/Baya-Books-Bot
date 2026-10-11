@@ -67,6 +67,14 @@ def get_lang(uid):
     except:
         return 'am'
 
+def get_full_name(user):
+    """Build full Telegram display name (first_name + last_name)."""
+    if not user:
+        return "User"
+    parts = [getattr(user, "first_name", None), getattr(user, "last_name", None)]
+    full = " ".join(str(p).strip() for p in parts if p and str(p).strip())
+    return full or "User"
+
 # ══════════════════════════════════════════
 #  CATEGORIES & GOALS (Amharic)
 # ══════════════════════════════════════════
@@ -335,7 +343,7 @@ def cmd_start(message):
         except ValueError:
             pass
 
-    database.add_user(user.id, user.username or "Unknown", user.first_name or "User", referred_by)
+    database.add_user(user.id, user.username or "Unknown", get_full_name(user), referred_by)
 
     if referred_by:
         database.record_referral(referred_by, user.id)
@@ -951,6 +959,177 @@ def cmd_admin(message):
     )
     show_admin_menu(message.chat.id, message.from_user)
 
+@bot.message_handler(commands=["lookup", "find"])
+def cmd_lookup_user(message):
+    if not is_admin(message.from_user):
+        return
+    parts = (message.text or "").split(maxsplit=1)
+    if len(parts) < 2 or not parts[1].strip():
+        set_state(message.from_user.id, "ADMIN_SEARCH_USER")
+        bot.send_message(
+            message.chat.id,
+            "🔍 <b>User Lookup</b>\n\n"
+            "Send any of the following:\n"
+            "• 👤 <b>Telegram Name</b> (e.g. <code>Selam</code> or <code>ሰላም</code>)\n"
+            "• 📛 <b>@username</b> or <code>t.me/username</code>\n"
+            "• 🆔 <b>User ID</b>\n"
+            "• ↩️ Or <b>forward a message</b> from the user\n\n"
+            "<i>(/cancel to exit)</i>",
+            parse_mode="HTML"
+        )
+        return
+    perform_admin_user_lookup(message.chat.id, message.from_user, query_text=parts[1].strip())
+
+def send_admin_user_profile(chat_id, target_id, caller_user):
+    details = database.get_user_details(target_id)
+    if not details:
+        bot.send_message(chat_id, "❌ User not found.")
+        return False
+    u = details["user"]
+    banned_tag = " 🚫 BANNED" if database.is_banned(target_id) else ""
+    admin_tag = " 👑" if database.is_sub_admin(target_id) else ""
+    vip_tag = " 💎 VIP" if database.is_vip(target_id) else ""
+
+    gender_str = {"male": "👨 Male", "female": "👩 Female"}.get(u.get('gender'), '❓ Unknown')
+
+    vip_expiry = u.get('vip_expiry') or 'N/A'
+    if vip_expiry != 'N/A':
+        vip_expiry = vip_expiry[:10]
+
+    msgs_left = u.get('advice_messages_left', 0)
+
+    ubooks, urentals, uexpired = database.get_user_books_state(target_id)
+    if ubooks or uexpired:
+        books_lines = []
+        for bk in ubooks:
+            bt = BOOK_TITLES.get(bk, bk)
+            if bk in urentals:
+                books_lines.append(f"  ⏳ {bt} (Rental: {urentals[bk]}d left)")
+            else:
+                books_lines.append(f"  ✅ {bt} (Full)")
+        for bk in uexpired:
+            bt = BOOK_TITLES.get(bk, bk)
+            books_lines.append(f"  ⏰ {bt} (Expired Rental)")
+        books_text = "\n".join(books_lines) + "\n"
+    else:
+        books_text = "  — No books unlocked\n"
+
+    payments_text = ""
+    for p in details.get("recent_payments", []):
+        tx = p['tx_ref'] or ''
+        ptype = '☕ Tip' if 'TIP' in tx else '🧠 Advice' if 'ADVICE' in tx else '📚 Book' if 'BOOK' in tx else '📦 Other'
+        payments_text += f"  {ptype} — <b>{p['amount']:,} ETB</b> ({p['payment_date'][:10] if p['payment_date'] else 'N/A'})\n"
+    if not payments_text:
+        payments_text = "  — No payments yet\n"
+
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{target_id}"),
+        InlineKeyboardButton("💵 Add Payment", callback_data=f"adm_record_pay_{target_id}")
+    )
+    markup.add(
+        InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{target_id}")
+    )
+    markup.add(
+        InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5"),
+        InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{target_id}_10")
+    )
+    markup.add(
+        InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{target_id}_25"),
+        InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{target_id}_75")
+    )
+    markup.add(
+        InlineKeyboardButton("👑 VIP 7d", callback_data=f"adm_make_vip_{target_id}_7"),
+        InlineKeyboardButton("👑 VIP 30d", callback_data=f"adm_make_vip_{target_id}_30")
+    )
+    if database.is_banned(target_id):
+        markup.add(InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{target_id}"))
+    else:
+        markup.add(InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{target_id}"))
+    if is_owner(caller_user):
+        if database.is_sub_admin(target_id):
+            markup.add(InlineKeyboardButton("👮 Remove Sub-Admin", callback_data=f"adm_rmsub_{target_id}"))
+        else:
+            markup.add(InlineKeyboardButton("👮 Make Sub-Admin", callback_data=f"adm_mksub_{target_id}"))
+    markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+
+    uname_disp = f"@{u['username']}" if u.get('username') and u.get('username') != 'Unknown' else "N/A"
+    bot.send_message(
+        chat_id,
+        f"👤 <b>User Profile</b>{banned_tag}{admin_tag}{vip_tag}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🆔 ID: <code>{target_id}</code>\n"
+        f"👤 Name: <b>{html.escape(str(u.get('first_name') or 'User'))}</b>\n"
+        f"📛 Username: {html.escape(uname_disp)}\n"
+        f"{gender_str} | 🌐 {u.get('bot_language', 'am').upper()}\n"
+        f"📅 Joined: {u['joined_date'][:10] if u.get('joined_date') else 'N/A'}\n\n"
+        f"━━ 📚 Books ━━━━━━━━━━━━━━━\n{books_text}\n"
+        f"━━ 💬 Advice ━━━━━━━━━━━━━━\n"
+        f"  📩 Messages Left: <b>{msgs_left}</b>\n"
+        f"  💎 VIP Until: <b>{vip_expiry}</b>\n\n"
+        f"━━ 💰 Payments ━━━━━━━━━━━━\n"
+        f"  💵 Total Paid: <b>{details['total_paid']:,} ETB</b> ({details['payment_count']} transactions)\n"
+        f"  👥 Referrals: <b>{details['referral_count']}</b>\n\n"
+        f"━━ 💳 Recent Payments ━━━━━━\n{payments_text}",
+        parse_mode="HTML",
+        reply_markup=markup,
+    )
+    return True
+
+def perform_admin_user_lookup(chat_id, caller_user, query_text="", forwarded_msg=None):
+    """Search by Telegram Name, @username, User ID, or forwarded message."""
+    if forwarded_msg is not None:
+        fwd_user = getattr(forwarded_msg, "forward_from", None)
+        fwd_origin = getattr(forwarded_msg, "forward_origin", None)
+        if not fwd_user and fwd_origin:
+            fwd_user = getattr(fwd_origin, "sender_user", None)
+        if fwd_user and getattr(fwd_user, "id", None):
+            # Sync their latest name/username if they exist in DB
+            database.sync_user_profile(fwd_user.id, getattr(fwd_user, "username", None), get_full_name(fwd_user))
+            if database.get_user(fwd_user.id):
+                send_admin_user_profile(chat_id, fwd_user.id, caller_user)
+                return True
+            query_text = get_full_name(fwd_user)
+        else:
+            sender_name = getattr(forwarded_msg, "forward_sender_name", None)
+            if not sender_name and fwd_origin:
+                sender_name = getattr(fwd_origin, "sender_user_name", None)
+            if sender_name:
+                query_text = sender_name
+
+    query_text = (query_text or "").strip()
+    if not query_text:
+        bot.send_message(chat_id, "❌ Please send a Telegram name, @username, User ID, or forward a message from the user (/cancel to exit).")
+        return False
+
+    results = database.search_users(query_text)
+    if not results:
+        bot.send_message(
+            chat_id,
+            f"❌ No users found matching <b>{html.escape(query_text)}</b>.\n\n"
+            f"Try part of their Telegram name, @username, or User ID (or /cancel):",
+            parse_mode="HTML"
+        )
+        return False
+
+    if len(results) == 1:
+        send_admin_user_profile(chat_id, results[0]["user_id"], caller_user)
+        return True
+
+    text = f"🔍 <b>Search Results for \"{html.escape(query_text)}\" ({len(results)})</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+    markup = InlineKeyboardMarkup(row_width=1)
+    for u in results:
+        fname = u.get("first_name") or "User"
+        uname = u.get("username")
+        uname_str = f"@{uname}" if uname and uname != "Unknown" else "no username"
+        g_icon = {"male": "👨", "female": "👩"}.get(u.get("gender"), "👤")
+        text += f"{g_icon} <b>{html.escape(str(fname))}</b> ({html.escape(uname_str)}) — <code>{u['user_id']}</code>\n"
+        btn_label = f"{g_icon} {fname} ({uname_str}) — {u['user_id']}"
+        markup.add(InlineKeyboardButton(btn_label[:60], callback_data=f"adm_lookup_{u['user_id']}"))
+    markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+    return True
+
 def show_admin_menu(chat_id, user):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -1029,6 +1208,7 @@ def handle_callback(call):
     uid = call.from_user.id
     data = call.data
     chat_id = call.message.chat.id
+    database.sync_user_profile(uid, call.from_user.username, get_full_name(call.from_user))
 
     # Ban check
     if database.is_banned(uid):
@@ -1378,7 +1558,17 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
         set_state(uid, "ADMIN_SEARCH_USER")
-        bot.send_message(chat_id, "🔍 <b>User Lookup</b>\n\nEnter User ID, @username, or name:\n(/cancel to exit)", parse_mode="HTML")
+        bot.send_message(
+            chat_id,
+            "🔍 <b>User Lookup</b>\n\n"
+            "Send any of the following:\n"
+            "• 👤 <b>Telegram Name</b> (e.g. <code>Selam</code> or <code>ሰላም</code>)\n"
+            "• 📛 <b>@username</b> or <code>t.me/username</code>\n"
+            "• 🆔 <b>User ID</b>\n"
+            "• ↩️ Or <b>forward a message</b> from the user\n\n"
+            "<i>(/cancel to exit)</i>",
+            parse_mode="HTML"
+        )
         return
     
     # ── Admin: User Lookup (from inline button) ─
@@ -1386,101 +1576,7 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         target_id = int(data.replace("adm_lookup_", ""))
         bot.answer_callback_query(call.id, "🔍 Loading...")
-        details = database.get_user_details(target_id)
-        if not details:
-            bot.send_message(chat_id, "❌ User not found.")
-            return
-        u = details["user"]
-        banned_tag = " 🚫 BANNED" if database.is_banned(target_id) else ""
-        admin_tag = " 👑" if database.is_sub_admin(target_id) else ""
-        vip_tag = " 💎 VIP" if database.is_vip(target_id) else ""
-        
-        # Gender display
-        gender_str = {"male": "👨 Male", "female": "👩 Female"}.get(u.get('gender'), '❓ Unknown')
-        
-        # VIP expiry
-        vip_expiry = u.get('vip_expiry') or 'N/A'
-        if vip_expiry != 'N/A':
-            vip_expiry = vip_expiry[:10]
-        
-        # Advice messages
-        msgs_left = u.get('advice_messages_left', 0)
-
-        # User's Unlocked Books
-        ubooks, urentals, uexpired = database.get_user_books_state(target_id)
-        if ubooks or uexpired:
-            books_lines = []
-            for bk in ubooks:
-                bt = BOOK_TITLES.get(bk, bk)
-                if bk in urentals:
-                    books_lines.append(f"  ⏳ {bt} (Rental: {urentals[bk]}d left)")
-                else:
-                    books_lines.append(f"  ✅ {bt} (Full)")
-            for bk in uexpired:
-                bt = BOOK_TITLES.get(bk, bk)
-                books_lines.append(f"  ⏰ {bt} (Expired Rental)")
-            books_text = "\n".join(books_lines) + "\n"
-        else:
-            books_text = "  — No books unlocked\n"
-        
-        # Recent payments text
-        payments_text = ""
-        for p in details.get("recent_payments", []):
-            tx = p['tx_ref'] or ''
-            ptype = '☕ Tip' if 'TIP' in tx else '🧠 Advice' if 'ADVICE' in tx else '📚 Book' if 'BOOK' in tx else '📦 Other'
-            payments_text += f"  {ptype} — <b>{p['amount']:,} ETB</b> ({p['payment_date'][:10] if p['payment_date'] else 'N/A'})\n"
-        if not payments_text:
-            payments_text = "  — No payments yet\n"
-        
-        markup = InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{target_id}"),
-            InlineKeyboardButton("💵 Add Payment", callback_data=f"adm_record_pay_{target_id}")
-        )
-        markup.add(
-            InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{target_id}")
-        )
-        markup.add(
-            InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5"),
-            InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{target_id}_10")
-        )
-        markup.add(
-            InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{target_id}_25"),
-            InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{target_id}_75")
-        )
-        markup.add(
-            InlineKeyboardButton("👑 VIP 7d", callback_data=f"adm_make_vip_{target_id}_7"),
-            InlineKeyboardButton("👑 VIP 30d", callback_data=f"adm_make_vip_{target_id}_30")
-        )
-        if database.is_banned(target_id):
-            markup.add(InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{target_id}"))
-        else:
-            markup.add(InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{target_id}"))
-        if is_owner(call.from_user):
-            if database.is_sub_admin(target_id):
-                markup.add(InlineKeyboardButton("👮 Remove Sub-Admin", callback_data=f"adm_rmsub_{target_id}"))
-            else:
-                markup.add(InlineKeyboardButton("👮 Make Sub-Admin", callback_data=f"adm_mksub_{target_id}"))
-        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
-        
-        bot.send_message(chat_id,
-            f"👤 <b>User Profile</b>{banned_tag}{admin_tag}{vip_tag}\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🆔 ID: <code>{target_id}</code>\n"
-            f"👤 Name: <b>{u['first_name']}</b>\n"
-            f"📛 Username: @{u.get('username') or 'N/A'}\n"
-            f"{gender_str} | 🌐 {u.get('bot_language', 'am').upper()}\n"
-            f"📅 Joined: {u['joined_date'][:10] if u.get('joined_date') else 'N/A'}\n\n"
-            f"━━ 📚 Books ━━━━━━━━━━━━━━━\n{books_text}\n"
-            f"━━ 💬 Advice ━━━━━━━━━━━━━━\n"
-            f"  📩 Messages Left: <b>{msgs_left}</b>\n"
-            f"  💎 VIP Until: <b>{vip_expiry}</b>\n\n"
-            f"━━ 💰 Payments ━━━━━━━━━━━━\n"
-            f"  💵 Total Paid: <b>{details['total_paid']:,} ETB</b> ({details['payment_count']} transactions)\n"
-            f"  👥 Referrals: <b>{details['referral_count']}</b>\n\n"
-            f"━━ 💳 Recent Payments ━━━━━━\n{payments_text}",
-            parse_mode="HTML", reply_markup=markup,
-        )
+        send_admin_user_profile(chat_id, target_id, call.from_user)
         return
     
     # ── Admin: Quick Credit from profile ──────
@@ -1835,6 +1931,7 @@ def handle_messages(message):
     session = get_session(uid)
     state = session["state"]
     chat_id = message.chat.id
+    database.sync_user_profile(uid, message.from_user.username, get_full_name(message.from_user))
 
     # Ban check
     if database.is_banned(uid):
@@ -1860,22 +1957,23 @@ def handle_messages(message):
         return
 
     # ── Admin States ─────────────────────────
-    # ── Admin: Search User (text input) ──────
+    # ── Admin: Search User (text or forwarded message) ──────
     if state == "ADMIN_SEARCH_USER" and is_admin(message.from_user):
-        if message.text == "/cancel":
+        if message.text and message.text.strip() == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
-        results = database.search_users(message.text.strip())
-        if not results:
-            bot.send_message(chat_id, "❌ No users found. Try again or /cancel")
-            return
-        text = f"🔍 <b>Search Results ({len(results)})</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
-        markup = InlineKeyboardMarkup(row_width=1)
-        for u in results:
-            text += f"👤 {u['first_name']} (@{u['username'] or 'N/A'}) — <code>{u['user_id']}</code>\n"
-            markup.add(InlineKeyboardButton(f"👤 {u['first_name']} ({u['user_id']})", callback_data=f"adm_lookup_{u['user_id']}"))
-        markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
-        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
-        clear_state(uid)
+        is_forwarded = bool(
+            getattr(message, "forward_from", None)
+            or getattr(message, "forward_sender_name", None)
+            or getattr(message, "forward_origin", None)
+        )
+        found = perform_admin_user_lookup(
+            chat_id,
+            message.from_user,
+            query_text=(message.text or message.caption or ""),
+            forwarded_msg=message if is_forwarded else None,
+        )
+        if found:
+            clear_state(uid)
         return
     
     # ── Admin: Record Manual Payment ─────────

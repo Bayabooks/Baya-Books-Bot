@@ -119,6 +119,15 @@ def get_user(user_id):
     conn.close()
     return dict(row) if row else None
 
+def get_user_by_username(username):
+    conn = get_connection()
+    c = conn.cursor()
+    uname = str(username).lstrip('@').lower()
+    c.execute("SELECT * FROM users WHERE LOWER(username) = ?", (uname,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
 def is_new_user(user_id):
     return get_user(user_id) is None
 
@@ -622,6 +631,10 @@ def is_banned(user_id):
 # ─── Sub-Admin Functions ──────────────────
 
 def add_sub_admin(user_id):
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        pass
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET is_sub_admin = 1 WHERE user_id = ?", (user_id,))
@@ -629,6 +642,10 @@ def add_sub_admin(user_id):
     conn.close()
 
 def remove_sub_admin(user_id):
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        pass
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET is_sub_admin = 0 WHERE user_id = ?", (user_id,))
@@ -636,12 +653,39 @@ def remove_sub_admin(user_id):
     conn.close()
 
 def is_sub_admin(user_id):
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        pass
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT IFNULL(is_sub_admin, 0) as is_sub_admin FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     conn.close()
     return bool(row and row['is_sub_admin'])
+
+def add_sub_admin_by_identifier(identifier):
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        uid = int(identifier)
+        c.execute("UPDATE users SET is_sub_admin = 1 WHERE user_id = ?", (uid,))
+        affected = c.rowcount
+        conn.commit()
+        conn.close()
+        return uid if affected > 0 else None
+    except (ValueError, TypeError):
+        uname = str(identifier).lstrip('@').lower()
+        c.execute("SELECT user_id FROM users WHERE LOWER(username) = ?", (uname,))
+        row = c.fetchone()
+        if row:
+            uid = row['user_id']
+            c.execute("UPDATE users SET is_sub_admin = 1 WHERE user_id = ?", (uid,))
+            conn.commit()
+            conn.close()
+            return uid
+        conn.close()
+        return None
 
 def get_all_sub_admins():
     conn = get_connection()

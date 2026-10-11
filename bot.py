@@ -174,17 +174,35 @@ def safe_delete_message(chat_id, message_id):
         pass
 
 def is_admin(user):
-    if user.username and user.username.lower() == config.ADMIN_USERNAME:
+    if not user:
+        return False
+    username = (user.username or "").lower().lstrip('@')
+    if username == config.ADMIN_USERNAME:
+        return True
+    if hasattr(config, "SUB_ADMINS") and username in config.SUB_ADMINS:
         return True
     return database.is_sub_admin(user.id)
 
 def is_owner(user):
-    return bool(user.username and user.username.lower() == config.ADMIN_USERNAME)
+    if not user:
+        return False
+    username = (user.username or "").lower().lstrip('@')
+    return bool(username == config.ADMIN_USERNAME)
 
 def is_admin_uid(uid):
+    if not uid:
+        return False
+    try:
+        uid = int(uid)
+    except (ValueError, TypeError):
+        pass
     user_data = database.get_user(uid)
-    if user_data and user_data['username'] and user_data['username'].lower() == config.ADMIN_USERNAME:
-        return True
+    if user_data:
+        username = (user_data.get('username') or "").lower().lstrip('@')
+        if username == config.ADMIN_USERNAME:
+            return True
+        if hasattr(config, "SUB_ADMINS") and username in config.SUB_ADMINS:
+            return True
     return database.is_sub_admin(uid)
 
 def get_admin_id():
@@ -786,12 +804,74 @@ def cmd_del_last(message):
         bot.reply_to(message, "No payments found to delete.")
     conn.close()
 
+@bot.message_handler(commands=["add_subadmin"])
+def cmd_add_subadmin(message):
+    if not is_owner(message.from_user):
+        bot.reply_to(message, "❌ Only the owner can add sub-admins.")
+        return
+    args = message.text.split()
+    if len(args) < 2:
+        bot.reply_to(message, "Usage: <code>/add_subadmin @username</code> or <code>/add_subadmin user_id</code>", parse_mode="HTML")
+        return
+    target = args[1].strip()
+    uid = database.add_sub_admin_by_identifier(target)
+    if uid:
+        bot.reply_to(message, f"✅ User <code>{target}</code> (ID: <code>{uid}</code>) is now a <b>Sub-Admin</b>!", parse_mode="HTML")
+        try:
+            bot.send_message(
+                uid,
+                "👑 <b>እንኳን ደስ አሎት! የ Sub-Admin መብት ተሰጥቶዎታል።</b>\n\nከታች ባለው ሜኑ <b>'⚙️ Dashboard'</b> እና <b>'📚 መጽሐፍት ቤት (Library)'</b> ማግኘት ይችላሉ። እንዲሁም /bayacontrol ን መጠቀም ይችላሉ!",
+                parse_mode="HTML",
+                reply_markup=get_bottom_markup(get_lang(uid), uid)
+            )
+        except:
+            pass
+    else:
+        bot.reply_to(message, f"❌ User <code>{target}</code> not found in database. Make sure they have messaged or started the bot first!", parse_mode="HTML")
+
+@bot.message_handler(commands=["remove_subadmin"])
+def cmd_remove_subadmin(message):
+    if not is_owner(message.from_user):
+        bot.reply_to(message, "❌ Only the owner can remove sub-admins.")
+        return
+    args = message.text.split()
+    if len(args) < 2:
+        bot.reply_to(message, "Usage: <code>/remove_subadmin @username</code> or <code>/remove_subadmin user_id</code>", parse_mode="HTML")
+        return
+    target = args[1].strip()
+    try:
+        uid = int(target)
+    except ValueError:
+        user_rec = database.get_user_by_username(target.lstrip('@'))
+        uid = user_rec['user_id'] if user_rec else None
+    if uid:
+        database.remove_sub_admin(uid)
+        bot.reply_to(message, f"✅ Sub-Admin removed for <code>{target}</code>.", parse_mode="HTML")
+        try:
+            bot.send_message(
+                uid,
+                "Sub-Admin privileges removed.",
+                reply_markup=get_bottom_markup(get_lang(uid), uid)
+            )
+        except:
+            pass
+    else:
+        bot.reply_to(message, f"❌ User <code>{target}</code> not found.", parse_mode="HTML")
+
 #  /bayacontrol COMMAND
 # ══════════════════════════════════════════
 @bot.message_handler(commands=["bayacontrol"])
 def cmd_admin(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ የ Admin መብት የለዎትም!"); return
+    uid = message.from_user.id
+    # Refresh persistent bottom menu for admin & sub-admins with Dashboard & Library buttons!
+    bot.send_message(
+        message.chat.id,
+        "👑 <b>Admin Menu</b>",
+        parse_mode="HTML",
+        reply_markup=get_bottom_markup(get_lang(uid), uid)
+    )
     show_admin_menu(message.chat.id, message.from_user)
 
 def show_admin_menu(chat_id, user):
@@ -1374,7 +1454,12 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "👮 Sub-Admin added!")
         bot.send_message(chat_id, f"👮 User <code>{target_id}</code> is now a <b>Sub-Admin</b>.", parse_mode="HTML")
         try:
-            bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /bayacontrol to access the admin panel.", parse_mode="HTML")
+            bot.send_message(
+                target_id,
+                "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nUse the new bottom menu buttons (⚙️ Dashboard & 📚 Library) or type /bayacontrol.",
+                parse_mode="HTML",
+                reply_markup=get_bottom_markup(get_lang(target_id), target_id)
+            )
         except: pass
         return
     
@@ -1719,19 +1804,23 @@ def handle_messages(message):
     if state == "ADMIN_ADD_SUBADMIN" and is_owner(message.from_user):
         if message.text == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        raw_input = message.text.strip()
+        target_id = database.add_sub_admin_by_identifier(raw_input)
+        if not target_id:
+            bot.send_message(chat_id, "❌ User not found! Make sure they have messaged or started the bot, then enter their @username or User ID.")
+            return
+        target = database.get_user(target_id)
+        name = target['first_name'] if target else raw_input
+        bot.send_message(chat_id, f"👮 <b>{name}</b> (<code>{target_id}</code>) is now a <b>Sub-Admin</b>.", parse_mode="HTML")
         try:
-            target_id = int(message.text.strip())
-            target = database.get_user(target_id)
-            if not target:
-                bot.send_message(chat_id, "❌ User not found!"); return
-            database.add_sub_admin(target_id)
-            bot.send_message(chat_id, f"👮 <b>{target['first_name']}</b> (<code>{target_id}</code>) is now a <b>Sub-Admin</b>.", parse_mode="HTML")
-            try:
-                bot.send_message(target_id, "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nType /bayacontrol to access the admin panel.", parse_mode="HTML")
-            except: pass
-            clear_state(uid)
-        except ValueError:
-            bot.send_message(chat_id, "❌ Please enter a valid User ID number.")
+            bot.send_message(
+                target_id,
+                "👑 <b>Congratulations!</b>\n\nYou have been granted Sub-Admin privileges!\nUse the new bottom menu buttons (⚙️ Dashboard & 📚 Library) or type /bayacontrol.",
+                parse_mode="HTML",
+                reply_markup=get_bottom_markup(get_lang(target_id), target_id)
+            )
+        except: pass
+        clear_state(uid)
         return
     
     # ── Admin: VIP Grant (text input) ────────

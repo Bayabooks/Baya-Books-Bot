@@ -396,9 +396,13 @@ def get_bottom_markup(lang='am', uid=None):
         KeyboardButton(S(lang, 'menu_lang'))
     )
     if uid and is_admin_uid(uid):
+        from telebot.types import WebAppInfo
         m.add(
             KeyboardButton(S(lang, 'menu_support')),
             KeyboardButton("⚙️ Dashboard")
+        )
+        m.add(
+            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app"))
         )
     else:
         m.add(
@@ -2322,6 +2326,23 @@ class DummyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.wfile.write(f"Error: {e}".encode('utf-8'))
             return
+
+        if self.path.startswith('/static/'):
+            filepath = self.path.lstrip('/').split('?')[0]
+            if os.path.exists(filepath) and os.path.isfile(filepath):
+                ext = filepath.split('.')[-1].lower()
+                mime = 'image/jpeg' if ext in ['jpg', 'jpeg'] else ('image/png' if ext == 'png' else 'application/octet-stream')
+                self.send_response(200)
+                self.send_header("Content-type", mime)
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.end_headers()
+                with open(filepath, 'rb') as f:
+                    self.wfile.write(f.read())
+                return
+            else:
+                self.send_response(404)
+                self.end_headers()
+                return
 
         if self.path == '/app':
             self.send_response(200)

@@ -100,38 +100,76 @@ def setup_database():
         user_id INTEGER,
         book_key TEXT,
         purchased_at TEXT,
+        expires_at TEXT DEFAULT NULL,
         PRIMARY KEY (user_id, book_key)
     )''')
+    try:
+        c.execute("ALTER TABLE user_books ADD COLUMN expires_at TEXT DEFAULT NULL")
+    except:
+        pass
 
     conn.commit()
     conn.close()
 
-def unlock_book(user_id, book_key):
+def unlock_book(user_id, book_key, days=None):
     try:
         user_id = int(user_id)
     except (ValueError, TypeError):
         return
+    now_dt = datetime.now()
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+    expires_str = (now_dt + timedelta(days=int(days))).strftime("%Y-%m-%d %H:%M:%S") if days else None
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at)
-        VALUES (?, ?, ?)
-    ''', (user_id, book_key, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at, expires_at)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, book_key, now_str, expires_str))
     conn.commit()
     conn.close()
 
-def get_user_books(user_id):
+def get_user_books_with_meta(user_id):
     if not user_id:
-        return []
+        return [], {}
     try:
         user_id = int(user_id)
     except (ValueError, TypeError):
-        return []
+        return [], {}
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT book_key FROM user_books WHERE user_id = ?", (user_id,))
+    try:
+        c.execute("SELECT book_key, expires_at FROM user_books WHERE user_id = ?", (user_id,))
+    except:
+        try:
+            c.execute("ALTER TABLE user_books ADD COLUMN expires_at TEXT DEFAULT NULL")
+            conn.commit()
+        except:
+            pass
+        c.execute("SELECT book_key, NULL as expires_at FROM user_books WHERE user_id = ?", (user_id,))
     rows = c.fetchall()
     conn.close()
-    return [r['book_key'] for r in rows]
+
+    now_dt = datetime.now()
+    books = []
+    rentals = {}
+    for r in rows:
+        bkey = r['book_key']
+        exp = r['expires_at']
+        if exp:
+            try:
+                exp_dt = datetime.strptime(exp[:19], "%Y-%m-%d %H:%M:%S")
+                if exp_dt <= now_dt:
+                    continue
+                rem_days = max(1, (exp_dt - now_dt).days + (1 if (exp_dt - now_dt).seconds > 0 else 0))
+                books.append(bkey)
+                rentals[bkey] = rem_days
+            except:
+                books.append(bkey)
+        else:
+            books.append(bkey)
+    return books, rentals
+
+def get_user_books(user_id):
+    return get_user_books_with_meta(user_id)[0]
 
 # ─── User Functions ────────────────────────
 

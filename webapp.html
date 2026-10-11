@@ -500,25 +500,41 @@
                 <div class="paywall-icon">🔥</div>
                 <h3 class="paywall-title">ሙሉውን መጽሐፍ ዛሬውኑ ማንበብ ይጀምሩ!</h3>
                 <p class="paywall-desc" id="paywallDesc"></p>
-                <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey)">
-                    <span>💎 ሙሉውን መጽሐፍ በ 499 ብር ክፈት</span>
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey, 'buy')">
+                        <span>💎 ሙሉውን መጽሐፍ ለዘላለም ግዛ — 499 ብር</span>
+                    </button>
+                    <button class="btn btn-outline" style="width: 100%; padding: 12px; font-size: 14px; border-color: rgba(245, 158, 11, 0.45); color: #fbbf24; background: rgba(245, 158, 11, 0.1);" onclick="openPayModal(activeBookKey, 'rent')">
+                        <span>⏳ ለ 15 ቀናት ተከራይ — 199 ብር</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
 
     <!-- ══════════════════════════════════════════
-         MODAL: PAYMENT (499 Birr)
+         MODAL: PAYMENT (499 Birr Buy / 199 Birr Rent)
     ══════════════════════════════════════════ -->
     <div id="modal-pay" class="modal-overlay" onclick="closePayModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ — 499 ብር</h3>
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ</h3>
                 <button class="btn-icon" onclick="closePayModal()">✕</button>
             </div>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-                እባክዎ <b>499 ብር</b> በሚከተሉት አማራጮች ያስገቡ፦
+
+            <!-- Plan Toggle (Full Purchase vs 15-Day Rental) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+                <button id="planBtnBuy" onclick="selectPayPlan('buy')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid #6366f1; background: rgba(99, 102, 241, 0.18); color: #fff; font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
+                    💎 ሙሉ ግዢ<br><span style="font-size: 14px; color: #a5b4fc;">499 ብር (ለዘላለም)</span>
+                </button>
+                <button id="planBtnRent" onclick="selectPayPlan('rent')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
+                    ⏳ የ 15 ቀን ኪራይ<br><span style="font-size: 14px; color: #fbbf24;">199 ብር (15 ቀናት)</span>
+                </button>
+            </div>
+
+            <p id="modalPayInstruction" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+                እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦
             </p>
 
             <div class="bank-item">
@@ -546,7 +562,7 @@
             </div>
 
             <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px; margin: 14px 0; font-size: 12px; line-height: 1.5;">
-                ✅ <b>ከከፈሉ በኋላ፦</b> የከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ በቦቱ ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ ሙሉውን መጽሐፍ <b>«📖 የኔ መጽሐፍት»</b> ውስጥ ይከፍትልዎታል!
+                ✅ <b>ከከፈሉ በኋላ፦</b> የከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ በቦቱ ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ መጽሐፉን <b>«📖 የኔ መጽሐፍት»</b> ውስጥ ይከፍትልዎታል!
             </div>
 
             <button class="btn btn-primary" style="width: 100%;" onclick="returnToBot()">
@@ -562,7 +578,10 @@
         const FULL_LOADED_FLAG = {};
         const INFLIGHT_FETCHES = {};
         let ownedBooks = [];
+        let rentedBooks = {};
         let activeBookKey = 'narcissist';
+        let activePayBookKey = 'narcissist';
+        let activePayMode = 'buy';
         let activeChapterIdx = 0;
         let currentCategory = 'all';
 
@@ -589,6 +608,9 @@
                     if (data && Array.isArray(data.books)) {
                         ownedBooks = data.books;
                     }
+                    if (data && data.rentals) {
+                        rentedBooks = data.rentals;
+                    }
                 } catch (e) {
                     console.error('Error loading user books:', e);
                 }
@@ -597,8 +619,11 @@
         }
 
         function createBookCardHTML(b, isOwned) {
+            const rentDays = rentedBooks[b.key];
             const badgeHTML = isOwned
-                ? `<div class="book-badge owned">✅ የተገዛ (ሙሉ መጽሐፍ) | ${b.pages}</div>`
+                ? (rentDays
+                    ? `<div class="book-badge owned" style="background: rgba(245, 158, 11, 0.16); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);">⏳ የተከራየ (ቀሪ ${rentDays} ቀናት) | ${b.pages}</div>`
+                    : `<div class="book-badge owned">✅ የተገዛ (ሙሉ መጽሐፍ) | ${b.pages}</div>`)
                 : `<div class="book-badge" style="${b.badge_style}">${b.badge}</div>`;
 
             const startChIdx = isOwned ? 1 : 0;
@@ -609,12 +634,15 @@
                            <span>📖 ሙሉውን መጽሐፍ አንብብ</span>
                        </button>
                    </div>`
-                : `<div class="btn-group">
-                       <button class="btn btn-primary" onclick="openReader('${b.key}', 0)">
+                : `<div class="btn-group" style="flex-wrap: wrap;">
+                       <button class="btn btn-primary" style="flex: 1 1 100%;" onclick="openReader('${b.key}', 0)">
                            <span>📖 ስለ መጽሐፉ</span>
                        </button>
-                       <button class="btn btn-outline" onclick="openPayModal('${b.key}')">
-                           <span>💎 499 ብር</span>
+                       <button class="btn btn-outline" style="flex: 1; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;" onclick="openPayModal('${b.key}', 'rent')">
+                           <span>⏳ 199 ብር (15 ቀን)</span>
+                       </button>
+                       <button class="btn btn-outline" style="flex: 1;" onclick="openPayModal('${b.key}', 'buy')">
+                           <span>💎 499 ብር (ግዢ)</span>
                        </button>
                    </div>`;
 
@@ -902,14 +930,44 @@
             document.body.className = themes[themeIdx];
         }
 
-        function openPayModal(bookKey) {
+        function selectPayPlan(mode) {
+            activePayMode = (mode === 'rent') ? 'rent' : 'buy';
+            const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
+            const btnBuy = document.getElementById('planBtnBuy');
+            const btnRent = document.getElementById('planBtnRent');
+            const inst = document.getElementById('modalPayInstruction');
+
+            if (activePayMode === 'rent') {
+                btnRent.style.border = '1.5px solid #f59e0b';
+                btnRent.style.background = 'rgba(245, 158, 11, 0.18)';
+                btnRent.style.color = '#fff';
+                btnBuy.style.border = '1.5px solid rgba(255,255,255,0.12)';
+                btnBuy.style.background = 'rgba(255,255,255,0.04)';
+                btnBuy.style.color = 'var(--text-secondary)';
+                inst.innerHTML = 'እባክዎ <b>199 ብር (ለ 15 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '⏳ ' + b.title + ' — 199 ብር (ኪራይ)';
+            } else {
+                btnBuy.style.border = '1.5px solid #6366f1';
+                btnBuy.style.background = 'rgba(99, 102, 241, 0.18)';
+                btnBuy.style.color = '#fff';
+                btnRent.style.border = '1.5px solid rgba(255,255,255,0.12)';
+                btnRent.style.background = 'rgba(255,255,255,0.04)';
+                btnRent.style.color = 'var(--text-secondary)';
+                inst.innerHTML = 'እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '💎 ' + b.title + ' — 499 ብር (ግዢ)';
+            }
+
+            if (b && USER_ID) {
+                fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode)).catch(() => {});
+            }
+        }
+
+        function openPayModal(bookKey, mode) {
             const b = BOOKS_META[bookKey] || BOOKS_META[activeBookKey];
             if (b) {
-                document.getElementById('modalBookTitle').innerText = '📱 ' + b.title + ' — 499 ብር';
-                if (USER_ID) {
-                    fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key)).catch(() => {});
-                }
+                activePayBookKey = b.key;
             }
+            selectPayPlan(mode || 'buy');
             document.getElementById('modal-pay').style.display = 'flex';
         }
         function closePayModal() {

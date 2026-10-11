@@ -1231,12 +1231,6 @@ def handle_callback(call):
             recent_pay_text = "  — No payments yet\n"
 
         markup = InlineKeyboardMarkup()
-        
-        # Add Auto-Nudge Toggle
-        auto_nudge_status = database.get_setting("auto_nudge", "OFF")
-        nudge_btn_text = "🤖 Auto-Nudge: ON 🟢" if auto_nudge_status == "ON" else "🤖 Auto-Nudge: OFF 🔴"
-        markup.add(InlineKeyboardButton(nudge_btn_text, callback_data="toggle_auto_nudge"))
-        
         markup.add(InlineKeyboardButton("🔄 Refresh", callback_data="adm_dashboard"))
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
@@ -1266,17 +1260,6 @@ def handle_callback(call):
             parse_mode="HTML", reply_markup=markup,
         )
         return
-    if data == "toggle_auto_nudge":
-        if not is_admin(call.from_user): return
-        current = database.get_setting("auto_nudge", "OFF")
-        new_val = "OFF" if current == "ON" else "ON"
-        database.set_setting("auto_nudge", new_val)
-        bot.answer_callback_query(call.id, f"Auto-Nudge turned {new_val}")
-        
-        # Simulate clicking the dashboard button to refresh it
-        call.data = "adm_dashboard"
-        safe_delete_message(chat_id, call.message.message_id)
-        return handle_callback(call)
 
     if data.startswith("adm_reply_"):
         if not is_admin(call.from_user): return
@@ -2851,7 +2834,7 @@ def auto_nudge_daemon():
     import time
     while True:
         try:
-            if database.get_setting("auto_nudge", "OFF") == "ON":
+            if True:
                 # 1. Onboarding Nudge
                 stuck = database.get_stuck_users()
                 for u in stuck:

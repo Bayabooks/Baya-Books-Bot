@@ -420,7 +420,7 @@ def get_bottom_markup(lang='am', uid=None):
             KeyboardButton("⚙️ Dashboard")
         )
         m.add(
-            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}"))
+            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app"))
         )
     else:
         m.add(
@@ -2482,7 +2482,10 @@ class DummyHandler(BaseHTTPRequestHandler):
                     mime = 'application/octet-stream'
                 self.send_response(200)
                 self.send_header("Content-type", mime)
-                self.send_header("Cache-Control", "public, max-age=3600")
+                if ext == 'json':
+                    self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                else:
+                    self.send_header("Cache-Control", "public, max-age=3600")
                 self.end_headers()
                 with open(filepath, 'rb') as f:
                     self.wfile.write(f.read())
@@ -2497,11 +2500,14 @@ class DummyHandler(BaseHTTPRequestHandler):
             qs = parse_qs(parsed_url.query)
             uid = qs.get('uid', [''])[0]
             books = database.get_user_books(uid)
+            ver = str(int(os.path.getmtime('webapp.html'))) if os.path.exists('webapp.html') else "1"
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
             self.end_headers()
-            self.wfile.write(json.dumps({"books": books}).encode('utf-8'))
+            self.wfile.write(json.dumps({"books": books, "version": ver}).encode('utf-8'))
             return
 
         if self.path.startswith('/api/select_book'):
@@ -2519,6 +2525,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                     logging.error(f"Failed to record book checkout: {e}")
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
             return
@@ -2526,11 +2533,15 @@ class DummyHandler(BaseHTTPRequestHandler):
         if self.path == '/app' or self.path.startswith('/app?'):
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
             self.end_headers()
             try:
-                with open('webapp.html', 'rb') as f:
-                    self.wfile.write(f.read())
+                ver = str(int(os.path.getmtime('webapp.html'))) if os.path.exists('webapp.html') else "1"
+                with open('webapp.html', 'r', encoding='utf-8') as f:
+                    html_str = f.read().replace('__WEBAPP_VERSION__', ver)
+                self.wfile.write(html_str.encode('utf-8'))
             except Exception as e:
                 self.wfile.write(b"App UI not found.")
             return

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Baya Books — Digital Library</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -557,6 +560,7 @@
 
 
     <script>
+        const WEBAPP_VERSION = "__WEBAPP_VERSION__";
         const BOOKS_META = {"narcissist": {"key": "narcissist", "title": "የናርሲሲስቶች ወጥመድ", "subtitle": "ከመርዛማ ግንኙነት የማምለጫ ጥበብ", "author": "ዶ/ር ራማኒ ዱርቫሱላ | ትርጉም፦ የአዕምሮ ምግቦች & Baya Books", "short_author": "ዶ/ር ራማኒ", "cover": "/static/covers/narcissist_trap.jpg", "pages": "274 ገጾች", "rating": "⭐ 4.9 (1.2k)", "badge": "🔥 በጣም ተነባቢ | 274 ገጾች", "badge_style": "", "category": "psychology", "data_url": "/static/books_data/narcissist_full.json", "paywall_desc": "የመጀመሪያዎቹን 3 ክፍሎች በነፃ አንብበዋል። ሙሉውን 274 ገጽ መጽሐፍ (ከምዕራፍ 2 እስከ 9) ለመክፈት እና ከመርዛማ ግንኙነት ራስዎን ነጻ ለማውጣት አሁኑኑ ያግኙ።"}, "boundaries": {"key": "boundaries", "title": "ድንበርህን አብጅ", "subtitle": "ምንም ይቅርታ ሳትጠይቅ ጤናማ ድንበር የማስከበር ጥበብ", "author": "ኔድራ ግሎቨር ታዋብ | ትርጉም፦ Baya Books", "short_author": "ኔድራ ታዋብ", "cover": "/static/covers/boundaries.png", "pages": "216 ገጾች", "rating": "⭐ 4.9 (950+)", "badge": "✨ አዲስ የተጨመረ | 216 ገጾች", "badge_style": "color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);", "category": "psychology", "data_url": "/static/books_data/boundaries_full.json", "paywall_desc": "የመጀመሪያዎቹን 3 ክፍሎች በነፃ አንብበዋል። ሙሉውን 216 ገጽ መጽሐፍ (ሁሉንም 15 ምዕራፎች) ለመክፈት እና በሕይወትዎ ጤናማ ድንበር ለማበጀት አሁኑኑ ያግኙ።"}, "buyback": {"key": "buyback", "title": "ጊዜህን አስመልስ (Buy Back Your Time)", "subtitle": "ንግድህን እያሳደግክ ነጻነትህን የምታገኝበት ጥበብ", "author": "ዳን ማርቴል (Dan Martell) | ትርጉም፦ Baya Books", "short_author": "ዳን ማርቴል", "cover": "/static/covers/buy_back_time.png", "pages": "213 ገጾች", "rating": "⭐ 4.8 (890)", "badge": "⚡ ምርጥ የቢዝነስ መጽሐፍ | 213 ገጾች", "badge_style": "color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);", "category": "productivity", "data_url": "/static/books_data/buyback_full.json", "paywall_desc": "የመግቢያ እና የምዕራፍ 1 ክፍሎችን በነፃ አንብበዋል። ሙሉውን 213 ገጽ መጽሐፍ (ሁሉንም 14 ምዕራፎች) ለመክፈት፣ ጊዜህን ለማስመለስና ገቢህን በእጥፍ ለማሳደግ አሁኑኑ ያግኙ።"}};
         const LOADED_CHAPTERS = {};
         let ownedBooks = [];
@@ -580,18 +584,24 @@
         const USER_ID = getUserId();
 
         async function loadUserBooks() {
-            if (USER_ID) {
-                try {
-                    const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID));
-                    const data = await res.json();
-                    if (data && Array.isArray(data.books)) {
-                        ownedBooks = data.books;
-                    }
-                } catch (e) {
-                    console.error('Error loading user books:', e);
+            try {
+                const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID) + '&_t=' + Date.now(), { cache: 'no-store' });
+                const data = await res.json();
+                if (data && data.version && WEBAPP_VERSION !== '__WEBAPP_VERSION__' && data.version !== WEBAPP_VERSION) {
+                    const nextUrl = '/app?_v=' + encodeURIComponent(data.version) + (USER_ID ? '&uid=' + encodeURIComponent(USER_ID) : '');
+                    window.location.replace(nextUrl);
+                    return;
                 }
+                if (data && Array.isArray(data.books)) {
+                    ownedBooks = data.books;
+                }
+            } catch (e) {
+                console.error('Error loading user books:', e);
             }
             renderStore();
+            if (document.getElementById('view-reader').style.display === 'block') {
+                renderChapter(activeChapterIdx);
+            }
         }
 
         function createBookCardHTML(b, isOwned) {
@@ -709,7 +719,7 @@
             if (!LOADED_CHAPTERS[bookKey]) {
                 document.getElementById('readerChapterContent').innerHTML = '<div style="text-align:center; padding: 60px 20px; color: var(--text-secondary);">⏳ መጽሐፉን በመክፈት ላይ...</div>';
                 try {
-                    const res = await fetch(meta.data_url);
+                    const res = await fetch(meta.data_url + '?_t=' + Date.now(), { cache: 'no-store' });
                     LOADED_CHAPTERS[bookKey] = await res.json();
                 } catch (e) {
                     document.getElementById('readerChapterContent').innerHTML = '<div style="text-align:center; padding: 60px 20px; color: #ef4444;">⚠️ መጽሐፉን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።</div>';
@@ -876,8 +886,12 @@
             else closePayModal();
         }
 
-        // Initialize Store on Load
+        // Initialize Store on Load & Auto-Refresh on Re-Focus / Visibility
         loadUserBooks();
+        window.addEventListener('focus', loadUserBooks);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) loadUserBooks();
+        });
     </script>
 </body>
 </html>

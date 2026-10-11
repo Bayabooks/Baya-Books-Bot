@@ -118,22 +118,50 @@ def unlock_book(user_id, book_key, days=None):
         return
     now_dt = datetime.now()
     now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
-    expires_str = (now_dt + timedelta(days=int(days))).strftime("%Y-%m-%d %H:%M:%S") if days else None
     conn = get_connection()
     c = conn.cursor()
+    expires_str = None
+    if days is not None:
+        days_int = int(days)
+        if days_int < 0:
+            expires_str = (now_dt - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            base_dt = now_dt
+            if days_int == 5:
+                try:
+                    c.execute("SELECT expires_at FROM user_books WHERE user_id = ? AND book_key = ?", (user_id, book_key))
+                    row = c.fetchone()
+                    if row and row['expires_at']:
+                        prev_dt = datetime.strptime(row['expires_at'][:19], "%Y-%m-%d %H:%M:%S")
+                        if prev_dt > now_dt:
+                            base_dt = prev_dt
+                except:
+                    pass
+            expires_str = (base_dt + timedelta(days=days_int)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at, expires_at)
         VALUES (?, ?, ?, ?)
     ''', (user_id, book_key, now_str, expires_str))
     conn.commit()
     conn.close()
 
-def get_user_books_with_meta(user_id):
-    if not user_id:
-        return [], {}
+def remove_user_book(user_id, book_key):
     try:
         user_id = int(user_id)
     except (ValueError, TypeError):
-        return [], {}
+        return
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM user_books WHERE user_id = ? AND book_key = ?", (user_id, book_key))
+    conn.commit()
+    conn.close()
+
+def get_user_books_state(user_id):
+    if not user_id:
+        return [], {}, []
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return [], {}, []
     conn = get_connection()
     c = conn.cursor()
     try:
@@ -151,6 +179,7 @@ def get_user_books_with_meta(user_id):
     now_dt = datetime.now()
     books = []
     rentals = {}
+    expired = []
     for r in rows:
         bkey = r['book_key']
         exp = r['expires_at']
@@ -158,6 +187,7 @@ def get_user_books_with_meta(user_id):
             try:
                 exp_dt = datetime.strptime(exp[:19], "%Y-%m-%d %H:%M:%S")
                 if exp_dt <= now_dt:
+                    expired.append(bkey)
                     continue
                 rem_days = max(1, (exp_dt - now_dt).days + (1 if (exp_dt - now_dt).seconds > 0 else 0))
                 books.append(bkey)
@@ -166,10 +196,14 @@ def get_user_books_with_meta(user_id):
                 books.append(bkey)
         else:
             books.append(bkey)
+    return books, rentals, expired
+
+def get_user_books_with_meta(user_id):
+    books, rentals, _ = get_user_books_state(user_id)
     return books, rentals
 
 def get_user_books(user_id):
-    return get_user_books_with_meta(user_id)[0]
+    return get_user_books_state(user_id)[0]
 
 # ─── User Functions ────────────────────────
 

@@ -1315,12 +1315,13 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         target_uid = int(data.replace("adm_push_book_menu_", ""))
         bot.answer_callback_query(call.id)
-        markup = InlineKeyboardMarkup(row_width=2)
+        markup = InlineKeyboardMarkup(row_width=3)
         for bkey, btitle in BOOK_TITLES.items():
             short_t = btitle.split("(")[0].strip()
             markup.add(
-                InlineKeyboardButton(f"📖 {short_t} (Full)", callback_data=f"adm_pushbook_{target_uid}_{bkey}_0"),
-                InlineKeyboardButton(f"⏳ {short_t} (15d)", callback_data=f"adm_pushbook_{target_uid}_{bkey}_15")
+                InlineKeyboardButton(f"💎 {short_t} (Full)", callback_data=f"adm_pushbook_{target_uid}_{bkey}_0"),
+                InlineKeyboardButton(f"⏳ 10d Rent", callback_data=f"adm_pushbook_{target_uid}_{bkey}_10"),
+                InlineKeyboardButton(f"➕ +5d Ext", callback_data=f"adm_pushbook_{target_uid}_{bkey}_5")
             )
         markup.add(InlineKeyboardButton("🔙 Back to User", callback_data=f"adm_lookup_{target_uid}"))
         bot.send_message(
@@ -1328,8 +1329,9 @@ def handle_callback(call):
             f"📚 <b>Push Book to User <code>{target_uid}</code></b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"Choose a book to unlock for this customer:\n"
-            f"• <b>Full</b> = Permanent Full Book (499 ETB value)\n"
-            f"• <b>15d</b> = 15-Day Rental (199 ETB value)",
+            f"• <b>Full</b> = Permanent Full Book (499 ETB)\n"
+            f"• <b>10d Rent</b> = 10-Day Rental (199 ETB)\n"
+            f"• <b>+5d Ext</b> = +5 Days Extension (99 ETB)",
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -1341,7 +1343,7 @@ def handle_callback(call):
         target_uid = int(parts[2])
         bkey = parts[3]
         days = int(parts[4]) if len(parts) > 4 else 0
-        rent_days = days if days > 0 else None
+        rent_days = days if days != 0 else None
         database.unlock_book(target_uid, bkey, days=rent_days)
         b_title = BOOK_TITLES.get(bkey, bkey)
         mode_label = f"{days}-Day Rental" if rent_days else "Full Permanent"
@@ -1412,8 +1414,8 @@ def handle_callback(call):
         msgs_left = u.get('advice_messages_left', 0)
 
         # User's Unlocked Books
-        ubooks, urentals = database.get_user_books_with_meta(target_id)
-        if ubooks:
+        ubooks, urentals, uexpired = database.get_user_books_state(target_id)
+        if ubooks or uexpired:
             books_lines = []
             for bk in ubooks:
                 bt = BOOK_TITLES.get(bk, bk)
@@ -1421,6 +1423,9 @@ def handle_callback(call):
                     books_lines.append(f"  ⏳ {bt} (Rental: {urentals[bk]}d left)")
                 else:
                     books_lines.append(f"  ✅ {bt} (Full)")
+            for bk in uexpired:
+                bt = BOOK_TITLES.get(bk, bk)
+                books_lines.append(f"  ⏰ {bt} (Expired Rental)")
             books_text = "\n".join(books_lines) + "\n"
         else:
             books_text = "  — No books unlocked\n"
@@ -1440,7 +1445,7 @@ def handle_callback(call):
             InlineKeyboardButton("💵 Add Payment", callback_data=f"adm_record_pay_{target_id}")
         )
         markup.add(
-            InlineKeyboardButton("📚 Push Book (Free / 15d Rent)", callback_data=f"adm_push_book_menu_{target_id}")
+            InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{target_id}")
         )
         markup.add(
             InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{target_id}_5"),
@@ -1983,7 +1988,7 @@ def handle_messages(message):
                     InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
                 )
                 markup.add(
-                    InlineKeyboardButton("📚 Push Book (Free / 15d Rent)", callback_data=f"adm_push_book_menu_{uid}")
+                    InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{uid}")
                 )
                 markup.add(
                     InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{uid}_5"),
@@ -2413,7 +2418,7 @@ def handle_messages(message):
                 
                 if purpose.startswith("BOOKRENT_"):
                     book_key = purpose.replace("BOOKRENT_", "")
-                    database.unlock_book(uid, book_key, days=15)
+                    database.unlock_book(uid, book_key, days=10)
                     b_title = BOOK_TITLES.get(book_key, book_key)
                     markup = InlineKeyboardMarkup()
                     markup.add(
@@ -2423,7 +2428,22 @@ def handle_messages(message):
                         )
                     )
                     bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ 15 ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ 10 ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+                        chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
+                    )
+                elif purpose.startswith("BOOKEXT_"):
+                    book_key = purpose.replace("BOOKEXT_", "")
+                    database.unlock_book(uid, book_key, days=5)
+                    b_title = BOOK_TITLES.get(book_key, book_key)
+                    markup = InlineKeyboardMarkup()
+                    markup.add(
+                        InlineKeyboardButton(
+                            "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
+                            web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+                        )
+                    )
+                    bot.edit_message_text(
+                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 ለ<b>«{b_title}»</b> <b>ተጨማሪ 5 ቀናት</b> የኪራይ ጊዜ ተጨምሮልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ማንበብዎን መቀጠል ይችላሉ!",
                         chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
                     )
                 elif purpose.startswith("BOOK_"):
@@ -2607,12 +2627,28 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed_url = urlparse(self.path)
             qs = parse_qs(parsed_url.query)
             uid = qs.get('uid', [''])[0]
-            books, rentals = database.get_user_books_with_meta(uid)
+            books, rentals, expired = database.get_user_books_state(uid)
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
-            self.wfile.write(json.dumps({"books": books, "rentals": rentals}).encode('utf-8'))
+            self.wfile.write(json.dumps({"books": books, "rentals": rentals, "expired": expired}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/api/finish_rental'):
+            parsed_url = urlparse(self.path)
+            qs = parse_qs(parsed_url.query)
+            uid = qs.get('uid', [''])[0]
+            book_key = qs.get('book', [''])[0]
+            if uid and book_key:
+                try:
+                    database.remove_user_book(int(uid), book_key)
+                except Exception as e:
+                    logging.error(f"Failed to finish rental: {e}")
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
             return
 
         if self.path.startswith('/api/select_book'):
@@ -2628,6 +2664,9 @@ class DummyHandler(BaseHTTPRequestHandler):
                     if mode == 'rent':
                         tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, 199, tx_ref, "PENDING_CHECKOUT", status="pending")
+                    elif mode == 'extend':
+                        tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
+                        database.record_payment(uid_int, 0, 99, tx_ref, "PENDING_CHECKOUT", status="pending")
                     else:
                         tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, 499, tx_ref, "PENDING_CHECKOUT", status="pending")

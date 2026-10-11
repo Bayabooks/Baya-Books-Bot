@@ -11,7 +11,8 @@ from urllib.parse import urlparse, parse_qs
 import threading
 import tempfile
 import html
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import gzip
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from telebot import TeleBot
 from telebot.types import (
     ReplyKeyboardMarkup, KeyboardButton,
@@ -2482,12 +2483,18 @@ class DummyHandler(BaseHTTPRequestHandler):
                     mime = 'application/json; charset=utf-8'
                 else:
                     mime = 'application/octet-stream'
+                with open(filepath, 'rb') as f:
+                    raw_bytes = f.read()
+                accept_enc = self.headers.get('Accept-Encoding', '')
                 self.send_response(200)
                 self.send_header("Content-type", mime)
                 self.send_header("Cache-Control", "public, max-age=3600")
+                if ext == 'json' and 'gzip' in accept_enc:
+                    raw_bytes = gzip.compress(raw_bytes)
+                    self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(raw_bytes)))
                 self.end_headers()
-                with open(filepath, 'rb') as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(raw_bytes)
                 return
             else:
                 self.send_response(404)
@@ -2526,18 +2533,26 @@ class DummyHandler(BaseHTTPRequestHandler):
             return
 
         if self.path == '/app' or self.path.startswith('/app?'):
-            self.send_response(200)
-            self.send_header("Content-type", "text/html; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
             try:
                 with open('webapp.html', 'rb') as f:
-                    self.wfile.write(f.read())
+                    raw_bytes = f.read()
+                accept_enc = self.headers.get('Accept-Encoding', '')
+                self.send_response(200)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                if 'gzip' in accept_enc:
+                    raw_bytes = gzip.compress(raw_bytes)
+                    self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(raw_bytes)))
+                self.end_headers()
+                self.wfile.write(raw_bytes)
             except Exception as e:
+                self.send_response(500)
+                self.end_headers()
                 self.wfile.write(b"App UI not found.")
             return
 
-            
+
         if self.path.startswith('/auto-verify-shegerpay/'):
             tx_ref = self.path.split('/')[-1]
             import shegerpay
@@ -2582,7 +2597,7 @@ class DummyHandler(BaseHTTPRequestHandler):
 
 def run_dummy_server():
     port = int(os.environ.get("PORT", 8080))
-    server = HTTPServer(("0.0.0.0", port), DummyHandler)
+    server = ThreadingHTTPServer(("0.0.0.0", port), DummyHandler)
     server.serve_forever()
 
 # ══════════════════════════════════════════

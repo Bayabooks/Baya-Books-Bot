@@ -61,7 +61,6 @@
             transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        /* App Header */
         header {
             position: sticky;
             top: 0;
@@ -75,518 +74,206 @@
             align-items: center;
             justify-content: space-between;
         }
+        body.light-theme header { background: rgba(248, 250, 252, 0.85); }
+        body.sepia-theme header { background: rgba(251, 240, 217, 0.85); }
 
-        body.light-theme header {
-            background: rgba(248, 250, 252, 0.85);
-        }
-        body.sepia-theme header {
-            background: rgba(251, 240, 217, 0.85);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
+        .brand { display: flex; align-items: center; gap: 10px; }
         .brand-icon {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
+            width: 34px; height: 34px; border-radius: 10px;
             background: var(--accent-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
         }
-
-        .brand-text h1 {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: -0.2px;
-        }
-        .brand-text p {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .brand-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+        .brand-text p { font-size: 11px; color: var(--text-muted); }
 
         .btn-icon {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 15px;
-            transition: all 0.2s;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            color: var(--text-primary); width: 36px; height: 36px;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 15px; transition: all 0.2s;
         }
-        .btn-icon:active {
-            transform: scale(0.94);
-        }
+        .btn-icon:active { transform: scale(0.94); }
 
-        /* Main Container */
-        .container {
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 18px 16px 80px;
-        }
+        .container { max-width: 680px; margin: 0 auto; padding: 18px 16px 80px; }
 
-        /* Hero Banner */
         .hero-banner {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
             border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
+            border-radius: 18px; padding: 20px; margin-bottom: 20px;
+            position: relative; overflow: hidden;
         }
         .hero-banner::after {
-            content: '';
-            position: absolute;
-            top: -40px;
-            right: -40px;
-            width: 140px;
-            height: 140px;
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 140px; height: 140px;
             background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, transparent 70%);
             border-radius: 50%;
         }
         .hero-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #ec4899;
-            background: rgba(236, 72, 153, 0.12);
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-bottom: 10px;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: #ec4899; background: rgba(236, 72, 153, 0.12);
+            padding: 4px 10px; border-radius: 20px; margin-bottom: 10px;
         }
-        .hero-title {
-            font-size: 18px;
-            font-weight: 800;
-            line-height: 1.35;
-            margin-bottom: 8px;
+        .hero-title { font-size: 18px; font-weight: 800; line-height: 1.35; margin-bottom: 8px; }
+        .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+        /* Filter Pills */
+        .filter-scroll {
+            display: flex; gap: 8px; margin-bottom: 20px;
+            overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
         }
-        .hero-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-pill {
+            padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .filter-pill.active {
+            background: var(--accent); color: #ffffff; border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
         }
 
-        /* Section Title */
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-        .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Featured Book Card */
+        /* Book Cards */
+        .book-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
         .featured-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 18px;
-            display: flex;
-            gap: 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-            margin-bottom: 28px;
-            position: relative;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 20px; padding: 16px; display: flex; gap: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
+        .featured-card:hover { border-color: rgba(99, 102, 241, 0.4); }
 
         .book-cover-wrap {
-            flex-shrink: 0;
-            width: 120px;
-            height: 175px;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
+            flex-shrink: 0; width: 110px; height: 165px; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1); background: #111;
         }
-        .book-cover {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
+        .book-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        .book-details {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex: 1;
-        }
-
+        .book-details { display: flex; flex-direction: column; justify-content: space-between; flex: 1; }
         .book-badge {
-            display: inline-block;
-            align-self: flex-start;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 6px;
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--gold);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            margin-bottom: 6px;
+            display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+            padding: 3px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.15);
+            color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); margin-bottom: 4px;
         }
-
-        .book-title {
-            font-size: 17px;
-            font-weight: 800;
-            line-height: 1.3;
-            margin-bottom: 4px;
-        }
-
-        .book-subtitle {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
+        .book-title { font-size: 16px; font-weight: 800; line-height: 1.3; margin-bottom: 4px; }
+        .book-subtitle { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.4; }
         .book-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 10px; font-size: 11px;
+            color: var(--text-muted); margin-bottom: 10px;
         }
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 8px;
-            margin-top: auto;
-        }
-
+        .btn-group { display: flex; gap: 8px; margin-top: auto; }
         .btn {
-            flex: 1;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.2s;
-            text-decoration: none;
+            flex: 1; padding: 9px 12px; border-radius: 10px; font-size: 12px; font-weight: 700;
+            border: none; cursor: pointer; display: inline-flex; align-items: center;
+            justify-content: center; gap: 5px; transition: all 0.2s;
         }
-        .btn:active {
-            transform: scale(0.97);
-        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent-gradient); color: #ffffff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); }
+        .btn-outline { background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); }
 
-        .btn-primary {
-            background: var(--accent-gradient);
-            color: #ffffff;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-outline {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-        }
-
-        /* Coming Soon Shelf */
-        .shelf-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
+        /* Upcoming Shelf */
+        .shelf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .shelf-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 10px;
-            text-align: center;
-            opacity: 0.85;
-            position: relative;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 10px; text-align: center; opacity: 0.85; position: relative;
         }
         .shelf-item-cover {
-            width: 100%;
-            height: 110px;
-            border-radius: 8px;
+            width: 100%; height: 105px; border-radius: 8px;
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+            margin-bottom: 8px; border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .shelf-item-title {
-            font-size: 12px;
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 2px;
-        }
-        .shelf-item-tag {
-            font-size: 10px;
-            color: var(--text-muted);
-        }
+        .shelf-item-title { font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shelf-item-tag { font-size: 9px; color: var(--text-muted); }
         .badge-soon {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background: rgba(99, 102, 241, 0.2);
-            color: #818cf8;
-            font-size: 9px;
-            font-weight: 700;
-            padding: 2px 5px;
-            border-radius: 4px;
+            position: absolute; top: 6px; right: 6px; background: rgba(99, 102, 241, 0.2);
+            color: #818cf8; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 4px;
         }
 
         /* ══════════════════════════════════════════
            READER VIEW
         ══════════════════════════════════════════ */
-        #view-reader {
-            display: none;
-        }
-
+        #view-reader { display: none; }
         .reader-header {
-            position: sticky;
-            top: 0;
-            z-index: 60;
-            background: rgba(15, 17, 23, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            position: sticky; top: 0; z-index: 60;
+            background: rgba(15, 17, 23, 0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); padding: 10px 14px;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        body.light-theme .reader-header {
-            background: rgba(248, 250, 252, 0.95);
-        }
-        body.sepia-theme .reader-header {
-            background: rgba(251, 240, 217, 0.95);
-        }
+        body.light-theme .reader-header { background: rgba(248, 250, 252, 0.95); }
+        body.sepia-theme .reader-header { background: rgba(251, 240, 217, 0.95); }
 
-        .progress-bar-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: transparent;
-            z-index: 100;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--accent-gradient);
-            transition: width 0.1s ease;
-        }
-
-        .reader-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .progress-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 100; }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-gradient); }
 
         .chapter-select {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 600;
-            outline: none;
-            max-width: 160px;
+            background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border);
+            padding: 6px 10px; border-radius: 8px; font-family: inherit; font-size: 12px; font-weight: 600;
+            outline: none; max-width: 170px;
         }
+        .reader-controls { display: flex; align-items: center; gap: 6px; }
 
         .reader-content {
-            max-width: 620px;
-            margin: 0 auto;
-            padding: 24px 18px 100px;
-            font-size: 17px;
-            line-height: 1.85;
-            letter-spacing: 0.1px;
+            max-width: 620px; margin: 0 auto; padding: 24px 18px 100px;
+            font-size: 17px; line-height: 1.85;
         }
-
         .reader-book-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px dashed var(--border);
+            text-align: center; margin-bottom: 26px; padding-bottom: 18px; border-bottom: 1px dashed var(--border);
         }
-        .reader-book-header h2 {
-            font-size: 22px;
-            font-weight: 800;
-            margin-bottom: 6px;
-        }
-        .reader-book-header p {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
+        .reader-book-header h2 { font-size: 21px; font-weight: 800; margin-bottom: 4px; }
+        .reader-book-header p { font-size: 12px; color: var(--text-secondary); }
 
         .reader-chapter-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--accent);
-            margin: 32px 0 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 19px; font-weight: 800; color: var(--accent);
+            margin: 30px 0 14px;
         }
+        .reader-content p { margin-bottom: 18px; text-align: justify; }
 
-        .reader-content p {
-            margin-bottom: 18px;
-            text-align: justify;
-            text-justify: inter-word;
-        }
-
-        .quote-box {
-            background: rgba(99, 102, 241, 0.08);
-            border-left: 4px solid var(--accent);
-            padding: 14px 16px;
-            border-radius: 0 12px 12px 0;
-            margin: 22px 0;
-            font-style: italic;
-            color: var(--text-primary);
-        }
-
-        /* Paywall Block in Reader */
+        /* Paywall */
         .paywall-box {
             background: linear-gradient(135deg, rgba(32, 38, 55, 0.9) 0%, rgba(20, 24, 35, 0.95) 100%);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            border-radius: 18px;
-            padding: 24px 20px;
-            text-align: center;
-            margin: 40px 0 20px;
+            border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 18px;
+            padding: 24px 20px; text-align: center; margin: 40px 0 20px;
             box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
-            position: relative;
         }
         .paywall-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--gold);
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 14px;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .paywall-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-        .paywall-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 18px;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(245, 158, 11, 0.15); color: var(--gold);
+            font-size: 22px; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px; border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
         /* Modal */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 200;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+            z-index: 200; display: none; align-items: flex-end; justify-content: center;
         }
         .modal-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 24px 24px 0 0;
-            width: 100%;
-            max-width: 540px;
-            padding: 24px 20px 36px;
-            animation: slideUp 0.25s ease-out;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 24px 24px 0 0; width: 100%; max-width: 540px;
+            padding: 24px 20px 36px; animation: slideUp 0.25s ease-out;
         }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-        .modal-title {
-            font-size: 18px;
-            font-weight: 800;
-        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .bank-item {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .bank-name {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-        .bank-acc {
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            user-select: all;
-        }
+        .bank-name { font-size: 11px; color: var(--text-muted); }
+        .bank-acc { font-size: 14px; font-weight: 700; user-select: all; }
     </style>
 </head>
 <body>
 
-    <!-- Scroll Progress for Reader -->
     <div class="progress-bar-container">
         <div id="readingProgress" class="progress-bar-fill"></div>
     </div>
 
     <!-- ══════════════════════════════════════════
-         VIEW 1: LIBRARY HOME
+         VIEW 1: STORE / LIBRARY
     ══════════════════════════════════════════ -->
     <div id="view-home">
         <header>
@@ -597,65 +284,94 @@
                     <p>ዲጂታል መጽሐፍት ቤት</p>
                 </div>
             </div>
-            <div class="header-actions">
-                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
-            </div>
+            <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
         </header>
 
         <div class="container">
-            <!-- Hero Announcement Banner -->
             <div class="hero-banner">
                 <div class="hero-tag">✨ የዕለቱ ምርጥ ስጦታ</div>
                 <h2 class="hero-title">የዓለማችን ተፅዕኖ ፈጣሪ የስነ-ልቦና መጽሐፍት</h2>
                 <p class="hero-desc">ጥልቅ ግንዛቤ፣ የተግባር መመሪያ እና የህይወት ለውጥ የሚያመጡ መጽሐፍትን በደቂቃዎች ውስጥ ያንብቡ።</p>
             </div>
 
-            <!-- Section Title -->
-            <div class="section-header">
-                <div class="section-title">
-                    <span>🔥 ተለይተው የቀረቡ (Featured)</span>
-                </div>
+            <!-- Category Filter Pills -->
+            <div class="filter-scroll">
+                <div class="filter-pill active" onclick="filterCategory('all', this)">🔥 ሁሉም (All)</div>
+                <div class="filter-pill" onclick="filterCategory('psychology', this)">🧠 ግንኙነት & ስነ-ልቦና</div>
+                <div class="filter-pill" onclick="filterCategory('productivity', this)">⏱️ ጊዜ & ቢዝነስ</div>
             </div>
 
-            <!-- Featured Book 1 -->
-            <div class="featured-card">
-                <div class="book-cover-wrap">
-                    <img src="/static/covers/narcissist_trap.jpg" alt="የናርሲሲስቶች ወጥመድ" class="book-cover">
-                </div>
-                <div class="book-details">
-                    <div>
-                        <div class="book-badge">⭐ 4.9 | 274 ገጾች</div>
-                        <h3 class="book-title">የናርሲሲስቶች ወጥመድ</h3>
-                        <p class="book-subtitle">ከመርዛማ ግንኙነት የማምለጫ ጥበብ</p>
-                        <div class="book-meta">
-                            <span class="meta-item">👤 ዶ/ር ራማኒ</span>
-                            <span class="meta-item">📖 9 ምዕራፎች</span>
+            <div class="section-header" style="margin-bottom: 12px; font-size: 15px; font-weight: 700;">
+                <span>📚 የሚገኙ መጽሐፍት (Available Books)</span>
+            </div>
+
+            <!-- Book List -->
+            <div class="book-list">
+                <!-- Book 1: Narcissist Trap -->
+                <div class="featured-card" data-category="psychology">
+                    <div class="book-cover-wrap">
+                        <img src="/static/covers/narcissist_trap.jpg" alt="የናርሲሲስቶች ወጥመድ" class="book-cover">
+                    </div>
+                    <div class="book-details">
+                        <div>
+                            <div class="book-badge">🔥 በጣም ተነባቢ | 274 ገጾች</div>
+                            <h3 class="book-title">የናርሲሲስቶች ወጥመድ</h3>
+                            <p class="book-subtitle">ከመርዛማ ግንኙነት የማምለጫ ጥበብ</p>
+                            <div class="book-meta">
+                                <span>👤 ዶ/ር ራማኒ</span>
+                                <span>⭐ 4.9 (1.2k)</span>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="openReader('narcissist')">
+                                <span>📖 በነፃ አንብብ</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="openPayModal('የናርሲሲስቶች ወጥመድ')">
+                                <span>💎 299 ብር</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="openReader('meqdim')">
-                            <span>📖 በነፃ አንብብ</span>
-                        </button>
-                        <button class="btn btn-outline" onclick="openPayModal()">
-                            <span>💎 299 ብር</span>
-                        </button>
+                </div>
+
+                <!-- Book 2: Buy Back Your Time -->
+                <div class="featured-card" data-category="productivity">
+                    <div class="book-cover-wrap">
+                        <img src="/static/covers/buy_back_time.png" alt="ጊዜህን አስመልስ" class="book-cover">
+                    </div>
+                    <div class="book-details">
+                        <div>
+                            <div class="book-badge" style="color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);">
+                                ⚡ አዲስ የተጨመረ | 213 ገጾች
+                            </div>
+                            <h3 class="book-title">ጊዜህን አስመልስ (Buy Back Your Time)</h3>
+                            <p class="book-subtitle">ንግድህን እያሳደግክ ነጻነትህን የምታገኝበት ጥበብ</p>
+                            <div class="book-meta">
+                                <span>👤 ዳን ማርቴል</span>
+                                <span>⭐ 4.8 (890)</span>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="openReader('buyback')">
+                                <span>📖 በነፃ አንብብ</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="openPayModal('ጊዜህን አስመልስ')">
+                                <span>💎 299 ብር</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Upcoming Books Shelf -->
-            <div class="section-header">
-                <div class="section-title">
-                    <span>📚 በቅርብ ቀን የሚመጡ (Coming Soon)</span>
-                </div>
+            <!-- Coming Soon Shelf -->
+            <div class="section-header" style="margin-bottom: 12px; font-size: 15px; font-weight: 700;">
+                <span>🚀 በቅርብ ቀን የሚመጡ (Coming Soon)</span>
             </div>
-
             <div class="shelf-grid">
                 <div class="shelf-item">
                     <span class="badge-soon">Soon</span>
                     <div class="shelf-item-cover">⚡</div>
                     <div class="shelf-item-title">አቶሚክ ሓቢትስ</div>
-                    <div class="shelf-item-tag">ልማድ እና ስኬት</div>
+                    <div class="shelf-item-tag">ልማድ & ስኬት</div>
                 </div>
                 <div class="shelf-item">
                     <span class="badge-soon">Soon</span>
@@ -680,47 +396,29 @@
     <div id="view-reader">
         <div class="reader-header">
             <button class="btn-icon" onclick="closeReader()" title="Back">‹</button>
-            <select id="chapterDropdown" class="chapter-select" onchange="jumpChapter(this.value)">
-                <option value="meqdim">መቅድም (Foreword)</option>
-                <option value="megbiya">መግቢያ (Introduction)</option>
-                <option value="ch1">ምዕራፍ 1 (Chapter 1)</option>
-            </select>
+            <select id="chapterDropdown" class="chapter-select" onchange="jumpChapter(this.value)"></select>
             <div class="reader-controls">
-                <button class="btn-icon" onclick="adjustFontSize(-1)" title="Smaller font">A-</button>
-                <button class="btn-icon" onclick="adjustFontSize(1)" title="Larger font">A+</button>
-                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
+                <button class="btn-icon" onclick="adjustFontSize(-1)">A-</button>
+                <button class="btn-icon" onclick="adjustFontSize(1)">A+</button>
+                <button class="btn-icon" onclick="toggleTheme()">🌓</button>
             </div>
         </div>
 
         <div class="reader-content" id="readerBody">
             <div class="reader-book-header">
-                <h2>የናርሲሲስቶች ወጥመድ</h2>
-                <p>ደራሲ፦ ዶ/ር ራማኒ ዱርቫሱላ | ትርጉም፦ የአዕምሮ ምግቦች እና Baya Books</p>
+                <h2 id="readerBookTitle">የመጽሐፍ ርዕስ</h2>
+                <p id="readerBookAuthor">ደራሲ</p>
             </div>
 
-            <!-- Chapter Sections -->
-            <div id="sec-meqdim">
-                <h3 class="reader-chapter-title">📖 መቅድም</h3>
-                <div class="quote-box">"ውዷ እህቴ፣ እስቲ ይህን ታሪክ ላጫውትሽ..."</div>
-                <p>መቅድም</p><p>"ውዷ እህቴ፣ እስቲ ይህን ታሪክ ላጫውትሽ።"</p><p>ከዕለታት አንድ ቀን፣ ማዶ ለመሻገር ፈልጎ ወንዝ ዳር የተቀመጠ አንድ</p><p>ጊንጥ ነበር። ወንዙ ሰፊ ነበር፤ ተራምዶ ለማለፍ ድንጋዮች አልነበሩም።</p><p>ስለዚህ የተለያዩ የውኃ ወፎችን፣ ዳክዬዎችንና አባ ኮዳዎችን፣ ጀርባቸው</p><p>ላይ አዝለው እንዲያሻግሩት ተማጸነ። እነሱ ግን የጊንጡን ተንኮልና መርዝ</p><p>ጠንቅቀው ስለሚያውቁ ጥያቄውን ውድቅ አደረጉት። በዚህ መሐል፣ አንዲት</p><p>እጅግ ውብ የሆነች ዝይ በውኃው ላይ ስትንሳፈፍ አየና፣ ያላትን ደግነት</p><p>ተጠቅሞ ማባበል ጀመረ።</p><p>"እባክሽ ቆንጆዋ ዝይ፣ ማዶ አሻግሪኝ። እንዳንቺ ያለ ውብ ፍጡር ላይ ጉዳት</p><p>አደርሳለሁ ብዬ ማሰብ እንኳን አልችልም፤ ደግሞም አይጠቅመኝም። እኔ</p><p>የምፈልገው ወንዙን መሻገር ብቻ ነው" አላት።</p><p>ዝይዋ አመነታች። ጊንጡ ግን ልብን የሚያባብልና አሳማኝ አንደበት ነበረው።</p><p>'አሁን እዚሁ ሊነድፈኝ ይችል ነበር፣ ግን አላደረገም፤ ታዲያ ምን ሊፈጠር</p><p>ይችላል? ደግሞም ወንዙን ለመሻገር የሚፈጀው ጥቂት ደቂቃ ብቻ ነው'</p><p>ብላ አሰበችና ልትረዳው ተስማማች።</p><p>ወንዙን እያቋረጡ ሳለ፣ ጊንጡ ምስጋናውን እያዥጎደጎደ ከሌሎቹ ራስ ወዳድ</p><p>ወፎች ይልቅ የእሷን ደግነትና ውበት ማድነቁን ቀጠለ። ልክ ማዶ</p><p>እንደደረሱና ሊዘል ሲዘጋጅ ግን፣ ጅራቱን ቀና አድርጎ በኃይል ነደፋት።</p><p>ዝይዋ በሕመም እየተሠቃየችና እያለቀሰች፣ ያ ሁሉ ማባበል፣ ያ ሁሉ</p><p>ምክንያታዊ ማብራሪያና ቃል ኪዳን የት ገብቶ ይህን እንዳደረገ ሊገባት</p><p>አልቻለም።</p><p>"ለምን ነደፍከኝ?" ስትል በድንጋጤ ጠየቀችው።</p><p>እሱም ከወንዙ ዳርቻ ሆኖ ተመለከታትና፣ "እኔ እኮ ጊንጥ ነኝ። ተፈጥሮዬ</p><p>ይኸው ነው" አላት።</p><p>♦♦♦</p><p>በሥነ ልቦና ሕክምና ሥራዬ፣ ራስ ወዳድ (ናርሲሲስት) ወይም ሰውን</p><p>ከሚበዘብዙ መርዛማ ሰዎች ጋር የፍቅር ግንኙነት ውስጥ ተተብትበው</p><p>ለሚመጡ ሴቶች፣ ይህ ተረት እጅግ ልብ የሚነካ ትልቅ ማስተማሪያ ነው።</p><p>የእኔ እህት፣ አንቺም ልክ እንደ ዝይዋ ደጋግመሽ ትነደፊያለሽ። አደጋው</p><p>እየመጣ መሆኑን እያወቅሽም እንኳን፣ 'ዘንድሮ የተለየ ይሆናል' ብለሽ</p><p>ራስሽን ታሳምኛለሽ። የውሻ ጅራት በቱቦ ቢያስገቡት አይቀናም</p><p>እንደሚባለው፣ ውጤቱ ሁልጊዜም ያው ነው። ከአጋርሽ የሚመጣው መጥፎ</p><p>ባሕርይና ቸልተኝነት እየባሰ ይሄዳል፤ በግንኙነትሽ ለሚፈጠረው ችግር ሁሉ</p><p>አንቺው ራስሽን ትወቅሻለሽ፤ ያ ጊንጥ የሆነው አጋርሽ ግን መቼም ባሕርዩን</p><p>አይቀይርም።</p><p>በዚህ አሳዛኝ ተረት ውስጥ ያለው ጊንጥ፣ ቢያንስ የራሱን ማንነት ጠንቅቆ</p><p>ያውቃል። ከተራ ራስ ወዳድ ሰዎች የተሻለ ግንዛቤ አለው። ከራስ ወዳድ</p><p>ሰዎች ጋር በፍቅር ለሚወድቁ ሴቶች፣ ቢያንስ የራሳቸውን መጥፎ ባሕርይ</p><p>አምነው የሚቀበሉ አጋሮችን ማግኘት ትልቅ ዕድል በሆነ ነበር።</p><p>የሚያሳዝነው ግን፣ የሰው ልጅ ራስ ወዳዶች እንደ ጊንጡ የራሳቸውን ችግር</p><p>አምነው አይቀበሉም። ይልቁንም፣ ለውስጣዊ ባዶነታቸውና ለስሕተታቸው</p><p>ሌሎች ሰዎችን በመውቀስ ረገድ እጅግ የተካኑ ናቸው። በተረቱ ላይ ያለው</p><p>ጊንጥ የሰው ልጅ ባሕርይ ቢኖረው ኖሮ፣ 'ማን አድርጊ ብሎሽ አሻገርሽኝ?</p><p>መጀመሪያውኑም እምቢ ማለት ትችይ አልነበረም እንዴ?' ብሎ ዝይዋን</p><p>በወቀሳት ነበር።</p>
-            </div>
+            <!-- Dynamic Chapter Content Injected Here -->
+            <div id="readerChapters"></div>
 
-            <div id="sec-megbiya" style="margin-top: 40px;">
-                <h3 class="reader-chapter-title">🔍 መግቢያ — ይህ የአንቺ ታሪክ ይሆን?</h3>
-                <p>መግቢያ</p><p>ይህ የአንቺ ታሪክ ይሆን?</p><p>ሬቸልና ጆን የተዋወቁት ዩኒቨርሲቲና የሕክምና ትምህርታቸውን</p><p>እንዳጠናቀቁ፣ በጋራ ጓደኞቻቸው አማካኝነት ነበር። አዲስ ዲግሪያቸውንና</p><p>ሥራቸውን ይዘው፣ ከጓደኞቻቸው ጋር በሚያሳልፉት አስደሳች ጊዜ፣ ዓለም</p><p>በፊታቸው እጅግ ብሩህ ነበረች። ሬቸል ረጅም፣ ውብና በማርኬቲንግ ሥራዋ</p><p>እጅግ ስኬታማ የነበረች ሴት ስትሆን፣ የሰዎችን ትኩረት መሳብ</p><p>አያቅታትም ነበር። ጆን ደግሞ ገና ሥራ የጀመረ ሐኪም ነበር፤ ብልህ፣</p><p>መልከ መልካም፣ ማራኪና ቀልደኛ። እንደ ንግሥት ይንከባከባት ጀመር።</p><p>ጥሩ መኪና አለው። ምርጥ ሥራና ብሩህ ተስፋ አለው። አጥብቆ</p><p>ይፈልጋታል። ምርጥ ምግብ ቤቶች ይወስዳታል፣ አሊያም አብረው ምግብ</p><p>ያበስላሉ፤ ዕረፍት ሲያገኝ ዘና ያደርጋታል፣ ደግሞም እጅግ ልብ የሚሰልብ</p><p>አንደበት አለው። በቃ እግሯን ከመሬት አነሳት ልበልሽ።</p><p>ነገር ግን ጆን በራሱ ከመጠን በላይ የሚተማመን ሰው ነበር፤ በጥቂት ወራት</p><p>ውስጥ ደግሞ ፍጹም ቸልተኛ መሆን ጀመረ። ከተቀጣጠሩበት ቦታ በሰዓቱ</p><p>አይገኝም፣ ቢመጣም በጣም ያረፍዳል። 'ሥራ የሚበዛብኝ ሐኪም ነኝ'</p><p>ይላል። ሬቸል ስለ ሥራዋ ስታወራው አይሰማትም። 'የሐኪም ሥራ እኮ</p><p>አያልቅም' በሚል ሰበብ ራሷን ታሳምናለች። መጀመሪያ አካባቢ ቤተሰቦቿንና</p><p>ጓደኞቿን ለማስደሰት ይጥር የነበረው ሰው፣ አሁን ምንም ደንታ</p><p>አልሰጠውም። እሷም፣ 'ሥራ በዝቶበት ነው እንጂ ይወደኛል፤ ትንሽ ጊዜ</p><p>ሲያገኝ ከእኔ ጋር መሆን ነው የሚፈልገው' እያለች ሰበብ ትፈልግለታለች።</p><p>የሥራ ቦታ ጭንቀቷን ልታዋየው ስትሞክር ያዛጋል፣ ስልኩን ይጎረጉራል።</p><p>'ምክንያቱም አስፈላጊ ስልክ ሊደወልለት የሚችል ሥራ የሚበዛበት ቀዶ</p><p>ጥገና ሐኪም ነውና' ብላ ታልፈዋለች።</p><p>ቢሆንም ግን ጥሩ ቦታዎች ይወጣሉ፣ ይዝናናሉ፣ የፍቅር ሕይወታቸውም</p><p>ያምራል፤ እናም ብዙም ሳይቆይ አብረው መኖር እንዲጀምሩ ጠየቃት።</p><p>የቤቷ የኪራይ ውል አልቆ ስለነበርና ዕድሜዋም ሃያ ዘጠኝ ስለሞላ፣ ጊዜው</p><p>አሁን ነው ብላ ተስማማች።</p><p>አብረው መኖር ሲጀምሩ፣ ጆን በቤቱ ውስጥ ትላልቅ ለውጦች እንዲደረጉ</p><p>እንደማይፈልግ ነገራት። እሱ የለመደው የራሱ አኗኗር አለው። ነገር ግን</p><p>የሴት እጅ ቢያርፍበት ደስ ይለኛል አላት፤ ይህ ማለት ደግሞ የጽዳት</p><p>ሠራተኛዋ በማትመጣበት ቀን ቤቱን እንድታጸዳው መሆኑን ቆየት ብሎ</p><p>ገባት። ቤቱ እሱ በሚፈልገው ልክ እንዲሆንለት ደፋ ቀና ትል ጀመር።</p><p>አንቺም እንዲህ ራስሽን ጥለሽ ለእሱ ስትሮጪ ታይቶሽ ያውቃል?</p><p>ከእሱ ጋር ከመገናኘቷ በፊትና በፍቅራቸው መባቻ ላይ፣ ሬቸል ነጻና ዘና</p><p>ያለች ሴት ነበረች። ከሥራ ስትመጣ ጫማዋን ሳሎን መሐል አውልቃ</p><p>የምትጥል፣ ልብሷ መሬት ላይ ቢወድቅ ግድ የማይሰጣት ዓይነት ሴት</p><p>ነበረች። አሁን ግን ሁልጊዜ የተወጠረችና ሁሉም ነገር እሱ እንደሚፈልገው</p><p>መሆኑን የምትቆጣጠር ሆነች። ቀስ በቀስ ግን ሕይወታቸው መስመር ያዘ።</p><p>እራት ትሠራለታለች፣ አብረው የሚያሳልፉት ጊዜም አስደሳች ነበር። አልፎ</p><p>አልፎ የሚያሳየው ቅዝቃዜ፣ ሐሳቡ መበተን፣ 'ብቻዬን መሆን እፈልጋለሁ'</p><p>ማለቱና ሕይወታቸው በእሱ መንገድ ብቻ እንዲመራ ማድረጉ፣ ምቾት</p><p>ያለው ሕይወት ከሚሰጣት ሥራ የሚበዛበት ሐኪም የሚጠበቅ ነው በሚል</p><p>ሰበብ ይድበሰበሳል። እሷም በግንኙነታቸው ጥሩ ጎን ላይ ብቻ አተኮረች።</p><p>ሬቸል ሥራዋን ትወደው ነበር። የእሷ የቆይታ ሰዓት ቢረዝምም፣ የእሱ</p><p>ይበልጥ ስለሚረዝም ጆን ቅር አይለውም። ሁለቱም ጥሩ ገቢ ስለነበራቸው</p><p>ኑሮአቸው የተደላደለ ነበር። የፈለገችውን መግዛት፣ ከጓደኞቿ ጋር ያለ</p><p>ምንም ሥጋት ወጥታ ማምሸት ትችላለች። ጊዜ ሲያገኙ እንግዶችን እየጠሩ</p><p>የተንደላቀቀ ሕይወታቸውን ያሳያሉ።</p><p>የሬቸል እናትና ጓደኞቿ ያደንቋታል፣ አንዳንዶቹም ይቀኑባት ነበር። ኑሮዋ</p><p>እጅግ የተደላደለና የሚያስቀና ነበር። እናቷ ደጋግማ፣ "ይህን የመሰለ ባል</p><p>አታገኚም፣ አጥብቀሽ ያዢው፣ ኑሮሽን ያደላድለዋል፣ ቋሚ ሥራ አለው፣</p><p>ደስተኛ ነው፣ መልከ መልካም ነው" ትላታለች። ጓደኞቿ እያገቡ ስለነበር፣</p><p>የትዳር ሽታ በአየሩ ላይ ይንሳፈፍ ነበር። አልፎ አልፎ የጓደኞቿ የፍቅር</p><p>ግንኙነት ሲፈርስና፣ 'ዕድሜዬ ሄደ እንደገና አዲስ ሰው መፈለግ አለብኝ'</p><p>ብለው ሲጨነቁ ስታይ፣ እሷም መጥፎ ምልክቶችን እያየች እንዳላየች</p><p>ለማለፍ ትገደዳለች። ያገኘችውን ላለማጣት ስትል ባለው ነገር ላይ ብቻ</p><p>ትኩረት ማድረግን መረጠች።</p><p>በዚያው ክረምት፣ ከተዋወቁ ከአንድ ዓመት በኋላ፣ ጆን ለሥራ ጉዳይ ወደ</p><p>ደቡብ አፍሪካ ኬፕታውን ይዟት ሄደ፤ እዚያም የጋብቻ ጥያቄ አቀረበላት።</p><p>ቀለበቱ ፊልም ላይ እንጂ በእውን የማይገኝ ዓይነት እጅግ ውድ ነበር።</p><p>ከዚያም በሚገርም የሳፋሪ ጉብኝት ዘና አደረጋት። ጉዞው ምርጥ ምግብ፣</p><p>ውድ ወይንና ሞቅ ያለ የፍቅር ጊዜ የተሞላበት፣ እሷም በሕልም ዓለም</p><p>ውስጥ ያለች ያህል የተሰማት ጊዜ ነበር። በእርግጥ የዚህ ተረት ልዑል</p><p>አልፎ አልፎ ቁጡ ቢሆንም። በሆቴሎች፣ በጉብኝት ቦታዎችና በአውሮፕላን</p><p>ማረፊያ ለሰዎች የሚያሳየውን ትዕቢትና ንቀት ፊቷን በማዞር ለማለፍ</p><p>ሞከረች። ቸልተኛ፣ ምቀኛና ክፉ ሲሆንባት፣ ግራ እጇ ላይ ያጠለቀችውን</p><p>ውድ ቀለበት እያየች፣ 'በእውነት ባይወደኝ ኖሮ ይህን ያህል ቃል</p><p>አይገባልኝም ነበር' ብላ ራሷን ታሳምናለች። ደግሞስ ሰው ሁልጊዜ እንደ</p><p>ጠዋት ፀሐይ ብሩህና ፍጹም ሊሆን አይችልም፣ አይደለም እንዴ?</p><p>ለቤተሰብና ለጓደኛ ነገሩ፣ ቀለበቷን እያሳዩ ደስታቸውን አጋሩ። ወደ</p><p>ቀድሞው የቤት ሕይወታቸው ተመልሰው፣ የሠርግ ቀን መቁረጥ ጀመሩ።</p><p>እናቷና ጓደኞቿ፣ ታላቅ ፍቅር፣ ምርጥ ሮሚዮና ውድ ቀለበት ያገኘች</p><p>ዕድለኛ ሴት እንደሆነች ደጋግመው ነገሯት።</p><p>ይሁን እንጂ ጆን ማምሸት ጀመረ፤ 'የሐኪም ሥራ አይገመትም' በሚል</p><p>ሰበብ ቢሆንም፣ አልፎ አልፎ ጠጥቶ እንደሚመጣ ያስታውቅ ነበር። አንድ</p><p>ቀን ማታ መታጠቢያ ቤት ውስጥ፣ ጀርባው ላይ በሰው ጥፍር የተቧጨረ</p><p>የሚመስል ምልክት አየች። በስልኩና በኮምፒውተሩ ላይ እጅግ ምሥጢራዊ</p><p>ሆነ፤ መታጠቢያ ቤት እንኳን ሲገባ ይዟቸው ይገባል። እሷ ወደ ክፍል</p><p>ስትገባ ኮምፒውተሩን ቶሎ ይዘጋና በፈገግታ፣ "የእኔ ፍቅር፣ ከሥራዬ ላይ</p><p>ቀና እንድል ስላደረግሽኝ አመሰግናለሁ" ይላታል።</p><p>አንድ ቅዳሜ ሬቸል የጆንን ኮት ወደ ልብስ ማጠቢያ ልትወስድ ኪሱን</p><p>ስትፈትሽ፣ ሥራ ላይ ነኝ ብሎ ካመሸበት ቀን የተቆረጠ ደረሰኝ አገኘች።</p><p>ደረሰኙ የአካባቢው መጠጥ ቤት ሲሆን፣ በሰዓቱ እሷ ስልክ ደውላ 'ታካሚ</p><p>እያየሁ ነው' ካላት ሰዓት ጋር አንድ ዓይነት ነበር፤ ለካስ ያኔ ሒሳብ እየከፈለ ነበር።</p><p>ስትጠይቀው እጅግ ተቆጣ። "እንዴት እንዲህ ብለሽ ትጠረጥሪኛለሽ? ስንት</p><p>ደክሜ፣ ስንት ለፍቼ! ያኔ እኮ ጆ ሞርጋን ሆስፒታል መጥቶ ወረቀቶቹን</p><p>ስቀበል የእሱ ደረሰኝ አብሮ ገብቶ ነው። ይኸውልሽ፣ የሥራ መርሐ ግብሬን</p><p>እይ። ምን ነካሽ? አንቺ በራስ መተማመን ስለሌለሽ ብቻ ይህንን ሁሉ</p><p>የገነባነውን ሕይወት ልታበላሽው ነው?" እያለ ጮኸባት። አንቺንም እንዲህ</p><p>አድርጎሽ ያውቃል? በገዛ ጥፋቱ አንቺን ጥፋተኛ አድርጎ፣ እውነታውን</p><p>አዛብቶ እንድትጠራጠሪ አድርጎሽ ያውቃል?</p><p>ተንበርክካ ማልቀስ ጀመረች፤ ይቅርታ ጠየቀች። የገነቡትን ማጣት</p><p>አልፈለገችም። 'ከዚህ የተሻለ አታገኚም' ያለቻት የእናቷ ቃል ጆሮዋ ላይ</p><p>አቃጨለ። እሱን የመጠየቅ መብት እንደሌላት ተሰማት። ምንም እንኳን</p><p>ከጓደኞቹ ጋር ሊጠጣ ወጥቶ ባይነግራትም፣ እሱም ዕረፍት ያስፈልገዋል</p><p>ብላ ራሷን አሳመነች። ጥርጣሬ ግን ልቧን ይበላው ጀመር። አንዴ በራሷ</p><p>ትተማመን የነበረችው ጠንካራ ሴት፣ አሁን ራሷን መጠራጠር ጀመረች።</p><p>ስሜቷ የሆነ ነገር ልክ እንዳልሆነ ይነግራት ነበር፤ ጆን ግን ሁልጊዜ ጥያቄ</p><p>ባነሳች ቁጥር እብድ እንደሆነች እንዲሰማት ያደርጋታል። አልፎ አልፎ እሱ</p><p>ራሱ ሌላ ወንድ እንዳላት አድርጎ ይከሳታል።</p><p>ጆን ወደ ውጭ ሲወጡ ለሰዎች ጥሩ እንዳልሆነ ማስተዋል ጀመረች።</p><p>ሁልጊዜ ቀዳሚ መሆን ይፈልጋል፣ አስተናጋጆችን ይቆጣል፣ ትዕግሥት</p><p>የለውም። ይህ ባሕርዩ እጅግ የሚያሳፍር ቢሆንም፣ በዚያው ቅጽበት ደግሞ</p><p>ወደ እሱ አስጠግቶ ምን ያህል ቆንጆ እንደሆነች ይነግራታል። ግራ</p><p>የሚያጋባና ሰላም የሚነሳ ሕይወት ሆነባት።</p><p>ጊዜ እያለፈ ሲሄድ ማምሸቱ ቀጠለ፤ ሬቸልም ብቸኝነት ተሰማት። በሰዓቱ</p><p>ሲመጣም፣ ወጥተው እንዲዝናኑ ወይም እራት ተዘጋጅቶ እንዲጠብቀው</p><p>ይፈልጋል። ነገር ግን ሰዓት ነግሯት ቢወጣም፣ በሰዓቱ የመምጣቱ ዕድል</p><p>ሃምሳ በሃምሳ ስለሆነ፣ ብዙ ጊዜ የሠራችውን እራት ብቻዋን ትበላለች።</p><p>በወር አንዴ ባሕርዩን ስትነግረው፣ ስለ ራስ ወዳድነቷ ይጮህባታል። "አንቺ</p><p>እኮ ተንደላቅቀሽ ነው የምትኖሪው፤ እኔ ነኝ የምለፋው፣ ጂፒኤስ</p><p>ልታስገጥሚብኝ ነው እንዴ?" እያለ ያዋርዳታል። አሊያም ደግሞ ጥያቄውን</p><p>ወደ እሷ አዙሮ፣ "ለምንድነው ይህን ሁሉ ጥያቄ የምትጠይቂኝ? የሆነ</p><p>የምትደብቂው ነገር አለ እንዴ?" ይላታል።</p><p>በሕይወቷ ሌሎች ፈተናዎችም ነበሩ። የሥራ ቦታዋ ላይ የተፈጠረው ለውጥ</p><p>ውጥረት ፈጥሮባት ነበር፤ እህቷ ደግሞ የጡት ካንሰር ታመመች። ይህ</p><p>ሁሉ ሐዘን ቢጫናትም እሱ ምንም አይመስለውም። ስትነግረው</p><p>አይሰማትም፤ የባሰውን ደግሞ ለሥራዋ ችግር እሷኑ ይወቅሳታል።</p><p>የእህቷን ሕመም በተመለከተም፣ ሊያጽናናት ሲገባው በሕክምናው ዓለም</p><p>ይህ በሽታ ምን ያህል የመዳን እድል እንዳለው በቁጥር እየነገረ የጭንቀቷን</p><p>ጥልቀት ያቃልለዋል።</p><p>በእነዚህ ወራት ውስጥ ሬቸል የሠርጓን ዝግጅት እያጧጧፈች ነበር። ሠርጉ</p><p>እጅግ የደመቀ፣ ወጪ ያልተቆጠበበት፣ ምርጥ ልብስና ምግብ የተዘጋጀለት፣</p><p>ጓደኞቻቸው ከየቦታው የሚመጡበት ትልቅ ድግስ ነበር። ውሳኔ</p><p>የሚያስፈልጋቸው ብዙ ጉዳዮች ነበሩ፤ ጆን ግን ግማሽ ጊዜ አብሯት</p><p>ይሳተፋል፣ ግማሹን ጊዜ ደግሞ ምንም ደንታ አይሰጠውም። ባሕርዩ</p><p>በፍጹም አይገመትም። እሱ በሌለበት ውሳኔዎችን ስታሳልፍ፣ ቆይቶ</p><p>ይመጣና ሁሉንም አፍርሶ ይጮህባታል። እርዳኝ ስትለው የትም ሄዶ፣</p><p>መጨረሻ ላይ ለምን ይህን መረጥሽ ብሎ ይወቅሳታል። ትጠራጠራለች</p><p>ራሷን ትጠይቃለች</p><p>ግን ታጭታለች፤ ቀለበት አድርጋለች፣ ቤት አላት፣ የሠርግ ልብስ</p><p>ተዘጋጅቷል፣ ሥራዋ ጥሩ ነው፣ እጮኛዋም ስኬታማ ነው። ሕልሟን</p><p>እየኖረች እንደሆነ ለራሷ ትነግረዋለች። አንድ ቀን ማታ ሬቸል፣ በሥዕል</p><p>ጥበብ ስላላት ሕልምና በበጋው ወቅት ጣሊያን አገር ስላለው የሥልጠና</p><p>ፕሮግራም ለጆን አዋየችው። ለስድስት ሳምንት እዚያ ቤት ተከራይተው እሷ</p><p>ሥዕል ስትስል እሱም አብሯት ዕረፍት እንዲያደርግ ጠየቀችው። እሱ ግን</p><p>በሐሳቧ ላይ ሳቀባት፣ አሾፈባትም። ከሥራዋ ፈቃድ መውሰድ መፈለጓን</p><p>እንደ ስንፍና ቆጥሮ፣ ራሷን እንደ ሠዓሊ ማሰቧ አስቂኝ እንደሆነ ነገራት።</p><p>የእሱ ሥራ እጅግ አስፈላጊ ስለሆነ እሷን ተከትሎ ወደማይታወቅ መንደር</p><p>መሄድ እንደማይችል በንቀት ተናገረ። ሐሳቧ ምናልባት ተግባራዊ ላይሆን</p><p>ቢችልም፣ ጆን ግን እጅግ ሞኝና ጅል እንደሆነች አድርጎ ነበር ያዋረዳት።</p><p>አንቺስ የእኔ እህት፣ እንዲህ የውስጥሽን ስትነግሪው አጣጥሎት፣ ሕልምሽ</p><p>በዓይንሽ ሥር ሲቀጭ ተሰምቶሽ ያውቃል? ሬቸልም የእሱን ንግግር አምና</p><p>መቀበልና ራሷን ማሳነስ ጀመረች።</p><p>ከሠርጋቸው ሦስት ወራት በፊት፣ እጮኛዋን በሥራ ቦታ ድግስ ላይ</p><p>ያውቀው የነበረ አንድ የሬቸል የሥራ ባልደረባ፣ ጆንን የአዋቂዎች ክለብ</p><p>ውስጥ አየው። እጮኛዋ የቦታው ቋሚ ደንበኛ እንደነበር ያስታውቅበታል።</p><p>ከአንዷ ሴት ጋር ወደ ጓሮ ሲገባ፣ በኋላም መኪናው ጋር ሲስማት አየው።</p><p>የሥራ ባልደረባዋ ግን የተኛን ውሻ ላለመቀስቀስ ብሎ ዝምታን መረጠ።</p><p>ከሳምንታት በኋላ፣ ሬቸልና ጆን በሥራ ቦታዋ በተዘጋጀ ድግስ ላይ ታደሙ፤</p><p>ያ ጆንን በክለብ ያየው ጓደኛዋም እዚያው ነበር። በዚያች ምሽት ጆን እጅግ</p><p>መጥፎ ባሕርይ አሳየ፤ ሬቸልን ንቋት፣ ከሌሎች ወጣት ሴቶች ጋር</p><p>በማሽኮርመም አሳፋሪ ድርጊት ፈጸመ። በዚህ ጊዜ ጓደኛዋ ሬቸልን ለብቻዋ</p><p>ጠርቶ ስለ እጮኛዋ ያለውን ሥጋት ነገራትና በሳምንቱ ውስጥ በሰፊው</p><p>እንዲያወሩ ጠየቃት። ማክሰኞ ከሥራ በኋላ ቡና እየጠጡ፣ ያየውን ሁሉና</p><p>በድግሱ ዕለትም ስላስተዋለው ነገር አጫወታት።</p><p>ሬቸል ግን እንደተለመደው ጆንን ተከላከለች። "እሱ ሊሆን አይችልም፣ ያኔ</p><p>ማታ ከእኔ ጋር ነበር፣ ሐኪም እኮ ነው፣ እንዲህ ዓይነት ነገር አያደርግም"</p><p>አለችው። ለረዥም ጊዜ ጓደኛዋ በነበረውና ሚስቱም ጓደኛዋ በሆነችው በዚህ</p><p>ሰው ላይ እጅግ ተቆጣች። ለምን ይህን ሊነግራት እንደፈለገ ግራ ገባት።</p><p>ሆኖም ከቀጠሮው ስትወጣ ልቧ ተረብሾ ነበር። ጆን አሁንም ቤት አልገባም።</p><p>የተኛች መስላ ጠበቀችውና በጣም አርፍዶ ገባ። በማግሥቱ ሆስፒታል</p><p>ደውላ ስትጠይቅ፣ ጆን በዚያች ምሽት ሥራ ላይ እንዳልነበረ አረጋገጠች።</p><p>የጓደኛዋ ታሪክ እውነት መሆኑን ማመን ጀመረች። ጓደኛዋን የክለቡን ስም</p><p>ጠየቀችውና፣ በሚቀጥለው ጊዜ ጆን 'ሥራ ነኝ' ብሎ ሲቀር፣ ወደ ክለቡ ሄዳ</p><p>ስትፈልግ፣ ያቺው የምታብረቀርቀው መኪናው ቆማ አገኘቻት።</p><p>ወደ ቤት ተመልሳ እስኪመጣ ጠበቀች። ሌሊት ስምንት ተኩል ላይ ሲገባ</p><p>ጠየቀችው። የሌላ ሰው ጠረን ይሸተዋል፤ እጅግ ተቆጥታ ነበር። መጀመሪያ</p><p>ላይ ክሱን አስተባብሎ ጮኸባት፤ መኪናውን እንዳየችው ስትነግረው፣</p><p>በስድብ አዋረዳት። ነገር ግን ጆን ማምለጫ ስላጣ፣ በማግሥቱ ተረጋግቶ</p><p>ሊያነጋግራት ሞከረ። እጅግ ገርና አፍቃሪ ሆነ። ይቅርታ ጠየቀ፤ እንዲህ</p><p>ዓይነት ቦታ ከሚወድ ጓደኛዬ ጋር ሄጄ ነው፣ ለአንቺ ግን ስሜትሽ</p><p>እንደሚጎዳ ይገባኛል አላት። ከመጋባታችን በፊት የሁለታችንን ብቻ ጊዜ</p><p>እናሳልፍ ብሎ አንደኛ ደረጃ ወደሆነች ደሴት ይዟት ሄደ። የመጨረሻ</p><p>የሠርግ ዋዜማ ዕረፍት።</p><p>ሞቃታማ አየር፣ ማራኪ ገጽታ፣ አፍቃሪ ንግግሮች፤ ሳታስበው ያ ክለብና</p><p>ቸልተኝነቱ ተረሳላት። በጉዞው ላይ እንደገና እንዲህ ዓይነት ቦታ እንዳይሄድ</p><p>ቃል አስገባችው። እሱም ተስማማ። ሠርጉ ሊደርስ ሁለት ወር ሲቀረው፣</p><p>ማምሸቱን ተወ፤ እሷም መጥፎ ባሕርዩን የመጨረሻዎቹ የነጠላነት ቀናት</p><p>መረበሽ በሚል አሳበበችው። ሕይወታቸው ወደ መስመር ተመለሰ።</p><p>ሠርጉ እጅግ ያማረ ነበር። የማይረሳ ቅዳሜና እሑድ፣ ድንቅ አየር፣ ሁሉም</p><p>ነገር የተዋጣለት ነበር። የጫጉላ ጊዜያቸው የደስታና የፍቅር ጥግ ነበር።</p><p>ሁሉም ጥርጣሬዋ ጠፋ።</p><p>ወደ መደበኛ ሕይወታቸው ተመለሱ። ጆንና ሬቸል ወደ ሥራ ገቡ። የሠርግ</p><p>ስጦታዎቻቸውን አደራጅተው ኑሮ ቀጠለ። አሁን ትዳር ይዛለች፣ ይህ ደግሞ</p><p>ትልቅ ትርጉም አለው አይደል? ስኬታማ ወጣት ባልና ሚስት በመሆን</p><p>ጥሩ ሚና ተጫወቱ፤ ከሁለት ዓመት በኋላም አረገዘች።</p><p>ቤተሰብ የመመሥረት ሕልም ስለነበራት ዜናው እጅግ አስደሳች ነበር። ነገር</p><p>ግን እርግዝናዋ እየገፋ ሲሄድ እሱ እየራቃት መጣ። ሬቸል በእርግዝናዋ</p><p>ወቅት ሥጋት ስለነበራት የጆንን ማበረታታት ትሻ ነበር፤ እሱ ግን ሥራ</p><p>በዝቶብኛል በሚለው ሰበብ ጸንቶ፣ ይህ ጊዜ ያልፋል፣ ቤተሰብ እንሆናለን</p><p>ይላታል። እግሯን ሲያሽላት፣ የልጅ ስም ሲያወጡና ዕቃ ሲገዙ በሕልሟ</p><p>ታስብ ነበር። እሱ ግን ለድካሟ ምንም ርኅራኄ አልነበረውም፣ ለሒደቱም</p><p>ደንታ አልሰጠውም። ይልቁንም፣ ልጁንና እኔን እንዴት ልታስተናግጂ ነው</p><p>እያለ ይጨነቃል።</p><p>ልጁ ተወለደ፤ እጅግ የሚያምር ወንድ ልጅ። ሕይወታቸው ተቀየረ። ጆን፣</p><p>ገቢው እየጨመረ ስለሆነ ሬቸል ሥራዋን እንድታቆም አዘዛት። የተሻለ</p><p>ሰፈር ወዳለ ትልቅ ቤት ተዛወሩ፤ ከዚያም ሴት ልጅ ወለዱ። እርግዝናና</p><p>ልጅ ማሳደግ የሕይወቷ አካል ሆነ፤ ሬቸልም በእናትነትና በቤት እመቤትነት</p><p>ውስጥ ተዋጠች። የጆን ማምሸት እምብዛም አላስጨነቃትም፣ ምክንያቱም</p><p>ልጆቿን አስተኝታ እሷም በድካም ትተኛለችና። እሱ ይሠራና ገንዘብ</p><p>ያመጣል፣ እሷ ልጆቹን ታሳድጋለች። ሬቸል እንደ ትልቅ ሰው ገንዘብ</p><p>መጠየቅ እጅግ ያስጠላታል። እሱ ግን፣ እኔ ስደክም፣ አንቺ በምቾት</p><p>ልጆችሽን እያሳደግሽ ትኖሪያለሽ እያለ ያዋርዳታል። ከሥራ ዓለም ለሰባት</p><p>ዓመታት በመራቋ፣ አሁን የእኔ ዕውቀት ለምንም አይጠቅምም ብላ ማመን</p><p>ጀመረች።</p><p>ከተጋቡ ዘጠኝ ዓመታት ቢሆናቸውም፣ የድሮው ባሕርዩ አሁንም አለ።</p><p>ማምሸት፣ ምሥጢር መደበቅ፣ አለመስማትና ድጋፍ አለመስጠት። ነገር</p><p>ግን ለሰዎች በማስመሰል የተካኑ ነበሩ። በበዓላት ላይ የሚነሷቸው ፎቶዎች</p><p>ትላልቅ ፈገግታ፣ ምርጥ ዕረፍትና የተዋጣለት ሕይወት ያሳያሉ። ፍጹም</p><p>የሆነ የውሸት ገጽታ። ሬቸል ግን በጭንቀቷ፣ በብቸኝነቷና በሚሊዮን</p><p>በሚቆጠሩ ስውር ስብራቶቿ መሐል ለማንም ማማረር እንደማትችል ታስብ</p><p>ነበር። ልጆቹ ምርጥ ትምህርት ቤት ይማራሉ፣ ቤታቸው ያምራል፣ ለውጭ</p><p>ሰው ሁሉንም ያሟሉ ናቸው።</p><p>ልጆቹ እያደጉ ሲመጡና እሷ እንቅልፍ ማጣቷ ሲቀጥል፣ ጆን አሁንም ቤት</p><p>አያድርም ነበር። የፍቅር ግንኙነታቸው ቀዘቀዘ፤ አሁንም ወደ እነዚያ ክለቦች</p><p>እንዳይሄድ ትለምነዋለች። እሱ ግን በሳቅ ያልፈዋል። ስልኩንና</p><p>ኮምፒውተሩን እንደደበቀ ነው፤ ሆኖም አልፎ አልፎ ጥሩ ስለሚሆንላት</p><p>ጸባቸው ይመጣል ይሄዳል። እሷም ዝም ብላ ተያይዛዋለች። ራስን መጠየቅ</p><p>የሕይወቷ መደበኛ አካል ሆነ። ያቺ በራሷ ትተማመን የነበረች ጠንካራ ሴት</p><p>ጠፍታ፣ በቤት ውስጥ በትንሽ ነገር የምትጨነቅና ከልጆቿ ጋር የምትወጠር</p><p>ሴት ሆነች። ውበቷ እንደቀድሞው ቢሆንም፣ ሌሎች ወንዶች ትኩረት</p><p>ሲሰጧት እንግዳ ይሆንባታል፤ ምክንያቱም ባሏ ካያት ብዙ ዘመን</p><p>አልፎታልና።</p><p>በመደበኛ የሕክምና ምርመራ ወቅት፣ ዶክተሯ የማኅፀን በር ምርመራዋ</p><p>ልክ እንዳልሆነና ኤች ፒ ቪ የተባለ ቫይረስ በደሟ ውስጥ እንደተገኘ ነገራት።</p><p>ከባሏ ውጪ ሌላ ወንድ አውቃ ስለማታውቅ፣ አሁን ችግሩ ከክለብ መሄድ</p><p>እጅግ የገዘፈ መሆኑን ተረዳች። ልጆቹን ወደ እናቷ ቤት ላከችና ማታ</p><p>ሲመጣ ፊት ለፊት ተፋጠጠችው። ታላቅ ጸብ ተነሣ፣ ጩኸትና ክስ። የስልክ</p><p>መልእክቶቹንና የባንክ ሒሳቡን ስትፈትሽ፣ ለዓመታት ሲሠራው የነበረው</p><p>ጉድ አፈጠጠባት። ለብዙ ዓመታት ከበርካታ ዳንሰኞችና አስተናጋጆች ጋር</p><p>ይማግጥ ነበር። ለአንዷ የወቅቱ ፍቅረኛው አፓርታማ እስከመከራየት</p><p>ደርሷል። ለእነዚህ ሴቶች፣ ለክለብ፣ ለአውሮፕላን ትኬትና ለስጦታ ወደ</p><p>መቶ ሺህ ዶላር አጥፍቷል። ከቤት እንዲወጣ ጠየቀችው፤ በቀጣዮቹ</p><p>ወራትም እንዲመለስ ሲለምናት ከረመ። እናቷ፣ "ምን እየሠራሽ እንደሆነ</p><p>ታውቂዋለሽ? ወንድ ልጅ ይሳሳታል፣ ይቅርታው ከልቡ ነው፤ ሁለት ልጅ</p><p>ይዘሽ ብቻሽን ለመቅረት ዝግጁ ነሽ?" እያለች አስጨነቀቻት። ሌላ ራስን</p><p>መጠራጠር። ሁሉም ሰው የተባበረባት መሰላት። በመጨረሻም በሽታውንና</p><p>የሠራውን ጉድ ሁሉ ለእናቷ ስትነግራት፣ ያኔ እናቷ ተረዳቻት።</p><p>ለወራት ይቅርታና ጭቅጭቅ ቢኖርም፣ ጆን አሁንም ይቅርታ እየጠየቀ</p><p>ማታ ግን ባር ውስጥ ከተዋወቃት የሃያ አራት ዓመት ፍቅረኛው ጋር ወደ</p><p>ተከራየው አፓርታማ ያመራል። የፍቺው ሒደት እጅግ አድካሚ ነበር፤</p><p>ሐብት ይደብቃል፤ በአሥር ሺዎች የሚቆጠር የሕግ ክፍያ ወጥቶ</p><p>በመጨረሻ ተፋቱ። ከተፋቱ በኋላ፣ ፌስቡክ ላይ እንደሚያሳየው፣ ሕይወቱ</p><p>ከወጣት ሴቶች ጋር መዝናናት፣ አዲስ የጸጉር አቆራረጥ፣ ፈጣን</p><p>መኪናዎችና የልጆቹን የትምህርት ቤት ክፍያ ለመክፈል ማቅማማት ሆነ።</p><p>ብልህ ጠበቆቹ ሬቸልን በኢኮኖሚ ቀውስ ውስጥ ጥለዋት አለፉ። ቤተሰቦቹም</p><p>ስለእሷ የነገራቸውን ውሸት አምነው ምንም ድጋፍ አላደረጉላትም። አሁን</p><p>ግን ሬቸል ሰላም አግኝታለች። ይሁን እንጂ፣ ልጆቹ አሁንም ስለሚወዱት፣</p><p>እሱ ግን ለሳምንታት ድምፁ ሲጠፋና ልጆቹን ሲያሳዝን ማየት ልቧን</p><p>ይሰብረዋል።</p><p>ከዚህ ሁሉ በኋላ ዋናው ጥያቄ፣ "ይህ ሁሉ ሲመጣ አላየሽውም ነበር ወይ?"</p><p>የሚለው ነው። አየሽ የእኔ እህት፣ ጅብ ከሄደ ውሻ ጮኸ እንደሚባለው፣</p><p>ሁሉም ነገር ካለፈ በኋላ መፍረድና አዋቂ መሆን እጅግ ይቀላል።</p><p>ክሕደቱ፣ ውሸቱ፣ ጭካኔው፣ ሁሉም ከመጀመሪያውኑ ነበሩ። መጀመሪያ</p><p>ላይ በራስ መተማመን፣ ጠንካራ ሠራተኛነትና ስኬታማነት ተብለው</p><p>የተሸፈኑት ባሕርያት፣ ውሎ አድሮ እውነተኛ ማንነታቸውን አወጡ። ሰዎች</p><p>'እሱን በማግባትሽ ዕድለኛ ነሽ' ማለታቸው፣ እናቷ የራሷን ሕልም በልጇ</p><p>ላይ መጫኗ፣ ጫና ፈጥሮባታል። በመጨረሻም ሬቸል፣ 'በፍቅሬ</p><p>እለውጠዋለሁ' የሚል ከንቱ ምኞት ውስጥ ወደቀች።</p><p>ትዳሯን ለአሥር ዓመታት ለማቆየት ስትል፣ ሬቸል የውስጥ ስሜቷን</p><p>አፈነች፣ በጥርጣሬ ተዋጠች፣ በኃፍረት ራሷን ከሰው አገለለች፣</p><p>በመጨረሻም ራሷን ረሳች። ልትቋቋሚው ትችይ ነበር ወይ? ተብላ</p><p>ስትጠየቅ፣ የተመኘችው አንድ ነገር ብቻ እንደነበር አስታወሰች፤ ወደ እነዚያ</p><p>ክለቦች እንዳይሄድ ብቻ ነበር የለመነችው። እሱ ግን ያቺን አንዲት ጥያቄ</p><p>እንኳን ሊያከብርላት አልቻለም። የሚገርመው ደግሞ፣ ከአሥር ዓመታት</p><p>ንቀት፣ ጭካኔና ቸልተኝነት በላይ፣ መጨረሻ ላይ ልቧን የሰበረው ያ የክለብ</p><p>ጉዳይ ነበር። በውጫዊ ድምቀትና በሰዎች ግፊት መሸወድ ምን ያህል ቀላል</p><p>እንደሆነ አሁንም ያስገርማታል።</p><p>ይህ የአንዲት ሴት ታሪክ ነው። ለመቆየት ሞክራ፣ በመጨረሻም ጥሎ</p><p>ስለመውጣት። የማንነቷን ምሥጢር ለመጠበቅ ስንል፣ የብዙ ሴቶች ታሪክ</p><p>ተደባልቆ፣ እንደ ተረትና እንደ ማስጠንቀቂያ ቀርቧል።</p><p>ይህ መጽሐፍ ለአንቺ የሕይወት መመሪያሽ ነው። እንዴት መቆየት</p><p>እንዳለብሽ፣ ወይም እንዴት መውጣት እንዳለብሽ የሚነግርሽ መመሪያ።</p><p>ሬቸል እንዲህ አለች፤ "በመጀመሪያ ያየኋቸውን የማስጠንቀቂያ ደወሎች</p><p>ብሰማ ኖሮ፣ መጀመሪያውኑም አልገባበትም ነበር። ወይም ደግሞ መቼም</p><p>እንደማይለወጥ ብገነዘብ ኖሮ፣ ቶሎ ወጥቼ አዲስ ሕይወት እጀምር ነበር።</p><p>በቆየሁባቸው ዓመታት ሁሉ፣ የተሻለ መፍትሔ ቢኖረኝ እመኝ ነበር፤</p><p>ምክንያቱም አሁንም ድረስ 'እኔ በቂ አይደለሁም' ከሚለው ራስን</p><p>መጠራጠርና የሥነ ልቦና ጠባሳ ጋር እየታገልኩ ነውና።"</p><p>ያለፍንበት ሕይወት ማንነታችንን ይቀርጸዋል። ነገር ግን ኪሳራችንን ቀንሰን</p><p>መውጫ መንገድ መፈለግ ከቻልን፣ የተሻለና ክብር ያለው ሕይወት</p><p>ለመገንባት፣ ጊዜያችንንም በእውነተኛ ስፍራ ለማሳለፍ ያስችለናል።</p><p>የአንቺስ ታሪክ ምንድነው?</p><p>መቆየት አለብሽ ወይስ መሄድ? የእኔ እህት፣ እባክሽን ማንበብሽን ቀጥይ።</p>
-            </div>
-
-            <div id="sec-ch1" style="margin-top: 40px;">
-                <h3 class="reader-chapter-title">🛡️ ምዕራፍ አንድ — የሕልውና ማትረፊያ መመሪያ</h3>
-                <p>ምዕራፍ አንድ</p><p>የሕልውና ማትረፊያ መመሪያ</p><p>"በተረት ዓለም ተውጠን፣ የጠፋውን የሰላም መንግሥትና አስማተኛ በር</p><p>ስንፈልግ ዕድሜያችን ያልፋል።"</p><p>ዩጂን ኦኔል</p><p>አንድን አሳዛኝ ነገር ደጋግመሽ ካየሽ በኋላ፣ የሆነ መፍትሔ ማምጣት</p><p>እንዳለብሽ ይሰማሻል። ስለ ጉዳዩ መናገርና የተማርሽውን ማካፈል ግድ</p><p>ይልሻል። እኔም እንደ ሥነ ልቦና ባለሙያ፣ እንደ መምህርና እንደ ምስክር</p><p>ዝም ማለት አልቻልኩም።</p><p>ከራስ ወዳድ (ናርሲሲስት) ሰዎች ጋር ባላቸው ግንኙነት ምክንያት የብዙ</p><p>ሴቶች ሕይወት ሲፈርስ፣ የሰላም ስሜታቸው ሲመሰቃቀልና ሥነ ልቦናቸው</p><p>ሲጎዳ በዓይኔ ስለተመለከትኩ፣ እውነተኛ የሆነ የማዳኛ መመሪያ</p><p>እንደሚያስፈልግ አመንኩ። ይህ መመሪያ በተስፋ ላይ በተመሠረተ ምክር፣</p><p>ሁሉም ሰው ሊለወጥ ይችላል በሚል ከንቱ አስተሳሰብ፣ አሊያም አውሬው</p><p>ወደ ልዑልነት ይቀየራል በሚል ምናባዊ ወሬ ላይ የተመሠረተ አይደለም።</p><p>ይልቁንም፣ የዚህን የሥነ ልቦና ችግር እውነተኛ ገጽታ በሚያሳይና፣</p><p>ተጨባጭ የሆነ የሕይወት መንገድን በሚጠቁም እውነት ላይ የቆመ ነው።</p><p>በካሊፎርኒያ ስቴት ዩኒቨርሲቲ ለአሥራ ስድስት ዓመታት የሥነ ልቦና</p><p>መምህር ሆኜ ሠርቻለሁ። በዚያ በቆየሁባቸው ዓመታት፣ የሰዎችን የስብዕና</p><p>መዛባት ከጤናና ከበሽታ ጋር በማያያዝ ጥናት ለማድረግ ከብሔራዊ የጤና</p><p>ተቋማት የገንዘብ ድጋፍ አግኝቼ ቆይቻለሁ። ይህ ሥራዬ፣ ራስ ወዳድነትን</p><p>ጨምሮ የስብዕና መዛባቶችን እጅግ በጥልቀት እንድመረምር አስገድዶኛል።</p><p>በመቶዎች የሚቆጠሩ ታካሚዎችን ስናጠና፣ እነዚህ የስብዕና ችግሮች በራሱ</p><p>በሰውየው ላይ ብቻ ሳይሆን፣ በዙሪያው ባሉ ሰዎች ላይ ጭምር</p><p>የሚፈጥሩትን ምስቅልቅል በዓይኔ አይቻለሁ። በአጭር ቋንቋ፣ የስብዕና</p><p>መዛባት ለጤና እጅግ ጎጂ ነው። በሥነ ልቦና ባለሙያነት ፈቃድ አግኝቼ</p><p>ለአሥራ ስምንት ዓመታት ሠርቻለሁ፤ በእነዚህ ዓመታትም የእነዚህን</p><p>ችግሮች እልከኝነት በቅርበት ተመልክቻለሁ። ይህ ችግር ያለባቸው ሰዎች</p><p>በቀላሉ አይለወጡም።</p><p>በቋሚነት ያስተዋልኩት አንድ ነገር ቢኖር፣ አንዳንዴ በራስ ወዳድ ሰዎች</p><p>ላይ የባሕርይ ለውጥ ማምጣት ብንችልም፣ ለውጡ ግን ዘላቂ አይሆንም።</p><p>ከሁሉም በላይ ደግሞ፣ የምናመጣቸው ጥቃቅን የባሕርይ ለውጦች፣ በፍቅር</p><p>ግንኙነታቸው ላይ የሚያሳዩትን አያያዝ አያሻሽሉትም። ራስ ወዳዶች</p><p>የከፋውን ጉዳት የሚያደርሱት ደግሞ በፍቅር ግንኙነት ውስጥ ነው። ራስ</p><p>ወዳድ የሆነን ሰው በሰዓቱ ስብሰባ ላይ እንዲገኝ ልታስተምሪው ትችይ</p><p>ይሆናል፣ ነገር ግን እውነተኛ ርኅራኄንና ፍቅርን ልታስተምሪው</p><p>አትችይም።</p><p>በተጨማሪም የእኔ የሙያ ዘመን ያደገው፣ በሰው ልጅ የሥነ ልቦና ታሪክ</p><p>ውስጥ እጅግ አስገራሚ በሆነው ወቅት ላይ ነው። መምህር ሆኜ ስጀምር</p><p>ላፕቶፕ የሚባል ነገር አልነበረም፣ የስማርት ፎን ሐሳብ የሳይንስ ልብ</p><p>ወለድ ይመስል ነበር፣ ኢንተርኔት ገና በልጅነት ዕድሜው ላይ ነበር።</p><p>ባሕላችን 'ኩራት ጥፋትን ይቀድማል' ከሚለው አስተሳሰብ ወደ 'ካለህ አሳይ'</p><p>በሚል ንቀት በአንድ አሥርት ዓመት ውስጥ ሲቀየር ተመልክቻለሁ። የሰው</p><p>ልጅ እርስ በርሱ ተራራቀ፤ ሁሉም ለራሱ ብቻ የሚሮጥበት ዘመን መጣ።</p><p>ጥልቀት ባለው የሕይወት ትርጉም ምትክ ላይ ላዩን መኖር መጣ፤ ይህ</p><p>ደግሞ በሥነ ልቦናችን ላይ ከባድ ዋጋ አስከፍሎናል። በሕክምናው ዓለም፣</p><p>በማስተማሩና በጥናቱ ዘርፍ ለረዥም ጊዜ ስቆይ፣ ሁሉም ነገር ግልጽ</p><p>ሆነልኝ። ችግሩን ማወቅ ብቻ ሳይሆን፣ የማይቀየሩ እውነታዎችንም</p><p>ተማርኩ። እነዚያ እውነታዎችና ምልከታዎች በዚህ መጽሐፍ ውስጥ</p><p>ተካተዋል።</p><p>ደራሲ ፊዝጀራልድ ቶምና ዴይዚ የተባሉትን ራስ ወዳድ ገጸ ባሕርያት</p><p>ሲገልጽ በተሻለ ሁኔታ አስቀምጦታል። ቶምና ዴይዚ ቸልተኛ ሰዎች ነበሩ።</p><p>ሰዎችንና ነገሮችን ሰባብረው ያደቃሉ፤ ከዚያም ወደ ገንዘባቸውና ወደ</p><p>ቸልተኝነታቸው ይሸሸጋሉ። ያበላሹትንና የፈጠሩትን ብልሽት ሌሎች</p><p>እንዲያጸዱላቸው ይተዋሉ። ራስ ወዳድ ሰዎች ልክ እንደዚህ ናቸው፤</p><p>ቸልተኞች።</p><p>ሕይወትን በዘፈቀደ ይጋልቧታል፤ ሰዎችንና ግንኙነቶችን እንደ ዕቃና እንደ</p><p>መጫወቻ ይጠቀሙባቸዋል። አንዳንዴ ጨካኞች ቢመስሉም፣ ያን ያህል</p><p>ክብር የሚገባቸው አይደሉም። እነሱ በቀላሉ ቸልተኞች ናቸው። ደግሞም</p><p>ያጠፉትን ጥፋት ሌሎች ሰዎች እንዲያጸዱላቸው ይጠብቃሉ።</p><p>ነገር ግን ቸልተኝነት ጭካኔ ነው። እውነቱን ለመናገር ለባሕርያቸው መነሻ</p><p>የሆነው ምክንያት ምንም ለውጥ አያመጣም፤ ዋናው ነገር ውጤቱ ነው።</p><p>ውጤቱ ደግሞ የሌሎችን ሰዎች ሰላም፣ ተስፋ፣ ሕልምና ሕይወት ማውደም</p><p>ነው። ቸልተኝነት ትክክለኛ መግለጫው ቢሆንም፣ ማስተባበያ ግን ሊሆን</p><p>አይችልም። አናይስ ኒን የተባለችው ጸሐፊ ይህንን ስትገልጸው እንዲህ</p><p>ትላለች። "ፍቅር በራሱ ጊዜ አይሞትም። ፍቅር የሚሞተው ምንጩን</p><p>እንዴት እንደምናለመልመው አለማወቃችን ነው። በዕውርነት፣ በስሕተትና</p><p>በክሕደት ይሞታል። በበሽታና በቁስል፣ በድካምና በመዛል ይሞታል።</p><p>እያንዳንዱ አፍቃሪ የገዛ ፍቅሩ ገዳይ ተብሎ ፍርድ ቤት ሊቀርብ ይችላል።</p><p>የሚያሳዝንሽና የሚጎዳሽ ነገር ሲፈጠር፣ አጋርሽ ሁኔታውን ለማስተካከልና</p><p>አንቺን ለመረዳት ከመጣር ይልቅ፣ በትዕግስት ማጣት ፊቱን ያዞርና 'ምንም</p><p>አይገባሽም' ይልሻል።</p><p>ይህ መጽሐፍ ተስፋን ለማምጣት የተጻፈ የተስፋ መጽሐፍ ነው። በምናባዊ</p><p>ምኞት ላይ ሳይሆን፣ በእውነታ ላይ የተመሠረተ እውነተኛ መፍትሔ</p><p>ለመስጠት የተዘጋጀ ነው። ከራስ ወዳድ ሰው ጋር ግንኙነት ውስጥ</p><p>መሆንሽንና አለመሆንሽን እንድታውቂ ይረዳሻል። ከእነዚህ ሰዎች ጋር</p><p>መኖር ምን ያህል ፈታኝ ቢሆንም፣ ሙሉ በሙሉ መጥፎ ብቻ እንዳልሆኑም</p><p>ያስገነዝብሻል። ከእነሱ ጋር ፍቅር እንይዛለን፣ ሕይወት እንገነባለን፣ ልጅ</p><p>እንወልዳለን፤ አንዳንዴም እኛን እያጠፉን እንኳን ልንተዋቸው አንችልም።</p><p>ይህንን የተወሳሰበ ስሜት መረዳትሽ፣ ለራስሽ ይበልጥ ርኅሩኅ እንድትሆኚና</p><p>እብድ እንዳልሆንሽ እንድታውቂ ይረዳሻል።</p><p>ከዚህ ሕይወት የመትረፊያው ምሥጢር</p><p>ይህ መጽሐፍ በአንድ ቀላል ምሥጢር ላይ የተመሠረተ ነው። ምሥጢሩም</p><p>ይህ ነው፤ ራስ ወዳዶች መቼም ቢሆን አይለወጡም።</p><p>ይህ አጭር ሐሳብ ሕይወትሽን እንደሚቀይረው ተስፋ አደርጋለሁ።</p><p>ምክንያቱም ይህን ስታውቂ ራስሽን ከመውቀስ፣ ከጭንቀት፣ ራስሽን</p><p>ከመጠራጠር፣ የማይሰማሽን ሰው ለማሳመን ከመልፋትና መቼም</p><p>የማይመጣን ባቡር ከመጠበቅ ትድኛለሽ። ከራስ ወዳዶች ጋር የሚደረግ</p><p>ግንኙነት፣ 'አንድ ቀን ይስተካከላል' በሚል የከንቱ ተስፋ ገመድ የተንጠለጠለ</p><p>ነው፤ ነገር ግን ያ ቀን እንደሚመጣ የሚያሳይ ምንም ማስረጃ የለም። በዚህ</p><p>እምነቴ ጸንቼ እቆማለሁ፤ ዘጠና ዘጠኝ በመቶ የሚሆኑ ራስ ወዳድ ሰዎች</p><p>በፍጹም አይቀየሩም። የሚታየው ነገር እሱው ነው፤ ስለዚህ ወይ ተላመጂው</p><p>አሊያም ጥለሽው ውጪ። እሱ ይለወጣል ብለሽ መጠበቅሽ አማራጭ ሊሆን</p><p>አይችልም። መለወጥ የምትችይው ራስሽን ብቻ ነው፤ ሁኔታውን መረዳት፣</p><p>የምትጠብቂውን ነገር ማስተካከልና በዚያ ልክ መወሰን። የዚህ መጽሐፍ</p><p>ዋና ዓላማም ይኸው ነው።</p><p>ይህ መጽሐፍ ስለ ራስ ወዳድነት እጅግ ጥልቅ የሆነ ማብራሪያ ይሰጥሻል።</p><p>የማስጠንቀቂያ ደወሎችንና የተለመዱ ባሕርያትን እንድታውቂ፣ በውስጥሽ</p><p>ከሚፈጥሩት ስሜት ጋር እንድታያይዣቸው፣ ትክክለኛውን መንገድ</p><p>መርጠሽ እርምጃ እንድትወስጂ ይረዳሻል። ከምንም በላይ ግን፣ ራስ ወዳዶች</p><p>እንደማይለወጡ ዘወትር ያስታውስሻል። ሕይወትሽን ሙሉ እንደ ሲሲፈስ</p><p>ትልቅ ድንጋይ ወደ ተራራ ጫፍ እያገፋሽ፣ መልሶ ቁልቁል ሲወርድብሽ</p><p>እያየሽ፣ በማግሥቱ እንደገና ከመጀመር የከንቱ ድካም ራስሽን እንድታድኚ</p><p>ነው። ውስጥሽ እንዳለሽ እንኳን ሳታውቂው የተዘፈቅሽበትን አዙሪት እንዴት</p><p>መስበር እንድምትችይ ያሳይሻል።</p><p>የስብዕና መዛባት እንደ ድብርት ካሉ ሌሎች የሥነ ልቦና ችግሮች ይለያል።</p><p>የስብዕና መዛባት ማለት አንድ ሰው ለዓለምና ለራሱ ውስጣዊ ስሜት ምላሽ</p><p>የሚሰጥበት የጸና ልማድ ነው። በጭንቀት ጊዜ እነዚህ ልማዶች ይበልጥ</p><p>ይጠነክራሉ። ቋሚ ልማድ ስለሆኑ ደግሞ በቀላሉ ሊገመቱ ይችላሉ። እነዚህ</p><p>ልማዶች ያሉት ራስ ወዳዱ ሰው ውስጥ እንጂ አንቺ ውስጥ አይደለም፤</p><p>ነገር ግን በእሱ ልማድ ምክንያት በዙሪያው ያሉ ሰዎች ሕይወት</p><p>ይታመሳል።</p><p>አነጋጋሪው የመፍትሔ ሐሳብ</p><p>ይህ መጽሐፍ በሙያ አጋሮቼና በብዙ አንባቢዎች ዘንድ አነጋጋሪ</p><p>እንደሚሆን አልጠራጠርም። እኔ የሥነ ልቦና ባለሙያ ነኝ፣ ሥራችን ደግሞ</p><p>ሰዎችን ማከምና መለወጥ ነው። ነገር ግን ራስ ወዳድ በሆኑ ሰዎች ላይ</p><p>ዘላቂ ለውጥ ሲመጣ አይቼ አላውቅም። ምናልባት ጥቂት ስንዝር ያህል</p><p>መሻሻል ሊያሳዩ ይችላሉ፣ ሁሌም ምርጥ እንዳልነበሩ በአንደበታቸው</p><p>ሊያምኑ ይችላሉ። ነገር ግን ልክ እንደ ተረቱ ጊንጥ፣ ጥፋታቸውን ማወቅ</p><p>ማለት ባሕርያቸውን ይቀይራሉ ማለት አይደለም። ዊሊያም ጀምስ</p><p>እንዳለው፣ "ምንም ለውጥ የማያመጣ ለውጥ፣ ለውጥ አይደለም።"</p><p>በሌላ በኩል ደግሞ፣ ጥለሽ መውጣት አለብሽ ብዬ አልነግርሽም። መጥፎ</p><p>አያያዝ ስለደረሰብሽ ጥለሽ ውጪ ብሎ መጻፍ እጅግ ቀላል ነው። ሕይወት</p><p>ግን ውስብስብ ናት፣ ያን ያህል ቀላል አይደለችም። አንዳንዶች</p><p>ግንኙነታቸውን ማፍረስ አይፈልጉም፤ ስለዚህ 'ጥለሽ ውጪ' የሚለው</p><p>ትእዛዝ ብቻውን ከተሰጠ፣ በችግሩ ውስጥ ያሉ ሴቶች ይበልጥ ብቸኝነትና</p><p>መውጫ እንደሌላቸው እንዲሰማቸው ያደርጋል። ይህ መጽሐፍ ሁለቱንም</p><p>አማራጮች በእውነተኛ ሚዛን ላይ ያስቀምጣል። ምናልባት አንባቢዋ</p><p>ለተወሰነ ጊዜ መቆየትን ትመርጥና፣ ቆየት ብላ ደግሞ ለመውጣት ትወስን</p><p>ይሆናል። ለማንኛውም ውሳኔሽ ማንም አይፈርድብሽም፤ ለአንቺ የሚበጅሽን</p><p>የምታውቂው አንቺው ራስሽ ብቻ ነሽ። በግንኙነትሽ ውስጥ ቆይተሽም</p><p>ቢሆን፣ በማስተዋልና መረጃ ላይ ተመሥርተሽ እንድትኖሪ የሚያስችሉሽን</p><p>መሣሪያዎች ስለሚሰጥሽ፣ ይህ መጽሐፍ ወደር የሌለው የሕይወት</p><p>ማትረፊያ መመሪያ ነው። የፍቅር ግንኙነት እጅግ የተወሳሰበ ነው። ራስ</p><p>ወዳዶች አንድ ዓይነት ዜማ ብቻ እንደሚጫወት የሙዚቃ መሣሪያ የተገደቡ</p><p>ቢመስሉም፣ እኛ ግን እንደእነሱ አይደለንም። እነሱ ራሳቸው በተለያየ</p><p>መንገድ ይገለጣሉ፤ ይህም የተለያየ ስሜት እንዲሰማን ያደርጋል። ይህ</p><p>መጽሐፍ ባሕርያቸውን እንዴት መቋቋም እንዳለብሽ እውነተኛ ምክር</p><p>ይሰጥሻል፤ ይህም በሰላም ለመቆየት፣ ቀስ እያሉ ለመለየት፣ አሊያም</p><p>በተረጋጋና ደህንነቱ በተጠበቀ ሁኔታ ጥሎ ለመውጣት ይረዳሻል።</p><p>ደራሲያን አንዳንዴ በቃላትና በሰዋሰው ሕግ ይታሠራሉ። በመጽሐፉ ውስጥ</p><p>ወጥ የሆነ አገላለጽ እንዲኖር፣ ስለ ራስ ወዳዶች ስናገር በተለምዶ የወንድ</p><p>ጾታን እጠቀማለሁ። አብዛኛዎቹ ጥናቶች እንደሚያሳዩት የስብዕና መዛባት</p><p>በብዛት የሚታየው በወንዶች ላይ ነው፤ ይህ ደግሞ ኅብረተሰባችን ለወንዶች</p><p>ከሚሰጠው ነጻነት ጋር የተያያዘ ሊሆን ይችላል። ነገር ግን ብዙ ራስ ወዳድ</p><p>ሴቶችም አሉ፤ ስለዚህ ስለዚህ አንባቢው ወንድ ከሆንክ እባክህ እሷ እያልክ</p><p>ተረዳው። ይህ መጽሐፍ ወንዶችን ብቻ ለመኮነን የተጻፈ አይደለም።</p><p>አጠቃቀሙ በአንዳንድ አንባቢዎች ዘንድ ጥያቄ ሊያነሳ ስለሚችል፣</p><p>ምክንያቱን ግልጽ ማድረግ ፈልጌ ነው።</p><p>በአካላዊ ጥቃት የታጀቡ ግንኙነቶች</p><p>የዚህን መጽሐፍ መዋቅር ሳዘጋጅ በጣም ያሳሰበኝ ጉዳይ፣ አብዛኛዎቹ የራስ</p><p>ወዳድነት ባሕርያት በቤተሰብ ውስጥ ከሚከሰት አካላዊ ጥቃት ጋር</p><p>መያያዛቸው ነው። ቁጥጥር፣ ቅዝቃዜ፣ መለዋወጥ፣ ማባበልና ሰውን</p><p>እንደፈለጉ ማሽከርከር የራስ ወዳድነት ዋና መገለጫዎች ናቸው። እውነቱን</p><p>ለመናገር እኔ ላደረግኳቸው ቃለ መጠይቆችና የሕክምና ታሪኮች ውስጥ፣</p><p>አካላዊ ጥቃትና ስሜታዊ በደል፣ ይኸውም መጮህ፣ ማስፈራራትና መስደብ</p><p>በስፋት ይስተዋላል። ብዙ ጊዜ ጥንዶቹ ወደ አካላዊ ጥቃት አፋፍ ይደርሳሉ፤</p><p>መማታት ባይኖር እንኳን ዕቃዎች ይወረወራሉ፣ በሮች በኃይል ይዘጋሉ።</p><p>በዓለማችን ላይ ከሦስት ሴቶች አንዷ፣ እንዲሁም ከአራት ወንዶች አንዱ</p><p>የቤተሰብ ውስጥ ጥቃት ሰለባ ናቸው። በአሜሪካ ከሚፈጸሙ የኃይል</p><p>ወንጀሎች ውስጥ ሃያ አንድ በመቶው የቤት ውስጥ ጥቃት ነው። ይህ</p><p>ዓይነቱ ጥቃት እጅግ አደገኛና ፈጣን ምላሽ የሚፈልግ ነው። በዚህ መጽሐፍ</p><p>ውስጥ ከተዘረዘሩት ምክሮች ባለፈ፣ የራስን ደህንነት ለማስጠበቅ የሕግ</p><p>አካላትን ማሳወቅና ልጆችን መታደግ ግድ ይላል። ይህ መጽሐፍ ለአካላዊ</p><p>ጥቃት መፍትሔ ለመስጠት የተዘጋጀ ባይሆንም፣ አካላዊ ጥቃት ባለበት</p><p>ግንኙነት ውስጥ ለሚገኙ ሰዎችም ጠቃሚ ሐሳቦችን ይዟል። በመጽሐፉ</p><p>መጨረሻ ላይ ለአካላዊ ጥቃት ሰለባዎች የሚረዱ መረጃዎችን</p><p>አስቀምጫለሁ። ስለዚህ በዚህ ዓይነት አደገኛ ግንኙነት ውስጥ ከሆንሽ፣</p><p>ለሕይወትሽ ደህንነት ስትይ አሁኑኑ አስቸኳይ እርዳታ እንድትፈልጊ</p><p>አጥብቄ እመክርሻለሁ።</p><p>አብሮ ጥገኝነት (ኮዲፔንደንሲ)</p><p>በዚህ መጽሐፍ ውስጥ ያሳሰበኝ ሌላው ጉዳይ አብሮ ጥገኝነት የሚባለው</p><p>ጽንሰ ሐሳብ ነው። የሥነ ልቦና መዝገበ ቃላት እንደሚለው፣ አብሮ ጥገኝነት</p><p>ማለት ሁለት ወይም ከዚያ በላይ የሆኑ ሰዎች፣ አንዱ የሌላውን ጤናማ</p><p>ያልሆነ ልማድ ደግፈውና ተሸክመው የሚኖሩበት ግንኙነት ነው። ምንም</p><p>እንኳን ይህ ቃል ቀደም ሲል ለሱስ ተጋላጭ ከሆኑ ሰዎች ጋር በሚደረግ</p><p>ግንኙነት ላይ ብቻ ይውል የነበረ ቢሆንም፣ አሁን ግን የሌላውን ሰው</p><p>መጥፎ ባሕርይ ታግሶ መኖርንም ያካትታል። በዚህ መንገድ ስናየው፣</p><p>በመጽሐፉ ውስጥ በገለጽኩት ዓይነት መርዛማ ግንኙነት ውስጥ መቆየት</p><p>እንደ አብሮ ጥገኝነት ሊቆጠር ይችላል፤ ምክንያቱም ባለመውጣትሽ፣</p><p>'እንዲህ ዓይነቱን መጥፎ አያያዝ መቀበል አግባብ ነው' ብለሽ እያመንሽ</p><p>ነውና።</p><p>አላን ራፖርት የተባለ የሥነ ልቦና ባለሙያ፣ ከራስ ወዳድ ሰው ጋር</p><p>የሚደረግን ግንኙነት 'ራስ ወዳድን ተሸክሞ መኖር' ብሎ ይጠራዋል። ይህን</p><p>ሐሳብ ወደፊት በሰፊው እንመለከተዋለን። በእሱ አገላለጽ፣ ይህች ሴት ለራስ</p><p>ወዳዱ ሰው ሁሌም መድረክ ላይ ሆኖ ጭብጨባ ለሚፈልገው ባሕርዩ እንደ</p><p>ተመልካች ሆና ታገለግላለች። ተዋናዩ ለተመልካቾቹ ደንታ የለውም፤</p><p>የሰጡትን አድናቆት ብቻ ተቀብሎ ከመድረኩ ይወርዳል። አሁን ባለው የሥነ</p><p>ልቦና አረዳዳችን፣ በዚህ ዓይነት ግንኙነት ውስጥ የምትቆየውን ሴት</p><p>መውቀስና መተቸት የተለመደ ሆኗል። ይህ ግን እጅግ ጨካኝ የሆነ</p><p>አመለካከት ነው። ብዙ ሴቶች ከእነዚህ ራስ ወዳድ ሰዎች ጋር የሚቆዩት፣</p><p>የችግሩን ጥልቀት ስለማያውቁ ነው። አብዛኛዎቹ፣ አጋራቸው አንድ ቀን</p><p>እንደሚለወጥ በጽኑ ያምናሉ። ችግሩ ምን እንደሆነና እንዴት መቋቋም</p><p>እንዳለብሽ ካወቅሽ በኋላ ግን፣ ያንን መጥፎ አያያዝ ዳግም ላለመሸከም</p><p>ትወስኛለሽ።</p><p>አዙሪቱን መስበር ትችያለሽ</p><p>ከራስ ወዳድ ሰው ጋር ፍቅር ውስጥ መሆን ማለት፣ መቼም ቢሆን</p><p>ከማይሰማሽ ሰው ጋር መኖር ማለት ነው። በዚህም የተነሣ፣ እንደ ማሽን</p><p>እጅግ ግልጽ በሆነ ቋንቋ ብትነግሪውም እንኳን አይሰማሽም፣ ለውጥም</p><p>አያመጣም። እውነቱን ለመናገር፣ ለዚህ መጽሐፍ ዝግጅት የሰማኋቸውን</p><p>የሕይወት ታሪኮች ሳስብ፣ እኔ ራሴ ግራ በመጋባት 'ግን ለምን ይህን ሁሉ</p><p>ታግሳ ቆየች?' ብዬ ራሴን እጠይቅ ነበር። በዚህ ዓይነት መርዛማ ግንኙነት</p><p>ውስጥ የምትቆየውን ሴት እንደ ሞኝ ወይም እንደ ተባባሪ አድርጎ መፈረጅ</p><p>ቀላል ነው። ነገር ግን የፍቅር ግንኙነት እጅግ የተወሳሰበ ነው። ማንም ሰው</p><p>ቢሆን እንዲህ ዓይነት መጥፎ አያያዝን ተሸክሞ መኖር የለበትም። ይህ</p><p>መጽሐፍ፣ እንዴት ወደዚህ ሕይወት እንደገባሽና ለምን እዚያው እንደቆየሽ</p><p>እንድትረጂ ከማድረጉም በላይ፣ የተሻለ ምርጫ እንድታደርጊ፣ ራስሽን</p><p>እንድትጠብቂ፣ እንዲሁም የጥርጣሬንና የጭንቀትን አዙሪት እንድትሰብሪ</p><p>በቂ መረጃ ይሰጥሻል ብዬ ተስፋ አደርጋለሁ።</p><p>በዚህ የሙያ መስክ፣ በጥናት፣ በትምህርትና በተሞክሮ ረዥም መንገድ</p><p>ተጉዣለሁ። በዚህ መጽሐፍ ውስጥ ያሉት መረጃዎች ምናልባት በሙያው</p><p>ውስጥ ያሉ ባለሙያዎችንም ሆነ ራስ ወዳዶቹን ሊያስቆጣ ይችላል። የእኔ</p><p>ትልቁ ተስፋ ግን ከዚህም በላይ ለብዙ ሴቶች መፍትሔ መሆን ነው።</p><p>መልእክቴ ለሁሉም እንዲደርስ በጽኑ አምናለሁ፤ ከታመመና ራስ ወዳድ</p><p>ከሆነ ሰው ጋር ግንኙነት ውስጥ ብትሆኝም እንኳን፣ ሕይወትሽን መልሰሽ</p><p>መቆጣጠር ትችያለሽ። ምናልባትም ከመጀመሪያውኑ ወደዚህ ዓይነት</p><p>ሕይወት እንዳትገቢ፣ አሊያም ዳግም እንዳትመለሺ ይረዳሻል።</p>
-            </div>
-
-            <!-- In-Reader Paywall -->
+            <!-- In-Reader Paywall Box -->
             <div class="paywall-box">
                 <div class="paywall-icon">🔒</div>
-                <h3 class="paywall-title">ቀጣዮቹን 8 ምዕራፎች ማንበብ ይፈልጋሉ?</h3>
-                <p class="paywall-desc">የመጀመሪያዎቹን ክፍሎች በነፃ አንብበዋል። ሙሉውን 274 ገጽ መጽሐፍ (ከምዕራፍ 2 እስከ 9) ለመክፈት እና ከመርዛማ ግንኙነት ራስዎን ነጻ ለማውጣት አሁኑኑ ያግኙ።</p>
-                <button class="btn btn-primary" style="width: 100%; padding: 14px;" onclick="openPayModal()">
+                <h3 class="paywall-title" id="paywallTitle">ቀጣዮቹን ምዕራፎች ማንበብ ይፈልጋሉ?</h3>
+                <p class="paywall-desc" id="paywallDesc">የመግቢያ ክፍሉን በነፃ አንብበዋል። ሙሉውን መጽሐፍ ለማግኘት አሁኑኑ ይክፈቱ።</p>
+                <button class="btn btn-primary" style="width: 100%; padding: 13px;" onclick="openPayModal(activeBook ? activeBook.title : '')">
                     <span>💎 ሙሉውን መጽሐፍ በ 299 ብር ክፈት</span>
                 </button>
             </div>
@@ -729,15 +427,15 @@
 
 
     <!-- ══════════════════════════════════════════
-         MODAL: PAYMENT DETAILS (299 Birr)
+         MODAL: PAYMENT (299 Birr)
     ══════════════════════════════════════════ -->
     <div id="modal-pay" class="modal-overlay" onclick="closePayModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title">📱 የክፍያ መረጃ — 299 ብር</h3>
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ — 299 ብር</h3>
                 <button class="btn-icon" onclick="closePayModal()">✕</button>
             </div>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
                 እባክዎ <b>299 ብር</b> በሚከተሉት አማራጮች ያስገቡ፦
             </p>
 
@@ -765,7 +463,7 @@
                 <div style="font-size: 12px; color: var(--text-muted);">በኃይሉ ጌታቸው</div>
             </div>
 
-            <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px; margin: 16px 0; font-size: 12px; line-height: 1.5;">
+            <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px; margin: 14px 0; font-size: 12px; line-height: 1.5;">
                 ✅ <b>ከከፈሉ በኋላ፦</b> የከፈሉበትን ደረሰኝ (Screenshot) በቀጥታ በቦቱ ላይ ይላኩልን። ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ ሙሉውን መጽሐፍ ይከፍትልዎታል!
             </div>
 
@@ -777,14 +475,15 @@
 
 
     <script>
+        const BOOKS_DATA = {"narcissist": {"title": "የናርሲሲስቶች ወጥመድ", "subtitle": "ከመርዛማ ግንኙነት የማምለጫ ጥበብ", "author": "ዶ/ር ራማኒ ዱርቫሱላ | ትርጉም፦ የአዕምሮ ምግቦች & Baya Books", "cover": "/static/covers/narcissist_trap.jpg", "pages": "274 ገጾች", "rating": "⭐ 4.9 (1,240+)", "badge": "🔥 ምርጥ ተነባቢ", "category": "psychology", "chapters": [{"id": "meqdim", "name": "📖 መቅድም (Foreword)", "paragraphs": ["መቅድም", "\"ውዷ እህቴ፣ እስቲ ይህን ታሪክ ላጫውትሽ።\"", "ከዕለታት አንድ ቀን፣ ማዶ ለመሻገር ፈልጎ ወንዝ ዳር የተቀመጠ አንድ", "ጊንጥ ነበር። ወንዙ ሰፊ ነበር፤ ተራምዶ ለማለፍ ድንጋዮች አልነበሩም።", "ስለዚህ የተለያዩ የውኃ ወፎችን፣ ዳክዬዎችንና አባ ኮዳዎችን፣ ጀርባቸው", "ላይ አዝለው እንዲያሻግሩት ተማጸነ። እነሱ ግን የጊንጡን ተንኮልና መርዝ", "ጠንቅቀው ስለሚያውቁ ጥያቄውን ውድቅ አደረጉት። በዚህ መሐል፣ አንዲት", "እጅግ ውብ የሆነች ዝይ በውኃው ላይ ስትንሳፈፍ አየና፣ ያላትን ደግነት", "ተጠቅሞ ማባበል ጀመረ።", "\"እባክሽ ቆንጆዋ ዝይ፣ ማዶ አሻግሪኝ። እንዳንቺ ያለ ውብ ፍጡር ላይ ጉዳት", "አደርሳለሁ ብዬ ማሰብ እንኳን አልችልም፤ ደግሞም አይጠቅመኝም። እኔ", "የምፈልገው ወንዙን መሻገር ብቻ ነው\" አላት።", "ዝይዋ አመነታች። ጊንጡ ግን ልብን የሚያባብልና አሳማኝ አንደበት ነበረው።", "'አሁን እዚሁ ሊነድፈኝ ይችል ነበር፣ ግን አላደረገም፤ ታዲያ ምን ሊፈጠር", "ይችላል? ደግሞም ወንዙን ለመሻገር የሚፈጀው ጥቂት ደቂቃ ብቻ ነው'", "ብላ አሰበችና ልትረዳው ተስማማች።", "ወንዙን እያቋረጡ ሳለ፣ ጊንጡ ምስጋናውን እያዥጎደጎደ ከሌሎቹ ራስ ወዳድ", "ወፎች ይልቅ የእሷን ደግነትና ውበት ማድነቁን ቀጠለ። ልክ ማዶ", "እንደደረሱና ሊዘል ሲዘጋጅ ግን፣ ጅራቱን ቀና አድርጎ በኃይል ነደፋት።", "ዝይዋ በሕመም እየተሠቃየችና እያለቀሰች፣ ያ ሁሉ ማባበል፣ ያ ሁሉ", "ምክንያታዊ ማብራሪያና ቃል ኪዳን የት ገብቶ ይህን እንዳደረገ ሊገባት", "አልቻለም።", "\"ለምን ነደፍከኝ?\" ስትል በድንጋጤ ጠየቀችው።", "እሱም ከወንዙ ዳርቻ ሆኖ ተመለከታትና፣ \"እኔ እኮ ጊንጥ ነኝ። ተፈጥሮዬ", "ይኸው ነው\" አላት።", "♦♦♦", "በሥነ ልቦና ሕክምና ሥራዬ፣ ራስ ወዳድ (ናርሲሲስት) ወይም ሰውን", "ከሚበዘብዙ መርዛማ ሰዎች ጋር የፍቅር ግንኙነት ውስጥ ተተብትበው", "ለሚመጡ ሴቶች፣ ይህ ተረት እጅግ ልብ የሚነካ ትልቅ ማስተማሪያ ነው።", "የእኔ እህት፣ አንቺም ልክ እንደ ዝይዋ ደጋግመሽ ትነደፊያለሽ። አደጋው", "እየመጣ መሆኑን እያወቅሽም እንኳን፣ 'ዘንድሮ የተለየ ይሆናል' ብለሽ", "ራስሽን ታሳምኛለሽ። የውሻ ጅራት በቱቦ ቢያስገቡት አይቀናም", "እንደሚባለው፣ ውጤቱ ሁልጊዜም ያው ነው። ከአጋርሽ የሚመጣው መጥፎ", "ባሕርይና ቸልተኝነት እየባሰ ይሄዳል፤ በግንኙነትሽ ለሚፈጠረው ችግር ሁሉ", "አንቺው ራስሽን ትወቅሻለሽ፤ ያ ጊንጥ የሆነው አጋርሽ ግን መቼም ባሕርዩን", "አይቀይርም።", "በዚህ አሳዛኝ ተረት ውስጥ ያለው ጊንጥ፣ ቢያንስ የራሱን ማንነት ጠንቅቆ", "ያውቃል። ከተራ ራስ ወዳድ ሰዎች የተሻለ ግንዛቤ አለው። ከራስ ወዳድ", "ሰዎች ጋር በፍቅር ለሚወድቁ ሴቶች፣ ቢያንስ የራሳቸውን መጥፎ ባሕርይ", "አምነው የሚቀበሉ አጋሮችን ማግኘት ትልቅ ዕድል በሆነ ነበር።", "የሚያሳዝነው ግን፣ የሰው ልጅ ራስ ወዳዶች እንደ ጊንጡ የራሳቸውን ችግር", "አምነው አይቀበሉም። ይልቁንም፣ ለውስጣዊ ባዶነታቸውና ለስሕተታቸው", "ሌሎች ሰዎችን በመውቀስ ረገድ እጅግ የተካኑ ናቸው። በተረቱ ላይ ያለው", "ጊንጥ የሰው ልጅ ባሕርይ ቢኖረው ኖሮ፣ 'ማን አድርጊ ብሎሽ አሻገርሽኝ?", "መጀመሪያውኑም እምቢ ማለት ትችይ አልነበረም እንዴ?' ብሎ ዝይዋን", "በወቀሳት ነበር።"]}, {"id": "megbiya", "name": "🔍 መግቢያ (Introduction)", "paragraphs": ["መግቢያ", "ይህ የአንቺ ታሪክ ይሆን?", "ሬቸልና ጆን የተዋወቁት ዩኒቨርሲቲና የሕክምና ትምህርታቸውን", "እንዳጠናቀቁ፣ በጋራ ጓደኞቻቸው አማካኝነት ነበር። አዲስ ዲግሪያቸውንና", "ሥራቸውን ይዘው፣ ከጓደኞቻቸው ጋር በሚያሳልፉት አስደሳች ጊዜ፣ ዓለም", "በፊታቸው እጅግ ብሩህ ነበረች። ሬቸል ረጅም፣ ውብና በማርኬቲንግ ሥራዋ", "እጅግ ስኬታማ የነበረች ሴት ስትሆን፣ የሰዎችን ትኩረት መሳብ", "አያቅታትም ነበር። ጆን ደግሞ ገና ሥራ የጀመረ ሐኪም ነበር፤ ብልህ፣", "መልከ መልካም፣ ማራኪና ቀልደኛ። እንደ ንግሥት ይንከባከባት ጀመር።", "ጥሩ መኪና አለው። ምርጥ ሥራና ብሩህ ተስፋ አለው። አጥብቆ", "ይፈልጋታል። ምርጥ ምግብ ቤቶች ይወስዳታል፣ አሊያም አብረው ምግብ", "ያበስላሉ፤ ዕረፍት ሲያገኝ ዘና ያደርጋታል፣ ደግሞም እጅግ ልብ የሚሰልብ", "አንደበት አለው። በቃ እግሯን ከመሬት አነሳት ልበልሽ።", "ነገር ግን ጆን በራሱ ከመጠን በላይ የሚተማመን ሰው ነበር፤ በጥቂት ወራት", "ውስጥ ደግሞ ፍጹም ቸልተኛ መሆን ጀመረ። ከተቀጣጠሩበት ቦታ በሰዓቱ", "አይገኝም፣ ቢመጣም በጣም ያረፍዳል። 'ሥራ የሚበዛብኝ ሐኪም ነኝ'", "ይላል። ሬቸል ስለ ሥራዋ ስታወራው አይሰማትም። 'የሐኪም ሥራ እኮ", "አያልቅም' በሚል ሰበብ ራሷን ታሳምናለች። መጀመሪያ አካባቢ ቤተሰቦቿንና", "ጓደኞቿን ለማስደሰት ይጥር የነበረው ሰው፣ አሁን ምንም ደንታ", "አልሰጠውም። እሷም፣ 'ሥራ በዝቶበት ነው እንጂ ይወደኛል፤ ትንሽ ጊዜ", "ሲያገኝ ከእኔ ጋር መሆን ነው የሚፈልገው' እያለች ሰበብ ትፈልግለታለች።", "የሥራ ቦታ ጭንቀቷን ልታዋየው ስትሞክር ያዛጋል፣ ስልኩን ይጎረጉራል።", "'ምክንያቱም አስፈላጊ ስልክ ሊደወልለት የሚችል ሥራ የሚበዛበት ቀዶ", "ጥገና ሐኪም ነውና' ብላ ታልፈዋለች።", "ቢሆንም ግን ጥሩ ቦታዎች ይወጣሉ፣ ይዝናናሉ፣ የፍቅር ሕይወታቸውም", "ያምራል፤ እናም ብዙም ሳይቆይ አብረው መኖር እንዲጀምሩ ጠየቃት።", "የቤቷ የኪራይ ውል አልቆ ስለነበርና ዕድሜዋም ሃያ ዘጠኝ ስለሞላ፣ ጊዜው", "አሁን ነው ብላ ተስማማች።", "አብረው መኖር ሲጀምሩ፣ ጆን በቤቱ ውስጥ ትላልቅ ለውጦች እንዲደረጉ", "እንደማይፈልግ ነገራት። እሱ የለመደው የራሱ አኗኗር አለው። ነገር ግን", "የሴት እጅ ቢያርፍበት ደስ ይለኛል አላት፤ ይህ ማለት ደግሞ የጽዳት", "ሠራተኛዋ በማትመጣበት ቀን ቤቱን እንድታጸዳው መሆኑን ቆየት ብሎ", "ገባት። ቤቱ እሱ በሚፈልገው ልክ እንዲሆንለት ደፋ ቀና ትል ጀመር።", "አንቺም እንዲህ ራስሽን ጥለሽ ለእሱ ስትሮጪ ታይቶሽ ያውቃል?", "ከእሱ ጋር ከመገናኘቷ በፊትና በፍቅራቸው መባቻ ላይ፣ ሬቸል ነጻና ዘና", "ያለች ሴት ነበረች። ከሥራ ስትመጣ ጫማዋን ሳሎን መሐል አውልቃ", "የምትጥል፣ ልብሷ መሬት ላይ ቢወድቅ ግድ የማይሰጣት ዓይነት ሴት", "ነበረች። አሁን ግን ሁልጊዜ የተወጠረችና ሁሉም ነገር እሱ እንደሚፈልገው", "መሆኑን የምትቆጣጠር ሆነች። ቀስ በቀስ ግን ሕይወታቸው መስመር ያዘ።", "እራት ትሠራለታለች፣ አብረው የሚያሳልፉት ጊዜም አስደሳች ነበር። አልፎ", "አልፎ የሚያሳየው ቅዝቃዜ፣ ሐሳቡ መበተን፣ 'ብቻዬን መሆን እፈልጋለሁ'", "ማለቱና ሕይወታቸው በእሱ መንገድ ብቻ እንዲመራ ማድረጉ፣ ምቾት", "ያለው ሕይወት ከሚሰጣት ሥራ የሚበዛበት ሐኪም የሚጠበቅ ነው በሚል", "ሰበብ ይድበሰበሳል። እሷም በግንኙነታቸው ጥሩ ጎን ላይ ብቻ አተኮረች።", "ሬቸል ሥራዋን ትወደው ነበር። የእሷ የቆይታ ሰዓት ቢረዝምም፣ የእሱ", "ይበልጥ ስለሚረዝም ጆን ቅር አይለውም። ሁለቱም ጥሩ ገቢ ስለነበራቸው", "ኑሮአቸው የተደላደለ ነበር። የፈለገችውን መግዛት፣ ከጓደኞቿ ጋር ያለ", "ምንም ሥጋት ወጥታ ማምሸት ትችላለች። ጊዜ ሲያገኙ እንግዶችን እየጠሩ", "የተንደላቀቀ ሕይወታቸውን ያሳያሉ።", "የሬቸል እናትና ጓደኞቿ ያደንቋታል፣ አንዳንዶቹም ይቀኑባት ነበር። ኑሮዋ", "እጅግ የተደላደለና የሚያስቀና ነበር። እናቷ ደጋግማ፣ \"ይህን የመሰለ ባል", "አታገኚም፣ አጥብቀሽ ያዢው፣ ኑሮሽን ያደላድለዋል፣ ቋሚ ሥራ አለው፣", "ደስተኛ ነው፣ መልከ መልካም ነው\" ትላታለች። ጓደኞቿ እያገቡ ስለነበር፣", "የትዳር ሽታ በአየሩ ላይ ይንሳፈፍ ነበር። አልፎ አልፎ የጓደኞቿ የፍቅር", "ግንኙነት ሲፈርስና፣ 'ዕድሜዬ ሄደ እንደገና አዲስ ሰው መፈለግ አለብኝ'", "ብለው ሲጨነቁ ስታይ፣ እሷም መጥፎ ምልክቶችን እያየች እንዳላየች", "ለማለፍ ትገደዳለች። ያገኘችውን ላለማጣት ስትል ባለው ነገር ላይ ብቻ", "ትኩረት ማድረግን መረጠች።", "በዚያው ክረምት፣ ከተዋወቁ ከአንድ ዓመት በኋላ፣ ጆን ለሥራ ጉዳይ ወደ", "ደቡብ አፍሪካ ኬፕታውን ይዟት ሄደ፤ እዚያም የጋብቻ ጥያቄ አቀረበላት።", "ቀለበቱ ፊልም ላይ እንጂ በእውን የማይገኝ ዓይነት እጅግ ውድ ነበር።", "ከዚያም በሚገርም የሳፋሪ ጉብኝት ዘና አደረጋት። ጉዞው ምርጥ ምግብ፣", "ውድ ወይንና ሞቅ ያለ የፍቅር ጊዜ የተሞላበት፣ እሷም በሕልም ዓለም", "ውስጥ ያለች ያህል የተሰማት ጊዜ ነበር። በእርግጥ የዚህ ተረት ልዑል", "አልፎ አልፎ ቁጡ ቢሆንም። በሆቴሎች፣ በጉብኝት ቦታዎችና በአውሮፕላን", "ማረፊያ ለሰዎች የሚያሳየውን ትዕቢትና ንቀት ፊቷን በማዞር ለማለፍ", "ሞከረች። ቸልተኛ፣ ምቀኛና ክፉ ሲሆንባት፣ ግራ እጇ ላይ ያጠለቀችውን", "ውድ ቀለበት እያየች፣ 'በእውነት ባይወደኝ ኖሮ ይህን ያህል ቃል", "አይገባልኝም ነበር' ብላ ራሷን ታሳምናለች። ደግሞስ ሰው ሁልጊዜ እንደ", "ጠዋት ፀሐይ ብሩህና ፍጹም ሊሆን አይችልም፣ አይደለም እንዴ?", "ለቤተሰብና ለጓደኛ ነገሩ፣ ቀለበቷን እያሳዩ ደስታቸውን አጋሩ። ወደ", "ቀድሞው የቤት ሕይወታቸው ተመልሰው፣ የሠርግ ቀን መቁረጥ ጀመሩ።", "እናቷና ጓደኞቿ፣ ታላቅ ፍቅር፣ ምርጥ ሮሚዮና ውድ ቀለበት ያገኘች", "ዕድለኛ ሴት እንደሆነች ደጋግመው ነገሯት።", "ይሁን እንጂ ጆን ማምሸት ጀመረ፤ 'የሐኪም ሥራ አይገመትም' በሚል", "ሰበብ ቢሆንም፣ አልፎ አልፎ ጠጥቶ እንደሚመጣ ያስታውቅ ነበር። አንድ", "ቀን ማታ መታጠቢያ ቤት ውስጥ፣ ጀርባው ላይ በሰው ጥፍር የተቧጨረ", "የሚመስል ምልክት አየች። በስልኩና በኮምፒውተሩ ላይ እጅግ ምሥጢራዊ", "ሆነ፤ መታጠቢያ ቤት እንኳን ሲገባ ይዟቸው ይገባል። እሷ ወደ ክፍል", "ስትገባ ኮምፒውተሩን ቶሎ ይዘጋና በፈገግታ፣ \"የእኔ ፍቅር፣ ከሥራዬ ላይ", "ቀና እንድል ስላደረግሽኝ አመሰግናለሁ\" ይላታል።", "አንድ ቅዳሜ ሬቸል የጆንን ኮት ወደ ልብስ ማጠቢያ ልትወስድ ኪሱን", "ስትፈትሽ፣ ሥራ ላይ ነኝ ብሎ ካመሸበት ቀን የተቆረጠ ደረሰኝ አገኘች።", "ደረሰኙ የአካባቢው መጠጥ ቤት ሲሆን፣ በሰዓቱ እሷ ስልክ ደውላ 'ታካሚ", "እያየሁ ነው' ካላት ሰዓት ጋር አንድ ዓይነት ነበር፤ ለካስ ያኔ ሒሳብ እየከፈለ", "ነበር።", "ስትጠይቀው እጅግ ተቆጣ። \"እንዴት እንዲህ ብለሽ ትጠረጥሪኛለሽ? ስንት", "ደክሜ፣ ስንት ለፍቼ! ያኔ እኮ ጆ ሞርጋን ሆስፒታል መጥቶ ወረቀቶቹን", "ስቀበል የእሱ ደረሰኝ አብሮ ገብቶ ነው። ይኸውልሽ፣ የሥራ መርሐ ግብሬን", "እይ። ምን ነካሽ? አንቺ በራስ መተማመን ስለሌለሽ ብቻ ይህንን ሁሉ", "የገነባነውን ሕይወት ልታበላሽው ነው?\" እያለ ጮኸባት። አንቺንም እንዲህ", "አድርጎሽ ያውቃል? በገዛ ጥፋቱ አንቺን ጥፋተኛ አድርጎ፣ እውነታውን", "አዛብቶ እንድትጠራጠሪ አድርጎሽ ያውቃል?", "ተንበርክካ ማልቀስ ጀመረች፤ ይቅርታ ጠየቀች። የገነቡትን ማጣት", "አልፈለገችም። 'ከዚህ የተሻለ አታገኚም' ያለቻት የእናቷ ቃል ጆሮዋ ላይ", "አቃጨለ። እሱን የመጠየቅ መብት እንደሌላት ተሰማት። ምንም እንኳን", "ከጓደኞቹ ጋር ሊጠጣ ወጥቶ ባይነግራትም፣ እሱም ዕረፍት ያስፈልገዋል", "ብላ ራሷን አሳመነች። ጥርጣሬ ግን ልቧን ይበላው ጀመር። አንዴ በራሷ", "ትተማመን የነበረችው ጠንካራ ሴት፣ አሁን ራሷን መጠራጠር ጀመረች።", "ስሜቷ የሆነ ነገር ልክ እንዳልሆነ ይነግራት ነበር፤ ጆን ግን ሁልጊዜ ጥያቄ", "ባነሳች ቁጥር እብድ እንደሆነች እንዲሰማት ያደርጋታል። አልፎ አልፎ እሱ", "ራሱ ሌላ ወንድ እንዳላት አድርጎ ይከሳታል።", "ጆን ወደ ውጭ ሲወጡ ለሰዎች ጥሩ እንዳልሆነ ማስተዋል ጀመረች።", "ሁልጊዜ ቀዳሚ መሆን ይፈልጋል፣ አስተናጋጆችን ይቆጣል፣ ትዕግሥት", "የለውም። ይህ ባሕርዩ እጅግ የሚያሳፍር ቢሆንም፣ በዚያው ቅጽበት ደግሞ", "ወደ እሱ አስጠግቶ ምን ያህል ቆንጆ እንደሆነች ይነግራታል። ግራ", "የሚያጋባና ሰላም የሚነሳ ሕይወት ሆነባት።", "ጊዜ እያለፈ ሲሄድ ማምሸቱ ቀጠለ፤ ሬቸልም ብቸኝነት ተሰማት። በሰዓቱ", "ሲመጣም፣ ወጥተው እንዲዝናኑ ወይም እራት ተዘጋጅቶ እንዲጠብቀው", "ይፈልጋል። ነገር ግን ሰዓት ነግሯት ቢወጣም፣ በሰዓቱ የመምጣቱ ዕድል", "ሃምሳ በሃምሳ ስለሆነ፣ ብዙ ጊዜ የሠራችውን እራት ብቻዋን ትበላለች።", "በወር አንዴ ባሕርዩን ስትነግረው፣ ስለ ራስ ወዳድነቷ ይጮህባታል። \"አንቺ", "እኮ ተንደላቅቀሽ ነው የምትኖሪው፤ እኔ ነኝ የምለፋው፣ ጂፒኤስ", "ልታስገጥሚብኝ ነው እንዴ?\" እያለ ያዋርዳታል። አሊያም ደግሞ ጥያቄውን", "ወደ እሷ አዙሮ፣ \"ለምንድነው ይህን ሁሉ ጥያቄ የምትጠይቂኝ? የሆነ", "የምትደብቂው ነገር አለ እንዴ?\" ይላታል።", "በሕይወቷ ሌሎች ፈተናዎችም ነበሩ። የሥራ ቦታዋ ላይ የተፈጠረው ለውጥ", "ውጥረት ፈጥሮባት ነበር፤ እህቷ ደግሞ የጡት ካንሰር ታመመች። ይህ", "ሁሉ ሐዘን ቢጫናትም እሱ ምንም አይመስለውም። ስትነግረው", "አይሰማትም፤ የባሰውን ደግሞ ለሥራዋ ችግር እሷኑ ይወቅሳታል።", "የእህቷን ሕመም በተመለከተም፣ ሊያጽናናት ሲገባው በሕክምናው ዓለም", "ይህ በሽታ ምን ያህል የመዳን እድል እንዳለው በቁጥር እየነገረ የጭንቀቷን", "ጥልቀት ያቃልለዋል።", "በእነዚህ ወራት ውስጥ ሬቸል የሠርጓን ዝግጅት እያጧጧፈች ነበር። ሠርጉ", "እጅግ የደመቀ፣ ወጪ ያልተቆጠበበት፣ ምርጥ ልብስና ምግብ የተዘጋጀለት፣", "ጓደኞቻቸው ከየቦታው የሚመጡበት ትልቅ ድግስ ነበር። ውሳኔ", "የሚያስፈልጋቸው ብዙ ጉዳዮች ነበሩ፤ ጆን ግን ግማሽ ጊዜ አብሯት", "ይሳተፋል፣ ግማሹን ጊዜ ደግሞ ምንም ደንታ አይሰጠውም። ባሕርዩ", "በፍጹም አይገመትም። እሱ በሌለበት ውሳኔዎችን ስታሳልፍ፣ ቆይቶ", "ይመጣና ሁሉንም አፍርሶ ይጮህባታል። እርዳኝ ስትለው የትም ሄዶ፣", "መጨረሻ ላይ ለምን ይህን መረጥሽ ብሎ ይወቅሳታል። ትጠራጠራለች", "ራሷን ትጠይቃለች", "ግን ታጭታለች፤ ቀለበት አድርጋለች፣ ቤት አላት፣ የሠርግ ልብስ", "ተዘጋጅቷል፣ ሥራዋ ጥሩ ነው፣ እጮኛዋም ስኬታማ ነው። ሕልሟን", "እየኖረች እንደሆነ ለራሷ ትነግረዋለች። አንድ ቀን ማታ ሬቸል፣ በሥዕል", "ጥበብ ስላላት ሕልምና በበጋው ወቅት ጣሊያን አገር ስላለው የሥልጠና", "ፕሮግራም ለጆን አዋየችው። ለስድስት ሳምንት እዚያ ቤት ተከራይተው እሷ", "ሥዕል ስትስል እሱም አብሯት ዕረፍት እንዲያደርግ ጠየቀችው። እሱ ግን", "በሐሳቧ ላይ ሳቀባት፣ አሾፈባትም። ከሥራዋ ፈቃድ መውሰድ መፈለጓን", "እንደ ስንፍና ቆጥሮ፣ ራሷን እንደ ሠዓሊ ማሰቧ አስቂኝ እንደሆነ ነገራት።", "የእሱ ሥራ እጅግ አስፈላጊ ስለሆነ እሷን ተከትሎ ወደማይታወቅ መንደር", "መሄድ እንደማይችል በንቀት ተናገረ። ሐሳቧ ምናልባት ተግባራዊ ላይሆን", "ቢችልም፣ ጆን ግን እጅግ ሞኝና ጅል እንደሆነች አድርጎ ነበር ያዋረዳት።", "አንቺስ የእኔ እህት፣ እንዲህ የውስጥሽን ስትነግሪው አጣጥሎት፣ ሕልምሽ", "በዓይንሽ ሥር ሲቀጭ ተሰምቶሽ ያውቃል? ሬቸልም የእሱን ንግግር አምና", "መቀበልና ራሷን ማሳነስ ጀመረች።", "ከሠርጋቸው ሦስት ወራት በፊት፣ እጮኛዋን በሥራ ቦታ ድግስ ላይ", "ያውቀው የነበረ አንድ የሬቸል የሥራ ባልደረባ፣ ጆንን የአዋቂዎች ክለብ", "ውስጥ አየው። እጮኛዋ የቦታው ቋሚ ደንበኛ እንደነበር ያስታውቅበታል።", "ከአንዷ ሴት ጋር ወደ ጓሮ ሲገባ፣ በኋላም መኪናው ጋር ሲስማት አየው።", "የሥራ ባልደረባዋ ግን የተኛን ውሻ ላለመቀስቀስ ብሎ ዝምታን መረጠ።", "ከሳምንታት በኋላ፣ ሬቸልና ጆን በሥራ ቦታዋ በተዘጋጀ ድግስ ላይ ታደሙ፤", "ያ ጆንን በክለብ ያየው ጓደኛዋም እዚያው ነበር። በዚያች ምሽት ጆን እጅግ", "መጥፎ ባሕርይ አሳየ፤ ሬቸልን ንቋት፣ ከሌሎች ወጣት ሴቶች ጋር", "በማሽኮርመም አሳፋሪ ድርጊት ፈጸመ። በዚህ ጊዜ ጓደኛዋ ሬቸልን ለብቻዋ", "ጠርቶ ስለ እጮኛዋ ያለውን ሥጋት ነገራትና በሳምንቱ ውስጥ በሰፊው", "እንዲያወሩ ጠየቃት። ማክሰኞ ከሥራ በኋላ ቡና እየጠጡ፣ ያየውን ሁሉና", "በድግሱ ዕለትም ስላስተዋለው ነገር አጫወታት።", "ሬቸል ግን እንደተለመደው ጆንን ተከላከለች። \"እሱ ሊሆን አይችልም፣ ያኔ", "ማታ ከእኔ ጋር ነበር፣ ሐኪም እኮ ነው፣ እንዲህ ዓይነት ነገር አያደርግም\"", "አለችው። ለረዥም ጊዜ ጓደኛዋ በነበረውና ሚስቱም ጓደኛዋ በሆነችው በዚህ", "ሰው ላይ እጅግ ተቆጣች። ለምን ይህን ሊነግራት እንደፈለገ ግራ ገባት።", "ሆኖም ከቀጠሮው ስትወጣ ልቧ ተረብሾ ነበር። ጆን አሁንም ቤት አልገባም።", "የተኛች መስላ ጠበቀችውና በጣም አርፍዶ ገባ። በማግሥቱ ሆስፒታል", "ደውላ ስትጠይቅ፣ ጆን በዚያች ምሽት ሥራ ላይ እንዳልነበረ አረጋገጠች።", "የጓደኛዋ ታሪክ እውነት መሆኑን ማመን ጀመረች። ጓደኛዋን የክለቡን ስም", "ጠየቀችውና፣ በሚቀጥለው ጊዜ ጆን 'ሥራ ነኝ' ብሎ ሲቀር፣ ወደ ክለቡ ሄዳ", "ስትፈልግ፣ ያቺው የምታብረቀርቀው መኪናው ቆማ አገኘቻት።", "ወደ ቤት ተመልሳ እስኪመጣ ጠበቀች። ሌሊት ስምንት ተኩል ላይ ሲገባ", "ጠየቀችው። የሌላ ሰው ጠረን ይሸተዋል፤ እጅግ ተቆጥታ ነበር። መጀመሪያ", "ላይ ክሱን አስተባብሎ ጮኸባት፤ መኪናውን እንዳየችው ስትነግረው፣", "በስድብ አዋረዳት። ነገር ግን ጆን ማምለጫ ስላጣ፣ በማግሥቱ ተረጋግቶ", "ሊያነጋግራት ሞከረ። እጅግ ገርና አፍቃሪ ሆነ። ይቅርታ ጠየቀ፤ እንዲህ", "ዓይነት ቦታ ከሚወድ ጓደኛዬ ጋር ሄጄ ነው፣ ለአንቺ ግን ስሜትሽ", "እንደሚጎዳ ይገባኛል አላት። ከመጋባታችን በፊት የሁለታችንን ብቻ ጊዜ", "እናሳልፍ ብሎ አንደኛ ደረጃ ወደሆነች ደሴት ይዟት ሄደ። የመጨረሻ", "የሠርግ ዋዜማ ዕረፍት።", "ሞቃታማ አየር፣ ማራኪ ገጽታ፣ አፍቃሪ ንግግሮች፤ ሳታስበው ያ ክለብና", "ቸልተኝነቱ ተረሳላት። በጉዞው ላይ እንደገና እንዲህ ዓይነት ቦታ እንዳይሄድ", "ቃል አስገባችው። እሱም ተስማማ። ሠርጉ ሊደርስ ሁለት ወር ሲቀረው፣", "ማምሸቱን ተወ፤ እሷም መጥፎ ባሕርዩን የመጨረሻዎቹ የነጠላነት ቀናት", "መረበሽ በሚል አሳበበችው። ሕይወታቸው ወደ መስመር ተመለሰ።", "ሠርጉ እጅግ ያማረ ነበር። የማይረሳ ቅዳሜና እሑድ፣ ድንቅ አየር፣ ሁሉም", "ነገር የተዋጣለት ነበር። የጫጉላ ጊዜያቸው የደስታና የፍቅር ጥግ ነበር።", "ሁሉም ጥርጣሬዋ ጠፋ።", "ወደ መደበኛ ሕይወታቸው ተመለሱ። ጆንና ሬቸል ወደ ሥራ ገቡ። የሠርግ", "ስጦታዎቻቸውን አደራጅተው ኑሮ ቀጠለ። አሁን ትዳር ይዛለች፣ ይህ ደግሞ", "ትልቅ ትርጉም አለው አይደል? ስኬታማ ወጣት ባልና ሚስት በመሆን", "ጥሩ ሚና ተጫወቱ፤ ከሁለት ዓመት በኋላም አረገዘች።", "ቤተሰብ የመመሥረት ሕልም ስለነበራት ዜናው እጅግ አስደሳች ነበር። ነገር", "ግን እርግዝናዋ እየገፋ ሲሄድ እሱ እየራቃት መጣ። ሬቸል በእርግዝናዋ", "ወቅት ሥጋት ስለነበራት የጆንን ማበረታታት ትሻ ነበር፤ እሱ ግን ሥራ", "በዝቶብኛል በሚለው ሰበብ ጸንቶ፣ ይህ ጊዜ ያልፋል፣ ቤተሰብ እንሆናለን", "ይላታል። እግሯን ሲያሽላት፣ የልጅ ስም ሲያወጡና ዕቃ ሲገዙ በሕልሟ", "ታስብ ነበር። እሱ ግን ለድካሟ ምንም ርኅራኄ አልነበረውም፣ ለሒደቱም", "ደንታ አልሰጠውም። ይልቁንም፣ ልጁንና እኔን እንዴት ልታስተናግጂ ነው", "እያለ ይጨነቃል።", "ልጁ ተወለደ፤ እጅግ የሚያምር ወንድ ልጅ። ሕይወታቸው ተቀየረ። ጆን፣", "ገቢው እየጨመረ ስለሆነ ሬቸል ሥራዋን እንድታቆም አዘዛት። የተሻለ", "ሰፈር ወዳለ ትልቅ ቤት ተዛወሩ፤ ከዚያም ሴት ልጅ ወለዱ። እርግዝናና", "ልጅ ማሳደግ የሕይወቷ አካል ሆነ፤ ሬቸልም በእናትነትና በቤት እመቤትነት", "ውስጥ ተዋጠች። የጆን ማምሸት እምብዛም አላስጨነቃትም፣ ምክንያቱም", "ልጆቿን አስተኝታ እሷም በድካም ትተኛለችና። እሱ ይሠራና ገንዘብ", "ያመጣል፣ እሷ ልጆቹን ታሳድጋለች። ሬቸል እንደ ትልቅ ሰው ገንዘብ", "መጠየቅ እጅግ ያስጠላታል። እሱ ግን፣ እኔ ስደክም፣ አንቺ በምቾት", "ልጆችሽን እያሳደግሽ ትኖሪያለሽ እያለ ያዋርዳታል። ከሥራ ዓለም ለሰባት", "ዓመታት በመራቋ፣ አሁን የእኔ ዕውቀት ለምንም አይጠቅምም ብላ ማመን", "ጀመረች።", "ከተጋቡ ዘጠኝ ዓመታት ቢሆናቸውም፣ የድሮው ባሕርዩ አሁንም አለ።", "ማምሸት፣ ምሥጢር መደበቅ፣ አለመስማትና ድጋፍ አለመስጠት። ነገር", "ግን ለሰዎች በማስመሰል የተካኑ ነበሩ። በበዓላት ላይ የሚነሷቸው ፎቶዎች", "ትላልቅ ፈገግታ፣ ምርጥ ዕረፍትና የተዋጣለት ሕይወት ያሳያሉ። ፍጹም", "የሆነ የውሸት ገጽታ። ሬቸል ግን በጭንቀቷ፣ በብቸኝነቷና በሚሊዮን", "በሚቆጠሩ ስውር ስብራቶቿ መሐል ለማንም ማማረር እንደማትችል ታስብ", "ነበር። ልጆቹ ምርጥ ትምህርት ቤት ይማራሉ፣ ቤታቸው ያምራል፣ ለውጭ", "ሰው ሁሉንም ያሟሉ ናቸው።", "ልጆቹ እያደጉ ሲመጡና እሷ እንቅልፍ ማጣቷ ሲቀጥል፣ ጆን አሁንም ቤት", "አያድርም ነበር። የፍቅር ግንኙነታቸው ቀዘቀዘ፤ አሁንም ወደ እነዚያ ክለቦች", "እንዳይሄድ ትለምነዋለች። እሱ ግን በሳቅ ያልፈዋል። ስልኩንና", "ኮምፒውተሩን እንደደበቀ ነው፤ ሆኖም አልፎ አልፎ ጥሩ ስለሚሆንላት", "ጸባቸው ይመጣል ይሄዳል። እሷም ዝም ብላ ተያይዛዋለች። ራስን መጠየቅ", "የሕይወቷ መደበኛ አካል ሆነ። ያቺ በራሷ ትተማመን የነበረች ጠንካራ ሴት", "ጠፍታ፣ በቤት ውስጥ በትንሽ ነገር የምትጨነቅና ከልጆቿ ጋር የምትወጠር", "ሴት ሆነች። ውበቷ እንደቀድሞው ቢሆንም፣ ሌሎች ወንዶች ትኩረት", "ሲሰጧት እንግዳ ይሆንባታል፤ ምክንያቱም ባሏ ካያት ብዙ ዘመን", "አልፎታልና።", "በመደበኛ የሕክምና ምርመራ ወቅት፣ ዶክተሯ የማኅፀን በር ምርመራዋ", "ልክ እንዳልሆነና ኤች ፒ ቪ የተባለ ቫይረስ በደሟ ውስጥ እንደተገኘ ነገራት።", "ከባሏ ውጪ ሌላ ወንድ አውቃ ስለማታውቅ፣ አሁን ችግሩ ከክለብ መሄድ", "እጅግ የገዘፈ መሆኑን ተረዳች። ልጆቹን ወደ እናቷ ቤት ላከችና ማታ", "ሲመጣ ፊት ለፊት ተፋጠጠችው። ታላቅ ጸብ ተነሣ፣ ጩኸትና ክስ። የስልክ", "መልእክቶቹንና የባንክ ሒሳቡን ስትፈትሽ፣ ለዓመታት ሲሠራው የነበረው", "ጉድ አፈጠጠባት። ለብዙ ዓመታት ከበርካታ ዳንሰኞችና አስተናጋጆች ጋር", "ይማግጥ ነበር። ለአንዷ የወቅቱ ፍቅረኛው አፓርታማ እስከመከራየት", "ደርሷል። ለእነዚህ ሴቶች፣ ለክለብ፣ ለአውሮፕላን ትኬትና ለስጦታ ወደ", "መቶ ሺህ ዶላር አጥፍቷል። ከቤት እንዲወጣ ጠየቀችው፤ በቀጣዮቹ", "ወራትም እንዲመለስ ሲለምናት ከረመ። እናቷ፣ \"ምን እየሠራሽ እንደሆነ", "ታውቂዋለሽ? ወንድ ልጅ ይሳሳታል፣ ይቅርታው ከልቡ ነው፤ ሁለት ልጅ", "ይዘሽ ብቻሽን ለመቅረት ዝግጁ ነሽ?\" እያለች አስጨነቀቻት። ሌላ ራስን", "መጠራጠር። ሁሉም ሰው የተባበረባት መሰላት። በመጨረሻም በሽታውንና", "የሠራውን ጉድ ሁሉ ለእናቷ ስትነግራት፣ ያኔ እናቷ ተረዳቻት።", "ለወራት ይቅርታና ጭቅጭቅ ቢኖርም፣ ጆን አሁንም ይቅርታ እየጠየቀ", "ማታ ግን ባር ውስጥ ከተዋወቃት የሃያ አራት ዓመት ፍቅረኛው ጋር ወደ", "ተከራየው አፓርታማ ያመራል። የፍቺው ሒደት እጅግ አድካሚ ነበር፤", "ሐብት ይደብቃል፤ በአሥር ሺዎች የሚቆጠር የሕግ ክፍያ ወጥቶ", "በመጨረሻ ተፋቱ። ከተፋቱ በኋላ፣ ፌስቡክ ላይ እንደሚያሳየው፣ ሕይወቱ", "ከወጣት ሴቶች ጋር መዝናናት፣ አዲስ የጸጉር አቆራረጥ፣ ፈጣን", "መኪናዎችና የልጆቹን የትምህርት ቤት ክፍያ ለመክፈል ማቅማማት ሆነ።", "ብልህ ጠበቆቹ ሬቸልን በኢኮኖሚ ቀውስ ውስጥ ጥለዋት አለፉ። ቤተሰቦቹም", "ስለእሷ የነገራቸውን ውሸት አምነው ምንም ድጋፍ አላደረጉላትም። አሁን", "ግን ሬቸል ሰላም አግኝታለች። ይሁን እንጂ፣ ልጆቹ አሁንም ስለሚወዱት፣", "እሱ ግን ለሳምንታት ድምፁ ሲጠፋና ልጆቹን ሲያሳዝን ማየት ልቧን", "ይሰብረዋል።", "ከዚህ ሁሉ በኋላ ዋናው ጥያቄ፣ \"ይህ ሁሉ ሲመጣ አላየሽውም ነበር ወይ?\"", "የሚለው ነው። አየሽ የእኔ እህት፣ ጅብ ከሄደ ውሻ ጮኸ እንደሚባለው፣", "ሁሉም ነገር ካለፈ በኋላ መፍረድና አዋቂ መሆን እጅግ ይቀላል።", "ክሕደቱ፣ ውሸቱ፣ ጭካኔው፣ ሁሉም ከመጀመሪያውኑ ነበሩ። መጀመሪያ", "ላይ በራስ መተማመን፣ ጠንካራ ሠራተኛነትና ስኬታማነት ተብለው", "የተሸፈኑት ባሕርያት፣ ውሎ አድሮ እውነተኛ ማንነታቸውን አወጡ። ሰዎች", "'እሱን በማግባትሽ ዕድለኛ ነሽ' ማለታቸው፣ እናቷ የራሷን ሕልም በልጇ", "ላይ መጫኗ፣ ጫና ፈጥሮባታል። በመጨረሻም ሬቸል፣ 'በፍቅሬ", "እለውጠዋለሁ' የሚል ከንቱ ምኞት ውስጥ ወደቀች።", "ትዳሯን ለአሥር ዓመታት ለማቆየት ስትል፣ ሬቸል የውስጥ ስሜቷን", "አፈነች፣ በጥርጣሬ ተዋጠች፣ በኃፍረት ራሷን ከሰው አገለለች፣", "በመጨረሻም ራሷን ረሳች። ልትቋቋሚው ትችይ ነበር ወይ? ተብላ", "ስትጠየቅ፣ የተመኘችው አንድ ነገር ብቻ እንደነበር አስታወሰች፤ ወደ እነዚያ", "ክለቦች እንዳይሄድ ብቻ ነበር የለመነችው። እሱ ግን ያቺን አንዲት ጥያቄ", "እንኳን ሊያከብርላት አልቻለም። የሚገርመው ደግሞ፣ ከአሥር ዓመታት", "ንቀት፣ ጭካኔና ቸልተኝነት በላይ፣ መጨረሻ ላይ ልቧን የሰበረው ያ የክለብ", "ጉዳይ ነበር። በውጫዊ ድምቀትና በሰዎች ግፊት መሸወድ ምን ያህል ቀላል", "እንደሆነ አሁንም ያስገርማታል።", "ይህ የአንዲት ሴት ታሪክ ነው። ለመቆየት ሞክራ፣ በመጨረሻም ጥሎ", "ስለመውጣት። የማንነቷን ምሥጢር ለመጠበቅ ስንል፣ የብዙ ሴቶች ታሪክ", "ተደባልቆ፣ እንደ ተረትና እንደ ማስጠንቀቂያ ቀርቧል።", "ይህ መጽሐፍ ለአንቺ የሕይወት መመሪያሽ ነው። እንዴት መቆየት", "እንዳለብሽ፣ ወይም እንዴት መውጣት እንዳለብሽ የሚነግርሽ መመሪያ።", "ሬቸል እንዲህ አለች፤ \"በመጀመሪያ ያየኋቸውን የማስጠንቀቂያ ደወሎች", "ብሰማ ኖሮ፣ መጀመሪያውኑም አልገባበትም ነበር። ወይም ደግሞ መቼም", "እንደማይለወጥ ብገነዘብ ኖሮ፣ ቶሎ ወጥቼ አዲስ ሕይወት እጀምር ነበር።", "በቆየሁባቸው ዓመታት ሁሉ፣ የተሻለ መፍትሔ ቢኖረኝ እመኝ ነበር፤", "ምክንያቱም አሁንም ድረስ 'እኔ በቂ አይደለሁም' ከሚለው ራስን", "መጠራጠርና የሥነ ልቦና ጠባሳ ጋር እየታገልኩ ነውና።\"", "ያለፍንበት ሕይወት ማንነታችንን ይቀርጸዋል። ነገር ግን ኪሳራችንን ቀንሰን", "መውጫ መንገድ መፈለግ ከቻልን፣ የተሻለና ክብር ያለው ሕይወት", "ለመገንባት፣ ጊዜያችንንም በእውነተኛ ስፍራ ለማሳለፍ ያስችለናል።", "የአንቺስ ታሪክ ምንድነው?", "መቆየት አለብሽ ወይስ መሄድ? የእኔ እህት፣ እባክሽን ማንበብሽን ቀጥይ።"]}, {"id": "ch1", "name": "🛡️ ምዕራፍ አንድ (Chapter 1)", "paragraphs": ["ምዕራፍ አንድ", "የሕልውና ማትረፊያ መመሪያ", "\"በተረት ዓለም ተውጠን፣ የጠፋውን የሰላም መንግሥትና አስማተኛ በር", "ስንፈልግ ዕድሜያችን ያልፋል።\"", "ዩጂን ኦኔል", "አንድን አሳዛኝ ነገር ደጋግመሽ ካየሽ በኋላ፣ የሆነ መፍትሔ ማምጣት", "እንዳለብሽ ይሰማሻል። ስለ ጉዳዩ መናገርና የተማርሽውን ማካፈል ግድ", "ይልሻል። እኔም እንደ ሥነ ልቦና ባለሙያ፣ እንደ መምህርና እንደ ምስክር", "ዝም ማለት አልቻልኩም።", "ከራስ ወዳድ (ናርሲሲስት) ሰዎች ጋር ባላቸው ግንኙነት ምክንያት የብዙ", "ሴቶች ሕይወት ሲፈርስ፣ የሰላም ስሜታቸው ሲመሰቃቀልና ሥነ ልቦናቸው", "ሲጎዳ በዓይኔ ስለተመለከትኩ፣ እውነተኛ የሆነ የማዳኛ መመሪያ", "እንደሚያስፈልግ አመንኩ። ይህ መመሪያ በተስፋ ላይ በተመሠረተ ምክር፣", "ሁሉም ሰው ሊለወጥ ይችላል በሚል ከንቱ አስተሳሰብ፣ አሊያም አውሬው", "ወደ ልዑልነት ይቀየራል በሚል ምናባዊ ወሬ ላይ የተመሠረተ አይደለም።", "ይልቁንም፣ የዚህን የሥነ ልቦና ችግር እውነተኛ ገጽታ በሚያሳይና፣", "ተጨባጭ የሆነ የሕይወት መንገድን በሚጠቁም እውነት ላይ የቆመ ነው።", "በካሊፎርኒያ ስቴት ዩኒቨርሲቲ ለአሥራ ስድስት ዓመታት የሥነ ልቦና", "መምህር ሆኜ ሠርቻለሁ። በዚያ በቆየሁባቸው ዓመታት፣ የሰዎችን የስብዕና", "መዛባት ከጤናና ከበሽታ ጋር በማያያዝ ጥናት ለማድረግ ከብሔራዊ የጤና", "ተቋማት የገንዘብ ድጋፍ አግኝቼ ቆይቻለሁ። ይህ ሥራዬ፣ ራስ ወዳድነትን", "ጨምሮ የስብዕና መዛባቶችን እጅግ በጥልቀት እንድመረምር አስገድዶኛል።", "በመቶዎች የሚቆጠሩ ታካሚዎችን ስናጠና፣ እነዚህ የስብዕና ችግሮች በራሱ", "በሰውየው ላይ ብቻ ሳይሆን፣ በዙሪያው ባሉ ሰዎች ላይ ጭምር", "የሚፈጥሩትን ምስቅልቅል በዓይኔ አይቻለሁ። በአጭር ቋንቋ፣ የስብዕና", "መዛባት ለጤና እጅግ ጎጂ ነው። በሥነ ልቦና ባለሙያነት ፈቃድ አግኝቼ", "ለአሥራ ስምንት ዓመታት ሠርቻለሁ፤ በእነዚህ ዓመታትም የእነዚህን", "ችግሮች እልከኝነት በቅርበት ተመልክቻለሁ። ይህ ችግር ያለባቸው ሰዎች", "በቀላሉ አይለወጡም።", "በቋሚነት ያስተዋልኩት አንድ ነገር ቢኖር፣ አንዳንዴ በራስ ወዳድ ሰዎች", "ላይ የባሕርይ ለውጥ ማምጣት ብንችልም፣ ለውጡ ግን ዘላቂ አይሆንም።", "ከሁሉም በላይ ደግሞ፣ የምናመጣቸው ጥቃቅን የባሕርይ ለውጦች፣ በፍቅር", "ግንኙነታቸው ላይ የሚያሳዩትን አያያዝ አያሻሽሉትም። ራስ ወዳዶች", "የከፋውን ጉዳት የሚያደርሱት ደግሞ በፍቅር ግንኙነት ውስጥ ነው። ራስ", "ወዳድ የሆነን ሰው በሰዓቱ ስብሰባ ላይ እንዲገኝ ልታስተምሪው ትችይ", "ይሆናል፣ ነገር ግን እውነተኛ ርኅራኄንና ፍቅርን ልታስተምሪው", "አትችይም።", "በተጨማሪም የእኔ የሙያ ዘመን ያደገው፣ በሰው ልጅ የሥነ ልቦና ታሪክ", "ውስጥ እጅግ አስገራሚ በሆነው ወቅት ላይ ነው። መምህር ሆኜ ስጀምር", "ላፕቶፕ የሚባል ነገር አልነበረም፣ የስማርት ፎን ሐሳብ የሳይንስ ልብ", "ወለድ ይመስል ነበር፣ ኢንተርኔት ገና በልጅነት ዕድሜው ላይ ነበር።", "ባሕላችን 'ኩራት ጥፋትን ይቀድማል' ከሚለው አስተሳሰብ ወደ 'ካለህ አሳይ'", "በሚል ንቀት በአንድ አሥርት ዓመት ውስጥ ሲቀየር ተመልክቻለሁ። የሰው", "ልጅ እርስ በርሱ ተራራቀ፤ ሁሉም ለራሱ ብቻ የሚሮጥበት ዘመን መጣ።", "ጥልቀት ባለው የሕይወት ትርጉም ምትክ ላይ ላዩን መኖር መጣ፤ ይህ", "ደግሞ በሥነ ልቦናችን ላይ ከባድ ዋጋ አስከፍሎናል። በሕክምናው ዓለም፣", "በማስተማሩና በጥናቱ ዘርፍ ለረዥም ጊዜ ስቆይ፣ ሁሉም ነገር ግልጽ", "ሆነልኝ። ችግሩን ማወቅ ብቻ ሳይሆን፣ የማይቀየሩ እውነታዎችንም", "ተማርኩ። እነዚያ እውነታዎችና ምልከታዎች በዚህ መጽሐፍ ውስጥ", "ተካተዋል።", "ደራሲ ፊዝጀራልድ ቶምና ዴይዚ የተባሉትን ራስ ወዳድ ገጸ ባሕርያት", "ሲገልጽ በተሻለ ሁኔታ አስቀምጦታል። ቶምና ዴይዚ ቸልተኛ ሰዎች ነበሩ።", "ሰዎችንና ነገሮችን ሰባብረው ያደቃሉ፤ ከዚያም ወደ ገንዘባቸውና ወደ", "ቸልተኝነታቸው ይሸሸጋሉ። ያበላሹትንና የፈጠሩትን ብልሽት ሌሎች", "እንዲያጸዱላቸው ይተዋሉ። ራስ ወዳድ ሰዎች ልክ እንደዚህ ናቸው፤", "ቸልተኞች።", "ሕይወትን በዘፈቀደ ይጋልቧታል፤ ሰዎችንና ግንኙነቶችን እንደ ዕቃና እንደ", "መጫወቻ ይጠቀሙባቸዋል። አንዳንዴ ጨካኞች ቢመስሉም፣ ያን ያህል", "ክብር የሚገባቸው አይደሉም። እነሱ በቀላሉ ቸልተኞች ናቸው። ደግሞም", "ያጠፉትን ጥፋት ሌሎች ሰዎች እንዲያጸዱላቸው ይጠብቃሉ።", "ነገር ግን ቸልተኝነት ጭካኔ ነው። እውነቱን ለመናገር ለባሕርያቸው መነሻ", "የሆነው ምክንያት ምንም ለውጥ አያመጣም፤ ዋናው ነገር ውጤቱ ነው።", "ውጤቱ ደግሞ የሌሎችን ሰዎች ሰላም፣ ተስፋ፣ ሕልምና ሕይወት ማውደም", "ነው። ቸልተኝነት ትክክለኛ መግለጫው ቢሆንም፣ ማስተባበያ ግን ሊሆን", "አይችልም። አናይስ ኒን የተባለችው ጸሐፊ ይህንን ስትገልጸው እንዲህ", "ትላለች። \"ፍቅር በራሱ ጊዜ አይሞትም። ፍቅር የሚሞተው ምንጩን", "እንዴት እንደምናለመልመው አለማወቃችን ነው። በዕውርነት፣ በስሕተትና", "በክሕደት ይሞታል። በበሽታና በቁስል፣ በድካምና በመዛል ይሞታል።", "እያንዳንዱ አፍቃሪ የገዛ ፍቅሩ ገዳይ ተብሎ ፍርድ ቤት ሊቀርብ ይችላል።", "የሚያሳዝንሽና የሚጎዳሽ ነገር ሲፈጠር፣ አጋርሽ ሁኔታውን ለማስተካከልና", "አንቺን ለመረዳት ከመጣር ይልቅ፣ በትዕግስት ማጣት ፊቱን ያዞርና 'ምንም", "አይገባሽም' ይልሻል።", "ይህ መጽሐፍ ተስፋን ለማምጣት የተጻፈ የተስፋ መጽሐፍ ነው። በምናባዊ", "ምኞት ላይ ሳይሆን፣ በእውነታ ላይ የተመሠረተ እውነተኛ መፍትሔ", "ለመስጠት የተዘጋጀ ነው። ከራስ ወዳድ ሰው ጋር ግንኙነት ውስጥ", "መሆንሽንና አለመሆንሽን እንድታውቂ ይረዳሻል። ከእነዚህ ሰዎች ጋር", "መኖር ምን ያህል ፈታኝ ቢሆንም፣ ሙሉ በሙሉ መጥፎ ብቻ እንዳልሆኑም", "ያስገነዝብሻል። ከእነሱ ጋር ፍቅር እንይዛለን፣ ሕይወት እንገነባለን፣ ልጅ", "እንወልዳለን፤ አንዳንዴም እኛን እያጠፉን እንኳን ልንተዋቸው አንችልም።", "ይህንን የተወሳሰበ ስሜት መረዳትሽ፣ ለራስሽ ይበልጥ ርኅሩኅ እንድትሆኚና", "እብድ እንዳልሆንሽ እንድታውቂ ይረዳሻል።", "ከዚህ ሕይወት የመትረፊያው ምሥጢር", "ይህ መጽሐፍ በአንድ ቀላል ምሥጢር ላይ የተመሠረተ ነው። ምሥጢሩም", "ይህ ነው፤ ራስ ወዳዶች መቼም ቢሆን አይለወጡም።", "ይህ አጭር ሐሳብ ሕይወትሽን እንደሚቀይረው ተስፋ አደርጋለሁ።", "ምክንያቱም ይህን ስታውቂ ራስሽን ከመውቀስ፣ ከጭንቀት፣ ራስሽን", "ከመጠራጠር፣ የማይሰማሽን ሰው ለማሳመን ከመልፋትና መቼም", "የማይመጣን ባቡር ከመጠበቅ ትድኛለሽ። ከራስ ወዳዶች ጋር የሚደረግ", "ግንኙነት፣ 'አንድ ቀን ይስተካከላል' በሚል የከንቱ ተስፋ ገመድ የተንጠለጠለ", "ነው፤ ነገር ግን ያ ቀን እንደሚመጣ የሚያሳይ ምንም ማስረጃ የለም። በዚህ", "እምነቴ ጸንቼ እቆማለሁ፤ ዘጠና ዘጠኝ በመቶ የሚሆኑ ራስ ወዳድ ሰዎች", "በፍጹም አይቀየሩም። የሚታየው ነገር እሱው ነው፤ ስለዚህ ወይ ተላመጂው", "አሊያም ጥለሽው ውጪ። እሱ ይለወጣል ብለሽ መጠበቅሽ አማራጭ ሊሆን", "አይችልም። መለወጥ የምትችይው ራስሽን ብቻ ነው፤ ሁኔታውን መረዳት፣", "የምትጠብቂውን ነገር ማስተካከልና በዚያ ልክ መወሰን። የዚህ መጽሐፍ", "ዋና ዓላማም ይኸው ነው።", "ይህ መጽሐፍ ስለ ራስ ወዳድነት እጅግ ጥልቅ የሆነ ማብራሪያ ይሰጥሻል።", "የማስጠንቀቂያ ደወሎችንና የተለመዱ ባሕርያትን እንድታውቂ፣ በውስጥሽ", "ከሚፈጥሩት ስሜት ጋር እንድታያይዣቸው፣ ትክክለኛውን መንገድ", "መርጠሽ እርምጃ እንድትወስጂ ይረዳሻል። ከምንም በላይ ግን፣ ራስ ወዳዶች", "እንደማይለወጡ ዘወትር ያስታውስሻል። ሕይወትሽን ሙሉ እንደ ሲሲፈስ", "ትልቅ ድንጋይ ወደ ተራራ ጫፍ እያገፋሽ፣ መልሶ ቁልቁል ሲወርድብሽ", "እያየሽ፣ በማግሥቱ እንደገና ከመጀመር የከንቱ ድካም ራስሽን እንድታድኚ", "ነው። ውስጥሽ እንዳለሽ እንኳን ሳታውቂው የተዘፈቅሽበትን አዙሪት እንዴት", "መስበር እንድምትችይ ያሳይሻል።", "የስብዕና መዛባት እንደ ድብርት ካሉ ሌሎች የሥነ ልቦና ችግሮች ይለያል።", "የስብዕና መዛባት ማለት አንድ ሰው ለዓለምና ለራሱ ውስጣዊ ስሜት ምላሽ", "የሚሰጥበት የጸና ልማድ ነው። በጭንቀት ጊዜ እነዚህ ልማዶች ይበልጥ", "ይጠነክራሉ። ቋሚ ልማድ ስለሆኑ ደግሞ በቀላሉ ሊገመቱ ይችላሉ። እነዚህ", "ልማዶች ያሉት ራስ ወዳዱ ሰው ውስጥ እንጂ አንቺ ውስጥ አይደለም፤", "ነገር ግን በእሱ ልማድ ምክንያት በዙሪያው ያሉ ሰዎች ሕይወት", "ይታመሳል።", "አነጋጋሪው የመፍትሔ ሐሳብ", "ይህ መጽሐፍ በሙያ አጋሮቼና በብዙ አንባቢዎች ዘንድ አነጋጋሪ", "እንደሚሆን አልጠራጠርም። እኔ የሥነ ልቦና ባለሙያ ነኝ፣ ሥራችን ደግሞ", "ሰዎችን ማከምና መለወጥ ነው። ነገር ግን ራስ ወዳድ በሆኑ ሰዎች ላይ", "ዘላቂ ለውጥ ሲመጣ አይቼ አላውቅም። ምናልባት ጥቂት ስንዝር ያህል", "መሻሻል ሊያሳዩ ይችላሉ፣ ሁሌም ምርጥ እንዳልነበሩ በአንደበታቸው", "ሊያምኑ ይችላሉ። ነገር ግን ልክ እንደ ተረቱ ጊንጥ፣ ጥፋታቸውን ማወቅ", "ማለት ባሕርያቸውን ይቀይራሉ ማለት አይደለም። ዊሊያም ጀምስ", "እንዳለው፣ \"ምንም ለውጥ የማያመጣ ለውጥ፣ ለውጥ አይደለም።\"", "በሌላ በኩል ደግሞ፣ ጥለሽ መውጣት አለብሽ ብዬ አልነግርሽም። መጥፎ", "አያያዝ ስለደረሰብሽ ጥለሽ ውጪ ብሎ መጻፍ እጅግ ቀላል ነው። ሕይወት", "ግን ውስብስብ ናት፣ ያን ያህል ቀላል አይደለችም። አንዳንዶች", "ግንኙነታቸውን ማፍረስ አይፈልጉም፤ ስለዚህ 'ጥለሽ ውጪ' የሚለው", "ትእዛዝ ብቻውን ከተሰጠ፣ በችግሩ ውስጥ ያሉ ሴቶች ይበልጥ ብቸኝነትና", "መውጫ እንደሌላቸው እንዲሰማቸው ያደርጋል። ይህ መጽሐፍ ሁለቱንም", "አማራጮች በእውነተኛ ሚዛን ላይ ያስቀምጣል። ምናልባት አንባቢዋ", "ለተወሰነ ጊዜ መቆየትን ትመርጥና፣ ቆየት ብላ ደግሞ ለመውጣት ትወስን", "ይሆናል። ለማንኛውም ውሳኔሽ ማንም አይፈርድብሽም፤ ለአንቺ የሚበጅሽን", "የምታውቂው አንቺው ራስሽ ብቻ ነሽ። በግንኙነትሽ ውስጥ ቆይተሽም", "ቢሆን፣ በማስተዋልና መረጃ ላይ ተመሥርተሽ እንድትኖሪ የሚያስችሉሽን", "መሣሪያዎች ስለሚሰጥሽ፣ ይህ መጽሐፍ ወደር የሌለው የሕይወት", "ማትረፊያ መመሪያ ነው። የፍቅር ግንኙነት እጅግ የተወሳሰበ ነው። ራስ", "ወዳዶች አንድ ዓይነት ዜማ ብቻ እንደሚጫወት የሙዚቃ መሣሪያ የተገደቡ", "ቢመስሉም፣ እኛ ግን እንደእነሱ አይደለንም። እነሱ ራሳቸው በተለያየ", "መንገድ ይገለጣሉ፤ ይህም የተለያየ ስሜት እንዲሰማን ያደርጋል። ይህ", "መጽሐፍ ባሕርያቸውን እንዴት መቋቋም እንዳለብሽ እውነተኛ ምክር", "ይሰጥሻል፤ ይህም በሰላም ለመቆየት፣ ቀስ እያሉ ለመለየት፣ አሊያም", "በተረጋጋና ደህንነቱ በተጠበቀ ሁኔታ ጥሎ ለመውጣት ይረዳሻል።", "ደራሲያን አንዳንዴ በቃላትና በሰዋሰው ሕግ ይታሠራሉ። በመጽሐፉ ውስጥ", "ወጥ የሆነ አገላለጽ እንዲኖር፣ ስለ ራስ ወዳዶች ስናገር በተለምዶ የወንድ", "ጾታን እጠቀማለሁ። አብዛኛዎቹ ጥናቶች እንደሚያሳዩት የስብዕና መዛባት", "በብዛት የሚታየው በወንዶች ላይ ነው፤ ይህ ደግሞ ኅብረተሰባችን ለወንዶች", "ከሚሰጠው ነጻነት ጋር የተያያዘ ሊሆን ይችላል። ነገር ግን ብዙ ራስ ወዳድ", "ሴቶችም አሉ፤ ስለዚህ ስለዚህ አንባቢው ወንድ ከሆንክ እባክህ እሷ እያልክ", "ተረዳው። ይህ መጽሐፍ ወንዶችን ብቻ ለመኮነን የተጻፈ አይደለም።", "አጠቃቀሙ በአንዳንድ አንባቢዎች ዘንድ ጥያቄ ሊያነሳ ስለሚችል፣", "ምክንያቱን ግልጽ ማድረግ ፈልጌ ነው።", "በአካላዊ ጥቃት የታጀቡ ግንኙነቶች", "የዚህን መጽሐፍ መዋቅር ሳዘጋጅ በጣም ያሳሰበኝ ጉዳይ፣ አብዛኛዎቹ የራስ", "ወዳድነት ባሕርያት በቤተሰብ ውስጥ ከሚከሰት አካላዊ ጥቃት ጋር", "መያያዛቸው ነው። ቁጥጥር፣ ቅዝቃዜ፣ መለዋወጥ፣ ማባበልና ሰውን", "እንደፈለጉ ማሽከርከር የራስ ወዳድነት ዋና መገለጫዎች ናቸው። እውነቱን", "ለመናገር እኔ ላደረግኳቸው ቃለ መጠይቆችና የሕክምና ታሪኮች ውስጥ፣", "አካላዊ ጥቃትና ስሜታዊ በደል፣ ይኸውም መጮህ፣ ማስፈራራትና መስደብ", "በስፋት ይስተዋላል። ብዙ ጊዜ ጥንዶቹ ወደ አካላዊ ጥቃት አፋፍ ይደርሳሉ፤", "መማታት ባይኖር እንኳን ዕቃዎች ይወረወራሉ፣ በሮች በኃይል ይዘጋሉ።", "በዓለማችን ላይ ከሦስት ሴቶች አንዷ፣ እንዲሁም ከአራት ወንዶች አንዱ", "የቤተሰብ ውስጥ ጥቃት ሰለባ ናቸው። በአሜሪካ ከሚፈጸሙ የኃይል", "ወንጀሎች ውስጥ ሃያ አንድ በመቶው የቤት ውስጥ ጥቃት ነው። ይህ", "ዓይነቱ ጥቃት እጅግ አደገኛና ፈጣን ምላሽ የሚፈልግ ነው። በዚህ መጽሐፍ", "ውስጥ ከተዘረዘሩት ምክሮች ባለፈ፣ የራስን ደህንነት ለማስጠበቅ የሕግ", "አካላትን ማሳወቅና ልጆችን መታደግ ግድ ይላል። ይህ መጽሐፍ ለአካላዊ", "ጥቃት መፍትሔ ለመስጠት የተዘጋጀ ባይሆንም፣ አካላዊ ጥቃት ባለበት", "ግንኙነት ውስጥ ለሚገኙ ሰዎችም ጠቃሚ ሐሳቦችን ይዟል። በመጽሐፉ", "መጨረሻ ላይ ለአካላዊ ጥቃት ሰለባዎች የሚረዱ መረጃዎችን", "አስቀምጫለሁ። ስለዚህ በዚህ ዓይነት አደገኛ ግንኙነት ውስጥ ከሆንሽ፣", "ለሕይወትሽ ደህንነት ስትይ አሁኑኑ አስቸኳይ እርዳታ እንድትፈልጊ", "አጥብቄ እመክርሻለሁ።", "አብሮ ጥገኝነት (ኮዲፔንደንሲ)", "በዚህ መጽሐፍ ውስጥ ያሳሰበኝ ሌላው ጉዳይ አብሮ ጥገኝነት የሚባለው", "ጽንሰ ሐሳብ ነው። የሥነ ልቦና መዝገበ ቃላት እንደሚለው፣ አብሮ ጥገኝነት", "ማለት ሁለት ወይም ከዚያ በላይ የሆኑ ሰዎች፣ አንዱ የሌላውን ጤናማ", "ያልሆነ ልማድ ደግፈውና ተሸክመው የሚኖሩበት ግንኙነት ነው። ምንም", "እንኳን ይህ ቃል ቀደም ሲል ለሱስ ተጋላጭ ከሆኑ ሰዎች ጋር በሚደረግ", "ግንኙነት ላይ ብቻ ይውል የነበረ ቢሆንም፣ አሁን ግን የሌላውን ሰው", "መጥፎ ባሕርይ ታግሶ መኖርንም ያካትታል። በዚህ መንገድ ስናየው፣", "በመጽሐፉ ውስጥ በገለጽኩት ዓይነት መርዛማ ግንኙነት ውስጥ መቆየት", "እንደ አብሮ ጥገኝነት ሊቆጠር ይችላል፤ ምክንያቱም ባለመውጣትሽ፣", "'እንዲህ ዓይነቱን መጥፎ አያያዝ መቀበል አግባብ ነው' ብለሽ እያመንሽ", "ነውና።", "አላን ራፖርት የተባለ የሥነ ልቦና ባለሙያ፣ ከራስ ወዳድ ሰው ጋር", "የሚደረግን ግንኙነት 'ራስ ወዳድን ተሸክሞ መኖር' ብሎ ይጠራዋል። ይህን", "ሐሳብ ወደፊት በሰፊው እንመለከተዋለን። በእሱ አገላለጽ፣ ይህች ሴት ለራስ", "ወዳዱ ሰው ሁሌም መድረክ ላይ ሆኖ ጭብጨባ ለሚፈልገው ባሕርዩ እንደ", "ተመልካች ሆና ታገለግላለች። ተዋናዩ ለተመልካቾቹ ደንታ የለውም፤", "የሰጡትን አድናቆት ብቻ ተቀብሎ ከመድረኩ ይወርዳል። አሁን ባለው የሥነ", "ልቦና አረዳዳችን፣ በዚህ ዓይነት ግንኙነት ውስጥ የምትቆየውን ሴት", "መውቀስና መተቸት የተለመደ ሆኗል። ይህ ግን እጅግ ጨካኝ የሆነ", "አመለካከት ነው። ብዙ ሴቶች ከእነዚህ ራስ ወዳድ ሰዎች ጋር የሚቆዩት፣", "የችግሩን ጥልቀት ስለማያውቁ ነው። አብዛኛዎቹ፣ አጋራቸው አንድ ቀን", "እንደሚለወጥ በጽኑ ያምናሉ። ችግሩ ምን እንደሆነና እንዴት መቋቋም", "እንዳለብሽ ካወቅሽ በኋላ ግን፣ ያንን መጥፎ አያያዝ ዳግም ላለመሸከም", "ትወስኛለሽ።", "አዙሪቱን መስበር ትችያለሽ", "ከራስ ወዳድ ሰው ጋር ፍቅር ውስጥ መሆን ማለት፣ መቼም ቢሆን", "ከማይሰማሽ ሰው ጋር መኖር ማለት ነው። በዚህም የተነሣ፣ እንደ ማሽን", "እጅግ ግልጽ በሆነ ቋንቋ ብትነግሪውም እንኳን አይሰማሽም፣ ለውጥም", "አያመጣም። እውነቱን ለመናገር፣ ለዚህ መጽሐፍ ዝግጅት የሰማኋቸውን", "የሕይወት ታሪኮች ሳስብ፣ እኔ ራሴ ግራ በመጋባት 'ግን ለምን ይህን ሁሉ", "ታግሳ ቆየች?' ብዬ ራሴን እጠይቅ ነበር። በዚህ ዓይነት መርዛማ ግንኙነት", "ውስጥ የምትቆየውን ሴት እንደ ሞኝ ወይም እንደ ተባባሪ አድርጎ መፈረጅ", "ቀላል ነው። ነገር ግን የፍቅር ግንኙነት እጅግ የተወሳሰበ ነው። ማንም ሰው", "ቢሆን እንዲህ ዓይነት መጥፎ አያያዝን ተሸክሞ መኖር የለበትም። ይህ", "መጽሐፍ፣ እንዴት ወደዚህ ሕይወት እንደገባሽና ለምን እዚያው እንደቆየሽ", "እንድትረጂ ከማድረጉም በላይ፣ የተሻለ ምርጫ እንድታደርጊ፣ ራስሽን", "እንድትጠብቂ፣ እንዲሁም የጥርጣሬንና የጭንቀትን አዙሪት እንድትሰብሪ", "በቂ መረጃ ይሰጥሻል ብዬ ተስፋ አደርጋለሁ።", "በዚህ የሙያ መስክ፣ በጥናት፣ በትምህርትና በተሞክሮ ረዥም መንገድ", "ተጉዣለሁ። በዚህ መጽሐፍ ውስጥ ያሉት መረጃዎች ምናልባት በሙያው", "ውስጥ ያሉ ባለሙያዎችንም ሆነ ራስ ወዳዶቹን ሊያስቆጣ ይችላል። የእኔ", "ትልቁ ተስፋ ግን ከዚህም በላይ ለብዙ ሴቶች መፍትሔ መሆን ነው።", "መልእክቴ ለሁሉም እንዲደርስ በጽኑ አምናለሁ፤ ከታመመና ራስ ወዳድ", "ከሆነ ሰው ጋር ግንኙነት ውስጥ ብትሆኝም እንኳን፣ ሕይወትሽን መልሰሽ", "መቆጣጠር ትችያለሽ። ምናልባትም ከመጀመሪያውኑ ወደዚህ ዓይነት", "ሕይወት እንዳትገቢ፣ አሊያም ዳግም እንዳትመለሺ ይረዳሻል።"]}], "paywall_desc": "የመጀመሪያዎቹን ክፍሎች በነፃ አንብበዋል። ሙሉውን 274 ገጽ መጽሐፍ (ከምዕራፍ 2 እስከ 9) ለመክፈት እና ከመርዛማ ግንኙነት ራስዎን ነጻ ለማውጣት አሁኑኑ ያግኙ።"}, "buyback": {"title": "ጊዜህን አስመልስ (Buy Back Your Time)", "subtitle": "ንግድህን እያሳደግክ ነጻነትህን የምታገኝበት ጥበብ", "author": "ዳን ማርቴል (Dan Martell) | ትርጉም፦ Baya Books", "cover": "/static/covers/buy_back_time.png", "pages": "213 ገጾች", "rating": "⭐ 4.8 (890+)", "badge": "⚡ አዲስ የተጨመረ", "category": "productivity", "chapters": [{"id": "megbiya", "name": "🔍 መግቢያ (Introduction)", "paragraphs": ["መግቢያ", "ንግድ ሕይወቴን እንዴት እንዳዳናት እና ውሎ አድሮ ሊያጠፋት እንደተቃረበ", "በቦርሳዬ ውስጥ ወዳለው ሽጉጥ አትኩሬ ተመለከትኩ።", "ይህን ሽጉጥ ወደ እነዚህ ፖሊሶች ብጠምደው፣ ይህን ምስቅልቅል ሕይወቴን ያሳጥሩልኛል ብዬ አሰብኩ።", "ላቤን ከዓይኔ ላይ እየጠረግኩ፣ የኋላ መመልከቻ መስተዋቱን አየሁ። ሁለት የታጠቁ ፖሊሶች ወደ መኪናዬ እየሮጡ ነበር። በከፍተኛ ፍጥነት ሳሽከረክር አምልጬ፣ በመጨረሻ የአንድን ቤት ግድግዳ ተጋጭቼ ነበር። አሁን ደርሰውብኛል ፤ ያለምንም ማመንታት ሊተኩሱብኝ በቂ", "ምክንያት ነበራቸው። ጨዋታው አብቅቶ ነበር።", "ተስፋ መቁረጥ ውርጭ ሆኖ ወረደብኝ። በችግር የተሞላው የልጅነት ሕይወቴ ትዝታዎች", "በአእምሮዬ ተመላለሱ። በአንደኛ ደረጃ ትምህርት ቤት ስርቆት። በመካከለኛ ደረጃ ትምህርት ቤት በማረሚያ ቤቶች ማሳለፍ። ከሁለተኛ ደረጃ ትምህርት ቤት መባረር።", "እናቴ በቤታችን አደንዛዥ ዕፅ፣ ገንዘብ እና የተሰረቁ ሽጉጦችን ስታገኝ፣ በመጨረሻ ትዕግስቷ ተሟጦ ፖሊስ ጠራች። ነገር ግን ወንድሜ ፒዬር ቀድሞ ስለነገረኝ፣ ፖሊስ መጥቶ እስኪያስረኝ ከመጠበቅ ይልቅ የሰጠኝን 63 ዶላር ይዤ ኮበለልኩ ፤ በአደን ካምፖች ውስጥ እየተደበቅኩ እና በጓደኞቼ ሶፋ ላይ እያደርኩ መኖር ጀመርኩ። በመጨረሻ፣ ከፖሊስ አንድ እርምጃ ቀድሞ", "ለመገኘት ለሳምንታት ከሞከርኩ በኋላ፣ ከተወለድኩበት የካናዳዋ ትንሽ ከተማ (ሞንክተን)", "ወጥቼ፣ አጎቴ ወደሚኖርበት ሞንትሪያል ለመሄድ ወሰንኩ።", "መኪና ሰርቄ ከከተማ ወጣሁ ፤ ግን ብዙም አልራቅኩም። መንገድ እንደጀመርኩ ድንገተኛ", "የፖሊስ ፍተሻ (Roadblock) ውስጥ ገባሁ። መንጃ ፈቃዴን እንደረሳሁ የሚገልጽ የፈጠራ ታሪክ ነግሬያቸው፣ መረጃዬን በኮምፒውተራቸው ለማየት ፊታቸውን እንዳዞሩ፣ ሞተሩን", "አስነሳሁትና በከፍተኛ ፍጥነት አመለጥኩ።", "የሚቀጥሉት ጥቂት ደቂቃዎች ልክ በፊልም ላይ እንዳለ የመኪና ማሳደድ ትዕይንት ነበሩ ፦", "ነዳጅ መጨመር፣ ጥሩንባ መንፋት፣ በመኪናዎች መሃል ሾልኮ ማለፍ ፤ በመጨረሻ የአንድን", "ሰው ቤት ግድግዳ እስክገጭ ድረስ።", "ያኔ ነው ሽጉጤን ለማውጣት የሞከርኩት። ግን ሳወጣው ተቀረቀረብኝ። ጎተትኩት፣", "ጎተትኩት... ግን አልተንቀሳቀሰም። ከዚያም ፖሊሶቹ እኔን ጎትተው ወደ መኪናቸው አስገቡኝ።", "1 የተመረጡ መጻሕፍትን ለማግኘት", "በፈጸምኳቸው ወንጀሎች ክብደት ምክንያት በአዋቂዎች ማረሚያ ቤት የስድስት ወር እስራት", "ተፈረደብኝ። ከሰው ተገልዬ ከችግር ለመራቅ ብሞክርም፣ የቆየ አመል ቶሎ አይለቅምና፣ ውሎ አድሮ ጸብ ውስጥ ገብቼ ብቻዬን ወደምታሰርበት ጨለማ ክፍል (Solitary confinement) ተወረወርኩ። ከ72 ሰዓታት በላይ በውስጥ ሱሪዬ ብቻዬን ካሳለፍኩ በኋላ፣ ብራያን የተባለ አንድ ጠባቂ ወደ ክፍሌ ገባ።", "\"ና ውጣ\" አለኝ። ወደ አንድ የጎን ክፍል ወሰደኝና አስገብቶ በሩን ቆለፈው። ክፍሉን ቃኘሁት ፤ ካሜራ ከሌለባቸው ጥቂት ቦታዎች አንዱ መሆኑን ተረዳሁ።", "ልቤ በአፌ ልትወጣ ደረሰች። ብራያን ትኩር ብሎ ተመለከተኝና፣ ከረጅም ጸጥታ በኋላ፣ አንድ ቀላል ነገር ግን ጥልቅ ጥያቄ ጠየቀኝ ፦", "\"ዳን፣ እዚህ ምን ታደርጋለህ?\"", "\"በጠዋቱ ቁርስ ላይ ከከሪክ ጋር ተጣልቼ...\" አቋረጠኝ።", "\"አይ፣ ማለቴ ለምን እሥር ቤት ገባህ?\"", "እየተንተባተብኩ ደካማ መልሶችን ሰጠሁ ፦ \"መኪና ሰርቄ፣ ከፖሊስ አምልጬ...\" አሁንም", "አቋረጠኝ።", "\"አይ ዳን። እዚህ ከዐሥር ዓመታት በላይ ሠርቻለሁ፣ ብዙ ልጆችንም አይቻለሁ። በጣም ብዙ።", "ነገር ግን አንተ የቤት ሥራህን ለመሥራት እና ከችግር ለመራቅ ስትሞክር አይሃለሁ። አንተ የተለየህ ነህ። እዚህ መሆንህ ለእኔ ትርጉም አይሰጠኝም። አንተ የዚህ ቦታ ሰው አይደለህም።\" ብራያን \"ለተለየ ታላቅ ነገር የተፈጠርኩ\" እንደመሰለው ሲያስረዳኝ፣ ትኩስ ዕንባ በጉንጬ ላይ ፈሰሰ። እስከዚያች ቀን ድረስ፣ ምን ያህል ችግር ፈጣሪ እንደሆንኩ ብቻ ነበር የምሰማው። ግን ብራያን በውስጤ ያለውን እምቅ አቅም አየ። ቃላቱም ለተሻለ ሕይወት ተስፋ ሰጡኝ።", "አሁን ወደ ኋላ መለስ ብዬ ሳስበው፣ በዚያ ምስቅልቅል የልጅነት ጊዜዬ ውስጥ ሁልጊዜም", "እምቅ አቅም ነበረኝ ፦ ፈጣሪ ነበርኩ፣ አደጋዎችን (Risks) ለመውሰድ አልፈራም ነበር፣ ከሰዎች ጋር ማውራት እችል ነበር፣ እንዲሁም በዙሪያዬ ካለው ትርምስ ውስጥ ሳልደናገጥ", "ማለፍ እችል ነበር። በአጭሩ፣ ስኬታማ ሥራ ፈጣሪ ለመሆን የሚያስፈልጉት ክህሎቶች ነበሩኝ ፤ ነገር ግን ክህሎቶቼ ወደ ትክክለኛው አቅጣጫ አልተመሩም ነበር።", "ቀጣዩ ፌርማታዬ እጅግ ወሳኝ ነበር። ከብራያን ጋር ካደረግኩት ውይይት ብዙም ሳይቆይ፣", "በአሥራዎቹ ዕድሜ ለሚገኙ ወጣቶች ወደተዘጋጀው ማገገሚያ ማዕከል ተላክሁ። እዚያም", "የሕይወት ለውጤ ቀጠለ። የተሰጡኝን ሥራዎች በትጋት ሠራሁ፣ አጠናሁ። በዚያ ቆይታዬ", "ሪክ ከተባለ የጥገና ሠራተኛ ጋር ተዋወቅኩ ፤ እንደ ታላቅ ወንድምም ሆነኝ። አንድ ቀን", "የተተወን ጎጆ እንዲያጸዳ እየረዳሁት ሳለ፣ ከአንድ አሮጌ ኮምፒውተር አጠገብ የኮምፒውተር ፕሮግራሚንግ (Java) መጽሐፍ አገኘሁ። ገለጥኩትና ያየሁት ነገር አስገረመኝ። የኮምፒውተር 2 የተመረጡ መጻሕፍትን ለማግኘት", "ኮዲንግ (Coding) ሁልጊዜ ውስብስብና ለመረዳት የሚያስቸግር የሒሳብ ቀመር ይመስለኝ", "ነበር። ነገር ግን ይህ... ልክ እንደ ቀላል እንግሊዝኛ ይነበብ ነበር። እናም ነፍሴን ነካት።", "ኮምፒውተሩን አብርቼ ከመመሪያው የመጀመሪያ ምዕራፍ ላይ ያሉትን ቀላል ትእዛዞች ጻፍኩ።", "ከደቂቃዎች በኋላ፣ ፕሮግራሙ ሠርቶ እነዚህ ቃላት ስክሪኑ ላይ ታዩ ፦", "\"Hello World!\"", "ያኔ ሁሉም ነገር ተቀየረ። አስተማማኝ እና ሊተነበይ የሚችል (Predictable) ውጤት የሚያመጡ ትእዛዞችን መፍጠር የምችልበትን መንገድ አገኘሁ። ሁልጊዜ። ያለምንም ስህተት።", "የሶፍትዌር አስተማማኝነት፣ በልጅነቴ ሙሉ ከኖርኩበት ምስቅልቅል እና ያልተጠበቀ ሕይወት", "ጋር ፍጹም ተቃራኒ ነበር። ከዚያች ቀን ጀምሮ ኮድ መጻፍ አዲሱ ሱሴ ሆነ። ብዙም ሳይቆይ በዲዛይን ሶፍትዌር እና በሥርዓቶች (Systems) ፍቅር ወደቅኩ። ዛሬም ቢሆን፣ ለደንበኞቼ የኩባንያቸውን አሠራር ሲዘረጉ፣ ትርምስን ወደ ሥርዓት እንዲቀይሩ መርዳት እጅግ", "ያስደስተኛል።", "በወቅቱ በራሴ ከልክ በላይ ኮርቼ ነበር \"Hello World!\" በማንኛውም የጀማሪ ፕሮግራሚንግ መጽሐፍ ላይ የመጀመሪያው ትምህርት መሆኑን አላወቅኩም ነበር። በዚያችው ባዶ ትምክህቴ", "ተሞልቼ፣ 'ኢንተርኔት' ወደተባለው አዲስ ዓለም ዘው ብዬ ገባሁ። በልጅነቴ ሙሉ ችግር", "ውስጥ ይከቱኝ የነበሩትን ክህሎቶቼን ሰብስቤ፣ ሙሉ ኃይሌን ወደ ንግድ ሥራ", "(Entrepreneurship) አዞርኩት።", "በእርግጥም፣ ያሳለፍኩት ምስቅልቅል የልጅነት ጊዜ ለግል ንግድ ዓለም ፍጹም ተስማሚ ሆኖ", "ተገኘ ፤ ያልታወቀ ፈተና አያስፈራኝም ነበር። በ18 ዓመቴ፣ በ1998 የመጀመሪያዬን ሕጋዊ ንግድ ጀመርኩ ፤ የዕረፍት ጊዜ ኪራይ ድረ-ገጽ። በ21 ዓመቴ ሁለተኛውን የድረ-ገጽ", "ማስተናገጃ (Web hosting) ንግዴን ጀመርኩ።", "ንግድ ሕይወቴን ታድጎት፣ አቅጣጫ ሰጥቶኝ ነበር። ግን አንድ ችግር ነበረ። የማውቀው አንድ ነገር ብቻ ነበር ፦ \"ሁሉንም ጠምዝዞ መሥራት\" (Get Shit Done - GSD) የሚለውን አባዜ።", "ጠንክረህ ሥራ፣ ገንዘብ አግኝ፣ ከችግር ራቅ። ከቀን ወደ ቀን። የመጀመሪያዎቹ ሁለት", "ኩባንያዎቼ አሳዛኝ ውድቀት እስኪያጋጥማቸው ድረስ ያው ነበርኩ። ከሌሎች ሰዎች ጋር", "ተባብሮ መሥራትን ወይም ለጊዜዬ ዋጋ መስጠትን አልተማርኩም ነበር። ነገር ግን ንግድ", "መጀመር በደሜ ውስጥ እንዳለ አውቃለሁ። ስለዚህ ተጠናክሬ በመቀጠል በ2004 ሦስተኛውን", "ኩባንያዬን (የሶፍትዌር ድርጅት) መሠረትኩ። እዚያ ላይ ድካሜ ፍሬ ማፍራት ጀመረ ፤", "ቢያንስ በሙያዬ ዘርፍ። በቀን ከ15 እስከ 18 ሰዓታት እሠራ ነበር ፤ ይህ ድካም በዓመት 150 በመቶ ዕድገት አመጣ ፤ በተመሳሳይ ጊዜ ግን የግል ሕይወቴን አወደመው።", "3 የተመረጡ መጻሕፍትን ለማግኘት", "ለሠርጌ አራት ወራት ሲቀሩ፣ ማለዳ ጀምሮ ስሠራ ከዋልኩበት እንደተለመደው የሥራ ቀን ወደ ቤቴ ስመለስ፣ እጮኛዬን ክፉኛ አዝና አገኘኋት።", "የጋብቻ ቀለበቷን ጠረጴዛው ላይ እያስቀመጠች፣ \"ከዚህ በላይ አልችልም\" አለችኝ።", "ለካ የወደፊት ሚስቴ ያሰበችው፣ ቀሪ ሕይወቴን ከእርሷ ጋር ማሳለፍ ከፈለግኩ፣ በእርግጥም 'ጊዜዬን' ከእርሷ ጋር ማሳለፍ እንዳለብኝ ነበር።", "በመጀመሪያ ላይ ባልገነዘበውም፣ ሁለቱ የከሰሩት ኩባንያዎቼ እና የፈረሰው ግንኙነቴ አንድ የሚያመሳስላቸው ነገር ነበረ ፤ እኔ ራሴ። የችግሬ ዋና መሠረት፣ ሌላውን ነገር ሁሉ እንዳላየ የጋረደኝ ያ የ \"ሁሉንም እኔው ልጨርሰው\" (GSD) አባዜዬ ነበር። ንግዴንም ሆነ ሕይወቴን የምመራበት የተሻለ መንገድ መፈለግ እንዳለብኝ አወቅኩ።", "እኔ ሳላውቀው ግን፣ ለመፍትሔዬ የሚሆን ዘር ቀድሞውኑ ተዘርቶ ነበር።", "እጮኛዬ ጥላኝ ከመሄዷ ከጥቂት ዓመታት በፊት፣ የቢዝነስ መጻሕፍትን ማንበብ ጀምሬ ነበር።", "Love Is the Killer App የተሰኘውን መጽሐፍ በድምጽ አዳመጥኩ። መጽሐፉን ሰምቼ ከጨረስኩ በኋላ፣ 'ዋው! የ20 ዓመታት የሕይወት ተሞክሮን በ20 ዶላር እና በጥቂት ሰዓታት ውስጥ ብቻ አገኘሁ። ከእነዚህ መጻሕፍት ምን ያህሉን ላገኝ እችላለሁ?' ብዬ አሰብኩ።", "ከዚያ በኋላ እንደ ዴል ካርኔጊ How to Win Friends and Influence People፣ ናፖሊዮን ሂል Think and Grow Rich እና ስቴፈን ኮቪ The 7 Habits of Highly Effective People የመሳሰሉትን ታላላቅ መጻሕፍት ማንበብ ቀጠልኩ። እነዚህ መጻሕፍት ንግዴ በተሻለ ሁኔታ", "እንዲንቀሳቀስ ረድተውኛል፣ ግን በቂ አልነበረም። ሕይወቴን በተለየ መንገድ መምራት", "ነበረብኝ።", "ማንነቴን (ሥራ ፈጣሪነቴን) ይበልጥ የሚያጎለብቱ፣ በተመሳሳይ ጊዜም ጥሩ ሰው እንድሆን", "የሚረዱኝ ሥርዓቶች (Systems) ያስፈልጉኝ ነበር።", "እጮኛዬን ማጣቴ፣ እውነተኛና የተሟላ የሕይወት መፍትሔ እንድፈልግ ያነቃኝ ደወል ነበር።", "ማንበቤን፣ መፈለጌን፣ እና መሞከሬን ቀጠልኩ። ሕይወቴን እንዴት እንደምመልስ፣ ፍላጎቴን", "እንዴት እንደምኖር፣ እና እኔን ባሪያ ከማያደርገኝ ንግድ ላይ እንዴት እንደምደርስ ሚስጥሮችን እዚህም እዚያም አገኘሁ።", "ከመጻሕፍት፣ ከአማካሪዎች እና ከፕሮግራሞች ያገኘኋቸውን መርሆች፣ ስልቶች፣ መሣሪያዎች", "እና ሥርዓቶች ተግባራዊ ማድረግ ጀመርኩ። ውጤቱንም ማየት ጀመርኩ ፦", "የምወደውን ማድረግ (ንግዶችን መምራት) እና መሆን የምፈልገውን (ጥሩ ጓደኛ፣ አባት እና ባል) መሆንን ተማርኩ። ሥራ ፈጣሪነትን ከራሴ ማንነት ነጥዬ ማውጣት እንደማልችል", "ተገነዘብኩ ፤ ምክንያቱም እኔው ራሴ ሥራ ፈጣሪ ነኝ። ኩባንያዬን በ2008 ሸጬ", "የመጀመሪያዬን ሚሊዮን ዶላር አገኘሁ ፤ ይህም ስለሚቻሉ ነገሮች የነበረኝን እምነት ሙሉ", "4 የተመረጡ መጻሕፍትን ለማግኘት", "በሙሉ ቀየረው። ከዚያም በ2009 ቀጣዩን ኩባንያዬን (Flowtown) ለመጀመር ወደ ሳን ፍራንሲስኮ ተዛወርኩ። ጊዜዬን እና ጉልበቴን ነፃ የሚያወጡ እና መልሼ እንዳፈስሳቸው", "የሚረዱኝን ቡድኖች እና መሠረተ-ልማቶች መገንባቴን ቀጠልኩ። የሚገርመው በዚህ ጊዜ፣", "ኩባንያዬ ባደገ ቁጥር፣ የበለጠ ነፃ ጊዜ አገኝ ነበር። ኩባንያዬን እና ጊዜዬን በአንድ ጊዜ ማሳደግ የምችልበትን መንገድ አግኝቼ ነበር። ከዚያም ይበልጥ ጥልቅ የሆነ ነገር አገኘሁ።", "እውነተኛ ደስታ የሚሰጠኝ፣ ሌሎች ሥራ ፈጣሪዎች እነዚያኑ እውነታዎች ሲያገኙ ማየት", "ነው።", "ከዋና መርሆቼ አንዱ ፦ ተማር፣ አድርግ፣ አስተምር ነው። ሳታደርግ አትማርም ፤ አንድን", "ጠቃሚ ነገር በትክክል ከተማርክ በኋላ ደግሞ ለሌሎች ማካፈል አለብህ። ዛሬ ከግል ልምዴ፣ ከረዱኝ ምርጥ አማካሪዎችና አሰልጣኞች ተምሬ እንደማውቀው፣ ንግድህን ከተወሰነ ደረጃ በላይ ለማሳደግ ብቸኛው መንገድ ጊዜህን መልሰህ መግዛት እና በጣም አስፈላጊ በሆነው ቦታ ላይ", "መልሰህ ማፍሰስ ነው።", "በ2006፣ የተማርኳቸውን የዕድገት ስልቶች ለማካፈል ብሎግ ጀመርኩ። ጊዜን መልሶ በመግዛት ረገድ ባለሙያ አልነበርኩም ፤ ነገር ግን ኩባንያዎችን ስለማሳደግ የተማርኩትን ጥቂት ነገር ለሌሎች ለማካፈል ብቻ ፈልጌ ነበር። ሰዎች ጽሑፎቼ ላይ አስተያየት መስጠት ጀመሩ።", "ከዚያም በ2008፣ በኮንፈረንሶች ላይ ንግግር ማድረግ ጀመርኩ። መጀመሪያ ላይ በሲሊኮን ቫሊ እምብርት ውስጥ የተማርኳቸውን የንግድ ስልቶች ነበር የማካፍለው ፤ ነገር ግን ሁልጊዜም", "ፍላጎቴ ሥራ ፈጣሪዎች እና መሥራቾች የተሟላ ሕይወት እንዲኖሩ መርዳት ነበር። በዚህም", "\"ሁሉንም እኔው ልሥራው\" በሚል አባዜ የሚሰቃየው ሥራ ፈጣሪ እኔ ብቻ እንዳልሆንኩ", "ተረዳሁ ፤ ይህም ለሰዎች ለማገልገል ያለኝን ቁርጠኝነት አጠናከረው።", "በ2012፣ Flowtown ተሸጠ ፤ ወዲያውኑ አዲስ ጀማሪዎችን የሚያስፈልጋቸውን የንግድ እና የሕግ ምክር ከሚያገኙበት ባለሙያዎች ጋር የሚያገናኘውን (Clarity) የተባለ መድረክ", "ጀመርኩ። እንደገናም፣ ስኬቴን በሙሉ ላነበብኳቸው መጻሕፍት እና ላገኘሁት ምክር ዕዳ", "እንዳለብኝ አውቃለሁ። ሥራ ፈጣሪዎች ትክክለኛውን መልስ ሲያገኙ፣ በድርጅታቸው ውስጥ", "ተዓምር መፍጠር እንደሚችሉ አውቃለሁ። በ2014 ያም ኩባንያ ሲሸጥ፣ ቀጣዩን ፈተና", "መፈለግ ጀመርኩ።", "በ2015፣ ለሶፍትዌር ኩባንያ መሥራቾች የYouTube ቻናል ጀመርኩ ፤ በዚያም የንግድ", "ስልቶችን ብቻ ሳይሆን፣ ይበልጥ የግል የሆኑ ስልቶችን ፤ እንደ የጊዜ አስተዳደርን ትቶ", "የጉልበት (Energy) አስተዳደርን ማስቀደም፣ የኩባንያ መመሪያዎች (Playbooks) አስፈላጊነት፣ እና በመጨረሻም ጊዜህን እንዴት መልሰህ መግዛት እንደምትችል በነፃ ማካፈል ጀመርኩ።", "ከተመልካቾች በማገኘው አስተያየት ተገረምኩ ፦ \"ልክ እንደ አጭር የቴራፒ ክፍለ-ጊዜ ነው፣\" እና \"በግሌ እስካሁን ካየኋቸው የሕይወት ለውጥ ቪዲዮዎች ሁሉ ምርጡ ነው።\" ለካስ እኔ", "ሳላውቀው አንድ ዓለም አቀፋዊ እውነት ላይ ደርሼ ነበር ፦", "ሁላችንም ጊዜያችንን እና ንግዳችንን እንዴት አጣጥመን መምራት እንደምንችል እንታገላለን።", "5 የተመረጡ መጻሕፍትን ለማግኘት", "የተፈጥሮ ሥራ ፈጣሪዎች በንግዳቸውም ሆነ በሕይወታቸው ሙሉ ለሙሉ የሚኖሩበትን", "መንገድ መፈለግ አለባቸው።", "ይህንን \"ሁሉንም እኔው ልጨርሰው\" የሚለውን ፍሬ ለተወሰነ ጊዜ ስትበላ ከቆየህ፣", "ምናልባትም የተወሰነ ስኬት አግኝተህ ይሆናል። ግንኙነቶችህን መስዋዕት አድርገህ እንኳን", "ቢሆን፣ ጠንክሮ መሥራት እስከ አንድ ደረጃ ድረስ ዋጋ ይከፍላል።", "ነገር ግን በአንድ ነጥብ ላይ፣ ስኬትህ ይቆማል። አንተ ውስን ጊዜ ያለህ አንድ ግለሰብ ነህ።", "የአንተን ጊዜ የሚፈልጉ ኩባንያ፣ ቤተሰብ እና ጓደኞች አሉህ።", "ምላሽ የሚሹ የተከመሩ ኢሜይሎች፣ መፍትሔ የሚጠብቁ አዳዲስ ቀውሶች፣ እንዲሁም", "ተጨማሪ ሸክም ሊጭኑብህ የተዘጋጁ ደንበኞችና ሠራተኞች እንዳሉ በማሰብ ብቻ፣ ጠዋት ወደ", "ሥራ መሄድ የሚያስፈራህ ከሆነ ፤ በተጨማሪም አቅምህ ተሟጦ፣ በጭንቀት ተውጠህ፣", "አሁንም አእምሮህ ቢሮ ውስጥ ጥለኸው በመጣኸው ጉዳይ ላይ ስለሚቅበዘበዝ ብቻ፣ ማታ ወደ", "ቤት መመለስ ከባድ የሚሆንብህ ከሆነ ፤ እንግዲያውስ ይህ መጽሐፍ የተጻፈው በትክክል", "ለአንተ ነው።", "ይህ መጽሐፍ የተዘጋጀው፣ ንግዳቸውን እያሳደጉ ፤ ነገር ግን ከልብ የሚወዱትን ተግባር", "በነፃነት ለመሥራት ጊዜያቸውን መልሰው መግዛት ለሚፈልጉ ሥራ ፈጣሪዎች በሙሉ ነው።", "ሥራ ፈጣሪነት በደምህ ውስጥ ስለሰረጸ፣ ከዚህ የሕይወት ጎዳና ውጪ ሙሉነት ሊሰማህ", "አይችልም። ነገር ግን የገዛ ኩባንያህ፣ ጊዜህንና ጉልበትህን በሚመጥጡ አድካሚ ተግባራት", "ተጠቅሞ አንተን፣ ቤተሰብህንና ማኅበራዊ ግንኙነቶችህን እያወደመ ከሆነ ፤ ከዚህ በኋላ በዚህ መንገድ መጓዝህን መቀጠል አትችልም።", "ስለዚህ፣ ይህንን አጥፊ ዑደት አሁኑኑ ግታው። የተሻለውን መንገድ እንድታገኝ እኔ", "እረዳሃለሁ።", "ይህ የራሴን አካሄድ እንዴት እንደቀየርኩ እና አንተም ያንኑ እንዴት ማድረግ እንደምትችል የሚያሳይ ታሪክ ነው።", "የማትጠላውን ንግድ እንዴት እንደምትገነባ", "ስቴፈን ኮቪ በአንድ ወቅት እንዲህ ብሎ ነበር፣ \"ቁልፉ ጊዜን ማሳለፍ ሳይሆን፣ ጊዜን ማፍሰስ (Investing) ላይ ነው።\" በዚህ መጽሐፍ ውስጥ፣ ያንን በትክክል እንዴት ማድረግ", "እንደምትችል ታገኛለህ። ከሁለት የከሰሩ ኩባንያዎች፣ ካጣኋት እጮኛዬ፣ ከ1,200 በላይ", "የቢዝነስ እና የራስ-ገዝ መጻሕፍትን ከማንበብ፣ ትልቅ የማማከር ቡድን ከመምራት፣ እና ስለ \"የጊዜ ግዢ\" በርካታ ንግግሮችን ከማድረግ ያገኘኋቸውን ስልቶች እና ስትራቴጂዎች ያጣመረ ሥርዓታዊ አካሄድ ታገኛለህ።", "እዚህ የተማርከውን ሁሉ በግሌ የምጠቀመው እኔ ብቻ ሳልሆን፣ ጊዜያቸውን እና", "ጉልበታቸውን እንዴት መልሰው መግዛት እና በትክክለኛው ቦታ ማሰማራት እንዳለባቸው", "6 የተመረጡ መጻሕፍትን ለማግኘት", "የተማሩ በሺዎች የሚቆጠሩ መሥራቾች እና ሥራ ፈጣሪዎችም ይጠቀሙበታል። በዚህም", "ምክንያት፣ የበለጠ ጉልበት አላቸው፣ ስለወደፊቱ ጊዜ ጉጉት አላቸው፣ እና ንግዶቻቸውን", "መልሰው ወድደዋቸዋል። በሥራ ቦታ ሠራተኞቻቸው ደስተኞች ናቸው። በቤታቸው የተሻሉ", "ጓደኞች፣ ወላጆች እና የትዳር አጋሮች ናቸው። ኩባንያዎቻቸውም በሚያስገርም ፍጥነት", "አድገዋል።", "አብዛኛዎቹ ሥራ ፈጣሪዎች፣ አትራፊ ንግድ የሚመነጨው ከከባድ ድካም (Hard work)", "እንደሆነ ያስባሉ። ያ እውነት ሊሆን ይችላል ፤ ነገር ግን የሚያብብና እጅግ የገነነ ግዛት የሚገነባው፣ ጊዜህን እንዴት መልሰህ መግዛት እንዳለብህ ስትማር ብቻ ነው። የሕይወትህን", "ልጓም መልሰህ ጨብጥ፣ በሥራህ ዳግም ተደሰት፣ እንዲሁም ንግድህ ሊሰጥህ የሚችለውን", "እውነተኛ ነፃነት መልሰህ ተጎናጸፍ።", "እመነኝ ፤ አሁን ነፃ ጊዜ ማግኘት፣ እንደ ሥራ ፈጣሪ መኖር፣ እና በግንኙነቶችህ ውስጥ", "ጉልበት ማፍሰስ እንደሚቻል ብቻ ሳይሆን፣ እነዚህ ሁሉ የተሳሰሩ መሆናቸውን አውቃለሁ ፦", "ደስተኛ የሆነው ዳን የተሻለ ሥራ ፈጣሪ ነው ፤ የተሻለ ሥራ ፈጣሪ የሆነው ዳን ደግሞ የተሻለ አባት እና ይበልጥ አፍቃሪ ባል ነው።", "በመቶዎች የሚቆጠሩ ሌሎች መሥራቾች ጊዜያቸውን እንዴት መልሰው ማሰማራት", "እንዳለባቸው ፤ መልሰው ገዝተው እጅግ አስፈላጊ በሆነው ቦታ ላይ ማፍሰስን እንዲማሩ", "ረድቻለሁ። በኩባንያቸው ውስጥ ከፍተኛ ብቃት ባላቸው ነገሮች ላይ ባጠፉ ቁጥር፣ የበለጠ", "ጉልበት እንደሚኖራቸው እና የበለጠ ገንዘብ እንደሚያገኙ፣ ያም ደግሞ ተጨማሪ ጊዜያቸውን", "መልሰው እንዲገዙ እንደሚያስችላቸው ተምረዋል። ይህ ከመጀመሪያዎቹ ኩባንያዎቼ አካሄድ", "ጋር ፍጹም ተቃራኒ ነው ፤ ያኔ ንግዶቼ ባደጉ ቁጥር፣ እኔ ይበልጥ እሰቃይ ነበር ፤", "በመጨረሻም ኩባንያዬንም ሆነ ግንኙነቶቼን አጣሁ።", "እፈልገው የነበረውን መፍትሔ አግኝቻለሁ ፤ ያንኑ ላስተምርህ እወዳለሁ። ይህ መጽሐፍ", "እንዴት እንደተዋቀረ የሚያሳይ አጭር ቅኝት እነሆ ፦", "· በመጀመሪያ፣ የጊዜ ግዢ መርህን፣ የጊዜ ግዢ ዑደትን እና የDRIP ማትሪክስን", "አስተምርሃለሁ። እነዚህ የአስተሳሰብ ለውጦች፣ በኩባንያህ ውስጥ ጊዜህን እንዴት እያጠፋህ እንደሆነ ዳግም እንድታስብ ያስችሉሃል። ጊዜህን ምን እየመጠጠው እንዳለ እና ለምን እንደሆነ በፍጥነት መለየት ትማራለህ። ራስህን በመስታወት በማየት ብቻ፣ አብዛኛዎቹ ሥራ ፈጣሪዎች", "፤ ምናልባትም አንተም ጭምር ፤ ኩባንያዎቻቸውን የሚመሩበትን የዕብደት መንገድ", "ትገነዘባለህ። ከራስህ 'የጊዜ ገዳዮች' (Time Assassins) በመጀመር፣ ለስኬትህ እንቅፋት የሆኑትን ሥነ-ልቦናዊ ገደቦች ታጋልጣለህ።", "· 'የመተኪያ መሰላል' (Replacement Ladder) በመጠቀም፣ ተግባራትህን እና ጊዜህን በቀጣይ ከፍተኛ እሴት ወዳላቸው ተግባራት እንዴት ማለቂያ በሌለው ሁኔታ ማሳደግ እንደምትችል", "ትማራለህ።", "7 የተመረጡ መጻሕፍትን ለማግኘት"]}], "paywall_desc": "የመግቢያ ክፍሉን በነፃ አንብበዋል። ሙሉውን 213 ገጽ መጽሐፍ (ሁሉንም 14 ምዕራፎች) ለመክፈት፣ ጊዜህን ለማስመለስና ገቢህን በእጥፍ ለማሳደግ አሁኑኑ ያግኙ።"}};
+        let activeBookKey = 'narcissist';
+        let activeBook = BOOKS_DATA['narcissist'];
+
         // Init Telegram Web App
         const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-        }
+        if (tg) { tg.ready(); tg.expand(); }
 
-        // Reading Progress Tracking
+        // Scroll Progress
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -793,12 +492,62 @@
             if (bar) bar.style.width = scrolled + "%";
         });
 
-        // Reader View navigation
-        function openReader(section) {
+        // Filter Categories
+        function filterCategory(cat, el) {
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            if (el) el.classList.add('active');
+            document.querySelectorAll('.featured-card').forEach(card => {
+                if (cat === 'all' || card.getAttribute('data-category') === cat) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Reader View
+        function openReader(bookKey) {
+            activeBookKey = bookKey;
+            activeBook = BOOKS_DATA[bookKey];
+            if (!activeBook) return;
+
+            document.getElementById('readerBookTitle').innerText = activeBook.title;
+            document.getElementById('readerBookAuthor').innerText = activeBook.author;
+            document.getElementById('paywallDesc').innerText = activeBook.paywall_desc;
+
+            // Populate Dropdown
+            const select = document.getElementById('chapterDropdown');
+            select.innerHTML = '';
+            const container = document.getElementById('readerChapters');
+            container.innerHTML = '';
+
+            activeBook.chapters.forEach(ch => {
+                const opt = document.createElement('option');
+                opt.value = ch.id;
+                opt.innerText = ch.name;
+                select.appendChild(opt);
+
+                const sec = document.createElement('div');
+                sec.id = 'sec-' + ch.id;
+                sec.style.marginTop = '36px';
+
+                const h3 = document.createElement('h3');
+                h3.className = 'reader-chapter-title';
+                h3.innerText = ch.name;
+                sec.appendChild(h3);
+
+                ch.paragraphs.forEach(p => {
+                    const pEl = document.createElement('p');
+                    pEl.innerText = p;
+                    sec.appendChild(pEl);
+                });
+
+                container.appendChild(sec);
+            });
+
             document.getElementById('view-home').style.display = 'none';
             document.getElementById('view-reader').style.display = 'block';
             window.scrollTo(0, 0);
-            if (section) jumpChapter(section);
         }
 
         function closeReader() {
@@ -815,14 +564,14 @@
             }
         }
 
-        // Font Size Adjustments
+        // Font Size
         let currFontSize = 17;
         function adjustFontSize(delta) {
             currFontSize = Math.min(24, Math.max(14, currFontSize + delta));
             document.getElementById('readerBody').style.fontSize = currFontSize + 'px';
         }
 
-        // Theme Toggle (Dark / Light / Sepia)
+        // Themes
         const themes = ['dark', 'light-theme', 'sepia-theme'];
         let themeIdx = 0;
         function toggleTheme() {
@@ -830,8 +579,9 @@
             document.body.className = themes[themeIdx];
         }
 
-        // Modal Handlers
-        function openPayModal() {
+        // Pay Modal
+        function openPayModal(title) {
+            if (title) document.getElementById('modalBookTitle').innerText = '📱 ' + title + ' — 299 ብር';
             document.getElementById('modal-pay').style.display = 'flex';
         }
         function closePayModal() {

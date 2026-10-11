@@ -85,10 +85,14 @@
 
         .brand { display: flex; align-items: center; gap: 10px; }
         .brand-icon {
-            width: 34px; height: 34px; border-radius: 10px;
-            background: var(--accent-gradient);
+            width: 40px; height: 40px; border-radius: 10px;
+            overflow: hidden; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+            border: 1.5px solid rgba(99, 102, 241, 0.45);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+        .brand-icon img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
         }
         .brand-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
         .brand-text p { font-size: 11px; color: var(--text-muted); }
@@ -412,7 +416,7 @@
     <div id="view-home">
         <header>
             <div class="brand">
-                <div class="brand-icon">📚</div>
+                <div class="brand-icon"><img src="/static/covers/baya_logo.jpg" alt="Baya Library"></div>
                 <div class="brand-text">
                     <h1>Baya Library</h1>
                     <p>ዲጂታል መጽሐፍት ቤት</p>

@@ -421,7 +421,7 @@ def get_bottom_markup(lang='am', uid=None):
             KeyboardButton("⚙️ Dashboard")
         )
         m.add(
-            KeyboardButton("📚 መጽሐፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}"))
+            KeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}"))
         )
     else:
         m.add(
@@ -475,7 +475,7 @@ def cmd_library(message):
 
     bot.send_message(
         message.chat.id,
-        f"📚 <b>ቤተ-መጽሐፍትዎ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📚 <b>ቤተ-መጻሕፍትዎ</b>\n━━━━━━━━━━━━━━━━━━━━\n\n"
         + "\n".join(lines) + "\n\n📥 ለማውረድ ከታች ይጫኑ",
         parse_mode="HTML", reply_markup=markup,
     )
@@ -806,7 +806,7 @@ def cmd_del_last(message):
     conn.close()
 
 BOOK_TITLES = {
-    "narcissist": "የናርሲሲስቶች ወጥመድ",
+    "narcissist": "የናርስሲስቶች ወጥመድ",
     "boundaries": "ድንበርህን አብጅ",
     "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
     "meaning": "የህይወት ትርጉም"
@@ -825,13 +825,13 @@ def notify_user_book_unlocked(uid, book_key, days=None):
         txt = (
             f"🎉 <b>እንኳን ደስ አለዎት!</b>\n\n"
             f"📖 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ {days} ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\n\n"
-            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
+            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
         )
     else:
         txt = (
             f"🎉 <b>እንኳን ደስ አለዎት!</b>\n\n"
             f"📖 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለዘላለም</b> ተከፍቶልዎታል!\n\n"
-            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
+            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
         )
     try:
         bot.send_message(uid, txt, parse_mode="HTML", reply_markup=markup)
@@ -883,7 +883,7 @@ def cmd_add_subadmin(message):
         try:
             bot.send_message(
                 uid,
-                "👑 <b>እንኳን ደስ አሎት! የ Sub-Admin መብት ተሰጥቶዎታል።</b>\n\nከታች ባለው ሜኑ <b>'⚙️ Dashboard'</b> እና <b>'📚 መጽሐፍት ቤት (Library)'</b> ማግኘት ይችላሉ። እንዲሁም /bayacontrol ን መጠቀም ይችላሉ!",
+                "👑 <b>እንኳን ደስ አሎት! የ Sub-Admin መብት ተሰጥቶዎታል።</b>\n\nከታች ባለው ሜኑ <b>'⚙️ Dashboard'</b> እና <b>'📚 መጻሕፍት ቤት (Library)'</b> ማግኘት ይችላሉ። እንዲሁም /bayacontrol ን መጠቀም ይችላሉ!",
                 parse_mode="HTML",
                 reply_markup=get_bottom_markup(get_lang(uid), uid)
             )
@@ -2428,7 +2428,7 @@ def handle_messages(message):
                         )
                     )
                     bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ 10 ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ 10 ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጻሕፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
                         chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
                     )
                 elif purpose.startswith("BOOKEXT_"):
@@ -2458,7 +2458,7 @@ def handle_messages(message):
                         )
                     )
                     bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለዘላለም</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጽሐፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጽሐፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
+                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለዘላለም</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጻሕፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
                         chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
                     )
                 elif purpose.startswith("ADVICE_"):

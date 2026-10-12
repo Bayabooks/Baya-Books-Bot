@@ -16,7 +16,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from telebot import TeleBot
 from telebot.types import (
     ReplyKeyboardMarkup, KeyboardButton,
-    InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo,
+    BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 )
 import config
 import database
@@ -225,6 +226,47 @@ def get_admin_id():
     except Exception:
         return None
 
+ADMIN_MENU_COMMANDS = [
+    BotCommand("lookup", "🔍 Look up user (Profile, Books, Balance)"),
+    BotCommand("investigate", "🕵️ Audit report of last 20 users"),
+    BotCommand("clean", "🧹 Purge ghost & blocked users"),
+    BotCommand("debug_carts", "🛒 Check abandoned checkouts"),
+    BotCommand("del_last", "🗑️ Delete last payment record"),
+    BotCommand("getlogs", "📋 View recent server logs"),
+    BotCommand("reset_advice", "🔄 Reset my conversation history"),
+    BotCommand("bayacontrol", "⚙️ Admin Control Panel"),
+]
+
+DEFAULT_USER_COMMANDS = [
+    BotCommand("start", "🚀 Start / Restart the bot"),
+    BotCommand("topup", "💎 Top up / Buy packages"),
+    BotCommand("mylibrary", "📚 My Books & Library"),
+]
+
+def setup_admin_menu(uid):
+    """Sets the left menu commands specifically for an admin/sub-admin chat."""
+    try:
+        if uid:
+            bot.set_my_commands(ADMIN_MENU_COMMANDS, scope=BotCommandScopeChat(chat_id=int(uid)))
+    except Exception as e:
+        logging.error(f"Failed to set admin commands for {uid}: {e}")
+
+def setup_global_commands():
+    """Sets the default command list for all users and pushes admin menu to all registered admins."""
+    try:
+        bot.set_my_commands(DEFAULT_USER_COMMANDS, scope=BotCommandScopeDefault())
+    except Exception as e:
+        logging.error(f"Failed to set default commands: {e}")
+    try:
+        admin_id = get_admin_id()
+        if admin_id:
+            setup_admin_menu(admin_id)
+        sub_admins = database.get_all_sub_admins()
+        for sa in sub_admins:
+            setup_admin_menu(sa['user_id'])
+    except Exception as e:
+        logging.error(f"Failed to configure admin menus on startup: {e}")
+
 def check_channel_member(user_id):
     """Check if user follows the channel."""
     try:
@@ -361,6 +403,9 @@ def cmd_start(message):
     if not is_admin(user) and not check_channel_member(user.id):
         send_join_channel_msg(message.chat.id, user.id)
         return
+
+    if is_admin(user):
+        setup_admin_menu(user.id)
 
     if check_onboarding(message.chat.id, user.id, user.first_name):
         send_welcome(message.chat.id, user.first_name)
@@ -943,6 +988,7 @@ def cmd_add_subadmin(message):
     target = args[1].strip()
     uid = database.add_sub_admin_by_identifier(target)
     if uid:
+        setup_admin_menu(uid)
         bot.reply_to(message, f"✅ User <code>{target}</code> (ID: <code>{uid}</code>) is now a <b>Sub-Admin</b>!", parse_mode="HTML")
         try:
             bot.send_message(
@@ -973,6 +1019,10 @@ def cmd_remove_subadmin(message):
         uid = user_rec['user_id'] if user_rec else None
     if uid:
         database.remove_sub_admin(uid)
+        try:
+            bot.delete_my_commands(scope=BotCommandScopeChat(chat_id=uid))
+        except:
+            pass
         bot.reply_to(message, f"✅ Sub-Admin removed for <code>{target}</code>.", parse_mode="HTML")
         try:
             bot.send_message(
@@ -992,6 +1042,7 @@ def cmd_admin(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ የ Admin መብት የለዎትም!"); return
     uid = message.from_user.id
+    setup_admin_menu(uid)
     # Refresh persistent bottom menu for admin & sub-admins with Dashboard & Library buttons!
     bot.send_message(
         message.chat.id,
@@ -2958,6 +3009,10 @@ def run_dummy_server():
 def main():
     threading.Thread(target=run_dummy_server, daemon=True).start()
     threading.Thread(target=auto_nudge_daemon, daemon=True).start()
+    try:
+        setup_global_commands()
+    except Exception as e:
+        logging.error(f"Failed to setup commands at startup: {e}")
     print("=" * 50)
     print("  Baya Books Bot is LIVE!")
     print("=" * 50)

@@ -693,6 +693,16 @@ html_content = f'''<!DOCTYPE html>
             if (!uid && tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {{
                 uid = String(tg.initDataUnsafe.user.id);
             }}
+            if (!uid && tg && tg.initData) {{
+                try {{
+                    const q = new URLSearchParams(tg.initData);
+                    const u = q.get('user');
+                    if (u) {{
+                        const parsed = JSON.parse(u);
+                        if (parsed && parsed.id) uid = String(parsed.id);
+                    }}
+                }} catch (e) {{}}
+            }}
             if (uid) {{
                 try {{ localStorage.setItem('baya_uid', uid); }} catch (e) {{}}
                 return uid;
@@ -1135,13 +1145,36 @@ html_content = f'''<!DOCTYPE html>
         }}
         async function returnToBot() {{
             const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
-            if (b && USER_ID) {{
+            const uid = getUserId();
+            const btn = document.querySelector('#modal-pay .btn-primary');
+            if (btn) {{
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳ ወደ ቦቱ በመላክ ላይ...</span>';
+            }}
+            if (tg && typeof tg.sendData === 'function' && b) {{
                 try {{
-                    await fetch('/api/select_book?uid=' + encodeURIComponent(USER_ID) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode) + '&notify=1');
+                    tg.sendData(JSON.stringify({{
+                        action: 'select_book',
+                        book: b.key,
+                        mode: activePayMode
+                    }}));
                 }} catch (e) {{}}
             }}
-            if (tg) tg.close();
-            else closePayModal();
+            if (b && uid) {{
+                const url = '/api/select_book?uid=' + encodeURIComponent(uid) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode) + '&notify=1';
+                try {{
+                    if (navigator.sendBeacon) {{
+                        try {{ navigator.sendBeacon(url); }} catch (e) {{}}
+                    }}
+                    await fetch(url, {{ keepalive: true, cache: 'no-store' }});
+                }} catch (e) {{
+                    console.error('select_book error:', e);
+                }}
+            }}
+            setTimeout(() => {{
+                if (tg) tg.close();
+                else closePayModal();
+            }}, 300);
         }}
 
         // Initialize Store on Load

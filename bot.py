@@ -860,6 +860,48 @@ def notify_user_book_unlocked(uid, book_key, days=None):
     except Exception as e:
         logging.error(f"Failed to notify user {uid} of unlocked book: {e}")
 
+def send_book_checkout_prompt(uid_int, book_key, mode):
+    try:
+        rand_suffix = uuid.uuid4().hex[:6].upper()
+        b_title = BOOK_TITLES.get(book_key, book_key)
+        if mode == 'rent':
+            amount = 199
+            plan_label = "የ 10 ቀናት ኪራይ (199 ብር)"
+            tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
+        elif mode == 'extend':
+            amount = 99
+            plan_label = "ተጨማሪ 5 ቀናት ኪራይ (99 ብር)"
+            tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
+        else:
+            amount = 499
+            plan_label = "ሙሉ መጽሐፍ ግዢ — ለዘላለም (499 ብር)"
+            tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
+
+        database.record_payment(uid_int, 0, amount, tx_ref, "PENDING_CHECKOUT", status="pending")
+
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("📖 ወደ መጻሕፍት ቤት ተመለስ (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid_int}"))
+        )
+
+        msg_text = (
+            f"📚 <b>የተመረጠው መጽሐፍ ዝርዝር</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"📖 <b>መጽሐፍ:</b> «{b_title}»\n"
+            f"💳 <b>የተመረጠው ዓይነት:</b> {plan_label}\n"
+            f"💰 <b>የሚከፈለው ዋጋ:</b> {amount} ብር\n\n"
+            f"🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n"
+            f"🏦 <b>CBE Birr (ሲቢኢ ብር):</b> <code>0912689900</code>\n"
+            f"📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n"
+            f"👤 <b>ስም:</b> በኃይሉ ጌታቸው\n\n"
+            f"📸 <b>የከፈሉበትን የ{amount} ብር ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን!</b> ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ መጽሐፉን ይከፍትልዎታል።"
+        )
+        bot.send_message(uid_int, msg_text, parse_mode="HTML", reply_markup=markup)
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send book checkout prompt to {uid_int}: {e}")
+        return False
+
 @bot.message_handler(commands=["unlock_book"])
 def cmd_unlock_book(message):
     if not is_admin(message.from_user):
@@ -1924,7 +1966,19 @@ def ask_language(chat_id):
 # ══════════════════════════════════════════
 # ══════════════════════════════════════════
 #  TEXT & PHOTO MESSAGE HANDLER
-# ══════════════════════════════════════════
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    uid = message.from_user.id
+    try:
+        raw_data = message.web_app_data.data
+        data = json.loads(raw_data)
+        if data.get('action') == 'select_book':
+            book_key = data.get('book')
+            mode = data.get('mode', 'buy')
+            send_book_checkout_prompt(uid, book_key, mode)
+    except Exception as e:
+        logging.error(f"Error handling web_app_data for {uid}: {e}")
+
 @bot.message_handler(content_types=["text", "photo", "document"])
 def handle_messages(message):
     uid = message.from_user.id
@@ -2807,44 +2861,25 @@ class DummyHandler(BaseHTTPRequestHandler):
             if uid and book_key:
                 try:
                     uid_int = int(uid)
-                    rand_suffix = uuid.uuid4().hex[:6].upper()
-                    b_title = BOOK_TITLES.get(book_key, book_key)
-                    if mode == 'rent':
-                        amount = 199
-                        plan_label = "የ 10 ቀናት ኪራይ (199 ብር)"
-                        tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
-                        database.record_payment(uid_int, 0, 199, tx_ref, "PENDING_CHECKOUT", status="pending")
-                    elif mode == 'extend':
-                        amount = 99
-                        plan_label = "ተጨማሪ 5 ቀናት ኪራይ (99 ብር)"
-                        tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
-                        database.record_payment(uid_int, 0, 99, tx_ref, "PENDING_CHECKOUT", status="pending")
-                    else:
-                        amount = 499
-                        plan_label = "ሙሉ መጽሐፍ ግዢ — ለዘላለም (499 ብር)"
-                        tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
-                        database.record_payment(uid_int, 0, 499, tx_ref, "PENDING_CHECKOUT", status="pending")
                     if notify:
-                        try:
-                            bot.send_message(
-                                uid_int,
-                                f"📚 <b>የመጽሐፍ ክፍያ ማረጋገጫ</b>\n"
-                                f"━━━━━━━━━━━━━━━━━━━━\n"
-                                f"📖 <b>መጽሐፍ:</b> «{b_title}»\n"
-                                f"💳 <b>ምርጫ:</b> {plan_label}\n\n"
-                                f"🏦 <b>CBE (ንግድ ባንክ):</b> <code>1000073164765</code>\n"
-                                f"🏦 <b>CBE Birr (ሲቢኢ ብር):</b> <code>0912689900</code>\n"
-                                f"📱 <b>ቴሌብር (Telebirr):</b> <code>0912689900</code>\n"
-                                f"👤 <b>ስም:</b> በኃይሉ ጌታቸው\n\n"
-                                f"📸 <b>የከፈሉበትን የ{amount} ብር ደረሰኝ (Screenshot) በቀጥታ እዚሁ ቻት ላይ ይላኩልን!</b> ሲስተማችን በሰከንዶች ውስጥ አረጋግጦ መጽሐፉን ይከፍትልዎታል።",
-                                parse_mode="HTML"
-                            )
-                        except Exception as ne:
-                            logging.error(f"Failed to send checkout prompt to {uid_int}: {ne}")
+                        send_book_checkout_prompt(uid_int, book_key, mode)
+                    else:
+                        rand_suffix = uuid.uuid4().hex[:6].upper()
+                        if mode == 'rent':
+                            amount = 199
+                            tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
+                        elif mode == 'extend':
+                            amount = 99
+                            tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
+                        else:
+                            amount = 499
+                            tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
+                        database.record_payment(uid_int, 0, amount, tx_ref, "PENDING_CHECKOUT", status="pending")
                 except Exception as e:
                     logging.error(f"Failed to record book checkout: {e}")
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
             return

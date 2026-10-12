@@ -758,6 +758,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <button class="btn-icon" onclick="openHighlightsModal('all')" title="Saved Quotes">🔖</button>
+                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
             </div>
         </header>
 
@@ -840,35 +841,9 @@
                 <button class="btn-icon" onclick="openSearchModal()" title="በመጽሐፉ ውስጥ ፈልግ">🔍</button>
                 <button class="btn-icon" onclick="openTocModal()" title="ማውጫ (Chapters)">📑</button>
                 <button class="btn-icon" onclick="openHighlightsModal(activeBookKey)" title="የተቀመጡ ጥቅሶች">🔖</button>
-                <button class="btn-icon" onclick="toggleTypoPopover(event)" title="የፊደል እና ገጽታ ማስተካከያ">Aa</button>
-            </div>
-        </div>
-
-        <!-- Typography & Eye-Comfort Popover -->
-        <div id="typoPopover" class="typo-popover" onclick="event.stopPropagation()">
-            <div class="typo-row">
-                <span class="typo-label">የፊደል መጠን</span>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(-1)">A-</button>
-                    <span id="fontSizeDisplay" style="font-size: 12px; font-weight: 800; min-width: 38px; text-align: center;">18px</span>
-                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(1)">A+</button>
-                </div>
-            </div>
-            <div class="typo-row">
-                <span class="typo-label">የመስመር ክፍተት</span>
-                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
-                    <button class="typo-btn" id="lh-1.75" onclick="setLineHeight(1.75)">ጥብቅ</button>
-                    <button class="typo-btn active" id="lh-2" onclick="setLineHeight(2.0)">መደበኛ</button>
-                    <button class="typo-btn" id="lh-2.3" onclick="setLineHeight(2.3)">ሰፊ</button>
-                </div>
-            </div>
-            <div class="typo-row">
-                <span class="typo-label">የገጽ ቀለም</span>
-                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
-                    <button class="typo-btn" id="th-dark" onclick="setThemeMode('dark')">🌙 ማታ</button>
-                    <button class="typo-btn" id="th-sepia-theme" onclick="setThemeMode('sepia-theme')">📜 ሴፒያ</button>
-                    <button class="typo-btn" id="th-light-theme" onclick="setThemeMode('light-theme')">☀️ ቀን</button>
-                </div>
+                <button class="btn-icon" onclick="adjustFontSize(-1)" title="Smaller">A-</button>
+                <button class="btn-icon" onclick="adjustFontSize(1)" title="Larger">A+</button>
+                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
             </div>
         </div>
 

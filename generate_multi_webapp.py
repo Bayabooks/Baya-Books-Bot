@@ -102,6 +102,35 @@ html_content = f'''<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Menbere:wght@400;600;700&family=Noto+Serif+Ethiopic:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        @font-face {{
+            font-family: 'Ethiopic Washra';
+            src: url('https://cdn.jsdelivr.net/gh/lecramyajiv/fonts-ethiopic-extra@master/TTF/Ethiopic%20washrasb.ttf') format('truetype');
+            font-weight: 400 700;
+            font-style: normal;
+            font-display: swap;
+        }}
+        @font-face {{
+            font-family: 'Ethiopic Fantuwua';
+            src: url('https://cdn.jsdelivr.net/gh/lecramyajiv/fonts-ethiopic-extra@master/TTF/Ethiopic-fantuwua.ttf') format('truetype');
+            font-weight: 400 700;
+            font-style: normal;
+            font-display: swap;
+        }}
+        @font-face {{
+            font-family: 'Ethiopia Jiret';
+            src: url('https://cdn.jsdelivr.net/gh/lecramyajiv/fonts-ethiopic-extra@master/TTF/Ethiopia%20jiret.ttf') format('truetype');
+            font-weight: 400 700;
+            font-style: normal;
+            font-display: swap;
+        }}
+        @font-face {{
+            font-family: 'Ethiopic Wookianos';
+            src: url('https://cdn.jsdelivr.net/gh/lecramyajiv/fonts-ethiopic-extra@master/TTF/Ethiopic%20wookianos.ttf') format('truetype');
+            font-weight: 400 700;
+            font-style: normal;
+            font-display: swap;
+        }}
+
         :root {{
             --bg-primary: #0d1017;
             --bg-secondary: #161b26;
@@ -408,9 +437,23 @@ html_content = f'''<!DOCTYPE html>
             padding: 28px 22px 110px;
             font-family: var(--font-reader);
             font-size: 17.5px;
+            font-weight: 400;
             line-height: 2.0;
             color: var(--text-primary);
             transition: font-size 0.15s ease, line-height 0.15s ease;
+        }}
+        .reader-content.reader-bold,
+        .reader-content.reader-bold .reader-p,
+        .reader-content.reader-bold .reader-li,
+        .reader-content.reader-bold .reader-quote-text {{
+            font-weight: 700 !important;
+            -webkit-text-stroke: 0.25px currentColor;
+        }}
+        .btn-icon.active-bold {{
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            border-color: var(--accent) !important;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.45);
         }}
 
         .ch-header-card {{
@@ -995,6 +1038,7 @@ html_content = f'''<!DOCTYPE html>
             <div class="reader-controls">
                 <button class="btn-icon" onclick="adjustFontSize(-1)" title="Smaller">A-</button>
                 <button class="btn-icon" onclick="adjustFontSize(1)" title="Larger">A+</button>
+                <button class="btn-icon" id="btnHeaderBold" onclick="toggleFontBold()" title="ደማቅ / መደበኛ (Bold)" style="font-weight: 900; font-family: Georgia, serif;">B</button>
                 <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
             </div>
         </div>
@@ -1104,10 +1148,14 @@ html_content = f'''<!DOCTYPE html>
         <div class="modal-card" onclick="event.stopPropagation()">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 800;">🖋️ የአማርኛ ፊደል ይምረጡ</h3>
-                    <p style="font-size: 11.5px; color: var(--text-secondary);">ለዓይንዎ የሚስማማውን የንባብ ፊደል ይምረጡ</p>
+                    <h3 style="font-size: 16px; font-weight: 800;">🖋️ የአማርኛ ፊደል እና ውፍረት</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);">ለዓይንዎ የሚስማማውን የንባብ ፊደል እና ውፍረት ይምረጡ</p>
                 </div>
                 <button class="btn-icon" onclick="closeFontModal()">✕</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                <button id="btnModalUnbold" class="reader-tool-btn" onclick="setFontBold(false)" style="padding: 9px; font-weight: 500;">መደበኛ (Normal)</button>
+                <button id="btnModalBold" class="reader-tool-btn" onclick="setFontBold(true)" style="padding: 9px; font-weight: 900;">B ደማቅ (Bold)</button>
             </div>
             <div class="drawer-list" id="fontList"></div>
         </div>
@@ -2349,6 +2397,7 @@ html_content = f'''<!DOCTYPE html>
         let currFontSize = 17.5;
         let currLineHeight = 2.0;
         let currFontKey = 'noto_serif';
+        let currFontBold = false;
         const themes = ['dark', 'light-theme', 'sepia-theme'];
         let themeIdx = 0;
 
@@ -2363,20 +2412,35 @@ html_content = f'''<!DOCTYPE html>
                 desc: 'ባህላዊ የኢትዮጵያ የብራና እና የህትመት ፊደል',
                 family: "'Abyssinica SIL', 'Noto Serif Ethiopic', serif"
             }},
+            washra: {{
+                name: 'ዋሽራ (ታዋቂ የህትመት ፊደል)',
+                desc: 'በኢትዮጵያ መጻሕፍት እና ጋዜጦች ተወዳጅ የሆነ ፊደል',
+                family: "'Ethiopic Washra', 'Noto Serif Ethiopic', serif"
+            }},
+            fantuwua: {{
+                name: 'ፋንቱዋ (ውብ እና ኪነ-ጥበባዊ)',
+                desc: 'ልዩ የፊደል ቅርጽ ያለው ማራኪ የአማርኛ ፊደል',
+                family: "'Ethiopic Fantuwua', 'Abyssinica SIL', serif"
+            }},
+            jiret: {{
+                name: 'ጅረት (ክላሲክ የኢትዮጵያ ፊደል)',
+                desc: 'ለስላሳ እና ለዓይን ተስማሚ የሆነ የተለመደ የአማርኛ ፊደል',
+                family: "'Ethiopia Jiret', 'Noto Serif Ethiopic', serif"
+            }},
             menbere: {{
-                name: 'መንበረ (ደማቅ ዘመናዊ)',
+                name: 'መንበረ (ዘመናዊ እና ግልጽ)',
                 desc: 'ደማቅ፣ ግልጽ እና ዘመናዊ የአማርኛ ፊደል',
                 family: "'Menbere', 'Noto Sans Ethiopic', sans-serif"
             }},
             noto_sans: {{
-                name: 'ኖቶ ሳንስ (ንጹህ እና ቀላል)',
+                name: 'ኖቶ ሳንስ (ንጹህ ለስልክ ስክሪን)',
                 desc: 'ለስልክ ስክሪን እጅግ ግልጽ የሆነ ዘመናዊ ፊደል',
                 family: "'Noto Sans Ethiopic', system-ui, sans-serif"
             }},
-            nyala: {{
-                name: 'ኒያላ / ኬፋ (ክላሲክ)',
-                desc: 'የተለመደ ለስላሳ የኮምፒውተር እና ስልክ ፊደል',
-                family: "'Nyala', 'Kefa', 'Ebrima', 'Abyssinica SIL', serif"
+            wookianos: {{
+                name: 'ውቂያኖስ (የጥንት ብራና ቅርጽ)',
+                desc: 'የጥንት የኢትዮጵያ የብራና ጽሑፍ ስሜት የሚሰጥ ፊደል',
+                family: "'Ethiopic Wookianos', 'Abyssinica SIL', serif"
             }}
         }};
 
@@ -2386,7 +2450,8 @@ html_content = f'''<!DOCTYPE html>
                     fontSize: currFontSize,
                     lineHeight: currLineHeight,
                     theme: themes[themeIdx],
-                    fontKey: currFontKey
+                    fontKey: currFontKey,
+                    fontBold: currFontBold
                 }}));
             }} catch (e) {{}}
         }}
@@ -2402,6 +2467,9 @@ html_content = f'''<!DOCTYPE html>
                 if (p.fontKey && AMHARIC_FONTS[p.fontKey]) {{
                     currFontKey = p.fontKey;
                 }}
+                if (typeof p.fontBold === 'boolean') {{
+                    currFontBold = p.fontBold;
+                }}
             }} catch (e) {{}}
             applyReaderPrefs();
         }}
@@ -2414,7 +2482,20 @@ html_content = f'''<!DOCTYPE html>
                 rb.style.fontSize = currFontSize + 'px';
                 rb.style.lineHeight = String(currLineHeight);
                 rb.style.fontFamily = fontObj.family;
+                rb.classList.toggle('reader-bold', !!currFontBold);
             }}
+            const btnHeaderBold = document.getElementById('btnHeaderBold');
+            if (btnHeaderBold) btnHeaderBold.classList.toggle('active-bold', !!currFontBold);
+
+            const btnModalBold = document.getElementById('btnModalBold');
+            const btnModalUnbold = document.getElementById('btnModalUnbold');
+            if (btnModalBold && btnModalUnbold) {{
+                btnModalBold.style.background = currFontBold ? 'var(--accent)' : 'var(--bg-card)';
+                btnModalBold.style.color = currFontBold ? '#ffffff' : 'var(--text-primary)';
+                btnModalUnbold.style.background = !currFontBold ? 'var(--accent)' : 'var(--bg-card)';
+                btnModalUnbold.style.color = !currFontBold ? '#ffffff' : 'var(--text-primary)';
+            }}
+
             const fsDisp = document.getElementById('fontSizeDisplay');
             if (fsDisp) fsDisp.innerText = Math.round(currFontSize) + 'px';
 
@@ -2431,9 +2512,29 @@ html_content = f'''<!DOCTYPE html>
             }});
         }}
 
+        function toggleFontBold() {{
+            currFontBold = !currFontBold;
+            applyReaderPrefs();
+            saveReaderPrefs();
+            showToast(currFontBold ? '🅱️ ደማቅ ፊደል (Bold) በርቷል' : '📝 መደበኛ ውፍረት (Normal)');
+        }}
+
+        function setFontBold(val) {{
+            currFontBold = !!val;
+            applyReaderPrefs();
+            saveReaderPrefs();
+            if (document.getElementById('modal-fonts').style.display === 'flex') {{
+                openFontModal();
+            }}
+            showToast(currFontBold ? '🅱️ ደማቅ ፊደል (Bold) በርቷል' : '📝 መደበኛ ውፍረት (Normal)');
+        }}
+
         function openFontModal() {{
+            applyReaderPrefs();
             const listEl = document.getElementById('fontList');
             const sample = 'ጥበብ ከሁሉ ትበልጣለች፤ አእምሮንም ማግኘት ከብር ይሻላል።';
+            const sampleWeight = currFontBold ? '700' : '400';
+            const sampleStroke = currFontBold ? '0.25px currentColor' : '0px';
             listEl.innerHTML = Object.keys(AMHARIC_FONTS).map(key => {{
                 const f = AMHARIC_FONTS[key];
                 const isActive = key === currFontKey;
@@ -2444,7 +2545,7 @@ html_content = f'''<!DOCTYPE html>
                             <span style="font-size: 12px; font-weight: 800; color: #34d399;">${{isActive ? '✓ የተመረጠ' : ''}}</span>
                         </div>
                         <div style="font-size: 11.5px; color: var(--text-secondary);">${{f.desc}}</div>
-                        <div style="font-size: 15.5px; line-height: 1.75; padding: 8px 10px; border-radius: 8px; background: rgba(15, 23, 42, 0.35); width: 100%; font-family: ${{f.family}}; color: var(--text-primary);">
+                        <div style="font-size: 15.5px; font-weight: ${{sampleWeight}}; -webkit-text-stroke: ${{sampleStroke}}; line-height: 1.75; padding: 8px 10px; border-radius: 8px; background: rgba(15, 23, 42, 0.35); width: 100%; font-family: ${{f.family}}; color: var(--text-primary);">
                             ${{sample}}
                         </div>
                     </div>

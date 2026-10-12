@@ -1232,62 +1232,65 @@ def run_refresh_all_menus(chat_id_to_report):
     total = len(users)
     bot.send_message(
         chat_id_to_report,
-        f"🔄 <b>Starting Menu Refresh for all {total} users...</b>\nThis runs in the background and will notify you when complete.",
+        f"🔄 <b>Starting Silent Menu Refresh for all {total} users...</b>\n"
+        f"Keyboards will be updated silently without sending announcement messages.",
         parse_mode="HTML"
     )
 
     def worker():
         import time
+        from telebot.apihelper import ApiTelegramException
         success, failed = 0, 0
         for u in users:
             try:
                 u_lang = database.get_bot_language(u) or 'am'
-                announcements = {
-                    'am': (
-                        "📚 <b>ታላቅ ዜና! አዲሱ የ Baya Books ዲጂታል መጻሕፍት ቤት ክፍት ሆኗል!</b> 🎉\n\n"
-                        "ምርጥ የህይወት፣ የስነ-ልቦና እና የቢዝነስ መጻሕፍትን በነጻ ማሳያ ለማንበብ ወይም በቅናሽ ለመከራየት "
-                        "ከታች በሜኑ ላይ የተጨመረውን <b>«📚 መጻሕፍት ቤት (Library)»</b> አሁኑኑ ይጫኑ!\n\n"
-                        "👇 <i>የታደሰውን የቦት ሜኑ ከታች ይመልከቱ፦</i>"
-                    ),
-                    'en': (
-                        "📚 <b>Big News! The new Baya Books Digital Library is now LIVE!</b> 🎉\n\n"
-                        "Explore bestselling books, read free chapters, and rent full books by tapping "
-                        "<b>«📚 መጻሕፍት ቤት (Library)»</b> on your bottom menu below!\n\n"
-                        "👇 <i>Check out your refreshed menu below:</i>"
-                    ),
-                    'ti': (
-                        "📚 <b>ዓቢ ዜና! ሓዱሽ ዲጂታል ቤት መጻሕፍቲ Baya Books ተኸፊቱ ኣሎ!</b> 🎉\n\n"
-                        "ካብ ታሕቲ ዘሎ <b>«📚 መጻሕፍት ቤት (Library)»</b> ብምጥዋቕ መጻሕፍቲ ብነጻ ኣንብቡ ወይ ብሕሳብ ተኻረዩ!\n\n"
-                        "👇 <i>ነቲ ዝተሓደሰ ሜኑ ኣብ ታሕቲ ርኣይዎ፦</i>"
-                    ),
-                    'om': (
-                        "📚 <b>Oduu Gammachiisaa! Mana Kitaabaa Diijitaalaa Baya Books haaraa banameera!</b> 🎉\n\n"
-                        "Kitaabota filatamoo dubbisuuf ykn kireeffachuuf baafata armaan gadii irraa "
-                        "<b>«📚 መጻሕፍት ቤት (Library)»</b> isa jedhu tuqaa!\n\n"
-                        "👇 <i>Baafata haarome armaan gaditti ilaalaa:</i>"
-                    )
-                }
-                announcement = announcements.get(u_lang) or announcements['am']
-                
-                bot.send_message(
+                # Silently deliver updated persistent reply keyboard and delete temporary message immediately
+                sent = bot.send_message(
                     u,
-                    announcement,
-                    parse_mode="HTML",
-                    reply_markup=get_bottom_markup(u_lang, u)
+                    "🔄",
+                    reply_markup=get_bottom_markup(u_lang, u),
+                    disable_notification=True
                 )
+                try:
+                    bot.delete_message(u, sent.message_id)
+                except Exception:
+                    pass
                 success += 1
                 database.mark_user_blocked(u, 0)
+            except ApiTelegramException as ate:
+                if ate.error_code == 429:
+                    retry_after = getattr(ate, 'result_json', {}).get('parameters', {}).get('retry_after', 3)
+                    time.sleep(retry_after)
+                    try:
+                        sent = bot.send_message(
+                            u,
+                            "🔄",
+                            reply_markup=get_bottom_markup(u_lang, u),
+                            disable_notification=True
+                        )
+                        try:
+                            bot.delete_message(u, sent.message_id)
+                        except Exception:
+                            pass
+                        success += 1
+                        database.mark_user_blocked(u, 0)
+                    except Exception:
+                        failed += 1
+                else:
+                    failed += 1
+                    database.mark_user_blocked(u, 1)
             except Exception:
                 failed += 1
                 database.mark_user_blocked(u, 1)
-            time.sleep(0.05)  # Telegram rate limit safety
+            time.sleep(0.08)  # Safe delay to prevent rate limits
             
         try:
             bot.send_message(
                 chat_id_to_report,
-                f"✅ <b>All Menus Refreshed Successfully!</b>\n\n"
-                f"✔️ <b>{success}</b> users received the new bottom menu\n"
-                f"❌ <b>{failed}</b> users skipped (blocked/inactive)",
+                f"✅ <b>All Keyboards Refreshed Silently!</b>\n\n"
+                f"✔️ <b>{success}</b> users refreshed\n"
+                f"❌ <b>{failed}</b> users skipped (blocked/inactive)\n\n"
+                f"<i>No messages or notifications were sent to users.</i>",
                 parse_mode="HTML"
             )
         except Exception:

@@ -79,10 +79,11 @@ for b_key, b_info in books_meta.items():
                 words = sum(len(str(b.get("text", "")).split()) for b in blocks)
                 mins = max(2, round(words / 135))
                 sub = next((b.get("text", "") for b in blocks if b.get("type") == "subtitle"), c.get("name", ""))
+                ch_name = "🚪 መግቢያ" if c.get("label") == "መግቢያ" or "መግቢያ" in c.get("name", "") else c["name"]
                 preview_chs.append({
                     "id": c["id"],
                     "label": c["label"],
-                    "name": c["name"],
+                    "name": ch_name,
                     "subtitle": sub,
                     "mins": mins,
                     "free": c["free"],
@@ -1043,9 +1044,9 @@ html_content = f'''<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- Dedicated Row for 🚪 ማውጫ, 🔍 ፈልግ, 🔖 ጥቅሶች, 🖋️ ፊደል -->
+        <!-- Dedicated Row for 📑 ማውጫ, 🔍 ፈልግ, 🔖 ጥቅሶች, 🖋️ ፊደል -->
         <div class="reader-tools-row" id="readerToolsRow">
-            <button class="reader-tool-btn" onclick="openTocModal()">🚪 ማውጫ</button>
+            <button class="reader-tool-btn" onclick="openTocModal()">📑 ማውጫ</button>
             <button class="reader-tool-btn" onclick="openSearchModal()">🔍 ፈልግ</button>
             <button class="reader-tool-btn" onclick="openHighlightsModal(activeBookKey)">🔖 ጥቅሶች</button>
             <button class="reader-tool-btn" onclick="openFontModal()">🖋️ ፊደል</button>
@@ -1126,13 +1127,13 @@ html_content = f'''<!DOCTYPE html>
     </div>
 
     <!-- ══════════════════════════════════════════
-         MODAL: TABLE OF CONTENTS (🚪 ማውጫ)
+         MODAL: TABLE OF CONTENTS (📑 ማውጫ)
     ══════════════════════════════════════════ -->
     <div id="modal-toc" class="modal-overlay" onclick="closeTocModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">🚪 የመጽሐፉ ማውጫ</h3>
+                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">📑 የመጽሐፉ ማውጫ</h3>
                     <p style="font-size: 11.5px; color: var(--text-secondary);" id="tocProgressSub">0% ተነቧል</p>
                 </div>
                 <button class="btn-icon" onclick="closeTocModal()">✕</button>
@@ -1661,6 +1662,7 @@ html_content = f'''<!DOCTYPE html>
                     const prevMeta = LOADED_CHAPTERS[bookKey] || [];
                     const arr = (Array.isArray(data) ? data : (data.chapters || [])).map((c, idx) => ({{
                         ...c,
+                        name: (c.label === 'መግቢያ' || (c.name && c.name.includes('መግቢያ'))) ? '🚪 መግቢያ' : c.name,
                         mins: (prevMeta[idx] && prevMeta[idx].mins) || c.mins || 5,
                         subtitle: (prevMeta[idx] && prevMeta[idx].subtitle) || c.subtitle || ''
                     }}));
@@ -1972,7 +1974,7 @@ html_content = f'''<!DOCTYPE html>
             const completedArr = prog.completed || [];
             const overallPct = isOwned ? getBookOverallPct(activeBookKey) : 0;
 
-            document.getElementById('tocBookTitle').innerText = '🚪 ' + meta.title;
+            document.getElementById('tocBookTitle').innerText = '📑 ' + meta.title;
             document.getElementById('tocProgressSub').innerText = isOwned
                 ? `${{overallPct}}% ተነቧል • ${{completedArr.length}} / ${{Math.max(1, chapters.length - 1)}} ክፍሎች ተጠናቀዋል`
                 : '🔒 ሙሉውን ማውጫ ለመክፈት መጽሐፉን ይግዙ ወይም ይከራዩ';

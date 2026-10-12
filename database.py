@@ -574,8 +574,15 @@ def get_analytics():
     c.execute("SELECT COUNT(*) FROM users WHERE joined_date >= ? AND bot_blocked = 0", (week_ago,))
     new_this_week = c.fetchone()[0]
 
-    c.execute("SELECT COUNT(*) FROM users WHERE advice_history != '[]' AND advice_history IS NOT NULL")
+    c.execute("""SELECT COUNT(*) FROM users 
+        WHERE (advice_history LIKE '%"role": "user"%' OR IFNULL(advice_messages_left, 5) < 5) 
+        AND bot_blocked = 0""")
     active_advice_users = c.fetchone()[0]
+
+    c.execute("""SELECT COUNT(*) FROM users 
+        WHERE IFNULL(advice_messages_left, 5) <= 0 
+        AND bot_blocked = 0""")
+    trial_exhausted_users = c.fetchone()[0]
 
     # Revenue — count ALL payments that are approved OR have WEBHOOK in receipt_file_id or tx_ref
     c.execute("""SELECT COALESCE(SUM(amount), 0) FROM payments 
@@ -644,6 +651,7 @@ def get_analytics():
         "new_today": new_today,
         "new_this_week": new_this_week,
         "active_advice_users": active_advice_users,
+        "trial_exhausted_users": trial_exhausted_users,
         "total_books_unlocked": total_books_unlocked,
         "active_book_rentals": active_book_rentals,
         "total_revenue": total_revenue,
@@ -1139,29 +1147,29 @@ def get_user_stage_stats():
         AND bot_blocked = 0""", (now_str,))
     stuck_onboarding = c.fetchone()[0]
 
-    # 4. Onboarded, No Chat (Not Paid, Not VIP, Has Gender, No History)
+    # 4. Onboarded, No Chat (Not Paid, Not VIP, Has Gender, Never Sent User Message)
     c.execute(f"""SELECT COUNT(*) FROM users 
         WHERE gender IS NOT NULL AND gender != '' 
-        AND (advice_history IS NULL OR advice_history = '[]') 
+        AND (advice_history IS NULL OR advice_history NOT LIKE '%"role": "user"%')
+        AND IFNULL(advice_messages_left, 5) >= 5
         AND user_id NOT IN ({paid_sql}) 
         AND (vip_expiry IS NULL OR vip_expiry <= ?) 
         AND bot_blocked = 0""", (now_str,))
     onboarded_no_chat = c.fetchone()[0]
 
-    # 5. In Trial (Not Paid, Not VIP, Has Gender, Has History, msgs > 0)
+    # 5. In Trial (Not Paid, Not VIP, Has Gender, Sent User Msg, msgs > 0)
     c.execute(f"""SELECT COUNT(*) FROM users 
         WHERE gender IS NOT NULL AND gender != '' 
-        AND advice_history IS NOT NULL AND advice_history != '[]' 
+        AND (advice_history LIKE '%"role": "user"%' OR IFNULL(advice_messages_left, 5) < 5)
         AND IFNULL(advice_messages_left, 5) > 0 
         AND user_id NOT IN ({paid_sql}) 
         AND (vip_expiry IS NULL OR vip_expiry <= ?) 
         AND bot_blocked = 0""", (now_str,))
     in_trial = c.fetchone()[0]
 
-    # 6. Trial Ended (Not Paid, Not VIP, Has Gender, Has History, msgs <= 0)
+    # 6. Trial Ended (Not Paid, Not VIP, Has Gender, msgs <= 0)
     c.execute(f"""SELECT COUNT(*) FROM users 
         WHERE gender IS NOT NULL AND gender != '' 
-        AND advice_history IS NOT NULL AND advice_history != '[]' 
         AND IFNULL(advice_messages_left, 5) <= 0 
         AND user_id NOT IN ({paid_sql}) 
         AND (vip_expiry IS NULL OR vip_expiry <= ?) 
@@ -1218,7 +1226,8 @@ def get_silent_users():
         FROM users
         WHERE IFNULL(age_verified, 0) = 1 
         AND gender IS NOT NULL AND gender != '' 
-        AND (advice_history IS NULL OR advice_history = '[]') 
+        AND (advice_history IS NULL OR advice_history NOT LIKE '%"role": "user"%')
+        AND IFNULL(advice_messages_left, 5) >= 5
         AND bot_blocked = 0
         AND IFNULL(nudge_silent_sent, 0) = 0
     """)

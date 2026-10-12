@@ -468,7 +468,8 @@ html_content = f'''<!DOCTYPE html>
 
         .reader-p {{
             margin-bottom: 1.35em;
-            text-align: left;
+            text-align: justify;
+            text-justify: inter-word;
             letter-spacing: 0.01em;
             word-spacing: 0.04em;
             border-radius: 10px;
@@ -561,6 +562,8 @@ html_content = f'''<!DOCTYPE html>
             font-weight: 600;
             line-height: 1.75;
             margin-bottom: 8px;
+            text-align: justify;
+            text-justify: inter-word;
         }}
         .reader-quote-author {{
             font-family: var(--font-ui);
@@ -573,6 +576,8 @@ html_content = f'''<!DOCTYPE html>
         .reader-li {{
             display: flex;
             align-items: flex-start;
+            text-align: justify;
+            text-justify: inter-word;
             gap: 12px;
             background: var(--bg-secondary);
             border: 1px solid var(--border);

@@ -914,16 +914,16 @@ def send_book_checkout_prompt(uid_int, book_key, mode):
         rand_suffix = uuid.uuid4().hex[:6].upper()
         b_title = BOOK_TITLES.get(book_key, book_key)
         if mode == 'rent':
-            amount = 199
-            plan_label = "የ 10 ቀናት ኪራይ (199 ብር)"
+            amount = 149
+            plan_label = "የ 10 ቀናት ኪራይ (149 ብር)"
             tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
         elif mode == 'extend':
-            amount = 99
-            plan_label = "ተጨማሪ 5 ቀናት ኪራይ (99 ብር)"
+            amount = 49
+            plan_label = "ተጨማሪ 5 ቀናት ኪራይ (49 ብር)"
             tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
         else:
-            amount = 499
-            plan_label = "ሙሉ መጽሐፍ ግዢ — ለዘላለም (499 ብር)"
+            amount = 399
+            plan_label = "ሙሉ መጽሐፍ ግዢ — ለዘላለም (399 ብር)"
             tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
 
         database.record_payment(uid_int, 0, amount, tx_ref, "PENDING_CHECKOUT", status="pending")
@@ -1688,9 +1688,9 @@ def handle_callback(call):
             f"📚 <b>Push Book to User <code>{target_uid}</code></b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"Choose a book to unlock for this customer:\n"
-            f"• <b>Full</b> = Permanent Full Book (499 ETB)\n"
-            f"• <b>10d Rent</b> = 10-Day Rental (199 ETB)\n"
-            f"• <b>+5d Ext</b> = +5 Days Extension (99 ETB)",
+            f"• <b>Full</b> = Permanent Full Book (399 ETB)\n"
+            f"• <b>10d Rent</b> = 10-Day Rental (149 ETB)\n"
+            f"• <b>+5d Ext</b> = +5 Days Extension (49 ETB)",
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -3008,13 +3008,13 @@ class DummyHandler(BaseHTTPRequestHandler):
                     else:
                         rand_suffix = uuid.uuid4().hex[:6].upper()
                         if mode == 'rent':
-                            amount = 199
+                            amount = 149
                             tx_ref = f"BAYA-{uid_int}-BOOKRENT_{book_key}-MANUAL-{rand_suffix}"
                         elif mode == 'extend':
-                            amount = 99
+                            amount = 49
                             tx_ref = f"BAYA-{uid_int}-BOOKEXT_{book_key}-MANUAL-{rand_suffix}"
                         else:
-                            amount = 499
+                            amount = 399
                             tx_ref = f"BAYA-{uid_int}-BOOK_{book_key}-MANUAL-{rand_suffix}"
                         database.record_payment(uid_int, 0, amount, tx_ref, "PENDING_CHECKOUT", status="pending")
                 except Exception as e:

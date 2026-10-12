@@ -14,7 +14,7 @@ books_meta = {
         "badge_style": "",
         "category": "psychology",
         "data_url": "/static/books_data/narcissist_full.json",
-        "paywall_desc": "ይህን ሙሉ የ 274 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ከመርዛማ ግንኙነት ራስሽን ነጻ የምታወጪበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም አግኚ።"
+        "paywall_desc": "ይህን ሙሉ የ 274 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ከመርዛማ ግንኙነት ራስሽን ነጻ የምታወጪበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም አግኚ።"
     },
     "boundaries": {
         "key": "boundaries",
@@ -29,7 +29,7 @@ books_meta = {
         "badge_style": "color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);",
         "category": "psychology",
         "data_url": "/static/books_data/boundaries_full.json",
-        "paywall_desc": "ይህን ሙሉ የ 216 ገጽ መጽሐፍ (ሁሉንም 17 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ምንም የጥፋተኝነት ስሜት ሳይሰማዎት ጤናማ ድንበር የሚያበጁበትን ሙሉ መመሪያ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 216 ገጽ መጽሐፍ (ሁሉንም 17 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ምንም የጥፋተኝነት ስሜት ሳይሰማዎት ጤናማ ድንበር የሚያበጁበትን ሙሉ መመሪያ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
     },
     "buyback": {
         "key": "buyback",
@@ -44,7 +44,7 @@ books_meta = {
         "badge_style": "color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);",
         "category": "productivity",
         "data_url": "/static/books_data/buyback_full.json",
-        "paywall_desc": "ይህን ሙሉ የ 213 ገጽ መጽሐፍ (ሁሉንም 16 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ ጊዜዎን መልሰው የሚገዙበትን እና ገቢዎን በእጥፍ የሚያሳድጉበትን ሙሉ ቀመር በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 213 ገጽ መጽሐፍ (ሁሉንም 16 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ጊዜዎን መልሰው የሚገዙበትን እና ገቢዎን በእጥፍ የሚያሳድጉበትን ሙሉ ቀመር በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
     },
     "meaning": {
         "key": "meaning",
@@ -59,7 +59,7 @@ books_meta = {
         "badge_style": "color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3);",
         "category": "psychology",
         "data_url": "/static/books_data/meaning_full.json",
-        "paywall_desc": "ይህን ሙሉ የ 176 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 499 ብር ብቻ በመክፈት፣ እውነተኛ የሕይወት ትርጉምና ዓላማን የሚያገኙበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
+        "paywall_desc": "ይህን ሙሉ የ 176 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ እውነተኛ የሕይወት ትርጉምና ዓላማን የሚያገኙበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"
     }
 }
 
@@ -552,7 +552,7 @@ html_content = f'''<!DOCTYPE html>
                 <div style="font-size: 36px; margin-bottom: 10px;">📚</div>
                 <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 6px;">ገና የገዙት መጽሐፍ የለም</h3>
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-                    ከመጻሕፍት መደብሩ ውስጥ የሚፈልጉትን መጽሐፍ በ 499 ብር ሲገዙ፣ ሙሉው መጽሐፍ እዚህ <b>«የኔ መጻሕፍት»</b> ስር ለዘላለም ይቀመጥልዎታል።
+                    ከመጻሕፍት መደብሩ ውስጥ የሚፈልጉትን መጽሐፍ በ 399 ብር ሲገዙ፣ ሙሉው መጽሐፍ እዚህ <b>«የኔ መጻሕፍት»</b> ስር ለዘላለም ይቀመጥልዎታል።
                 </p>
                 <button class="btn btn-primary" onclick="filterCategory('all', document.getElementById('pill-all'))">
                     <span>🔥 መጻሕፍትን ተመልከት</span>
@@ -593,13 +593,13 @@ html_content = f'''<!DOCTYPE html>
                 <p class="paywall-desc" id="paywallDesc"></p>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
                     <button id="paywallBtnExtend" class="btn btn-primary" style="display: none; width: 100%; padding: 13px; font-size: 14px; background: linear-gradient(135deg, #10b981, #059669);" onclick="openPayModal(activeBookKey, 'extend')">
-                        <span>➕ ተጨማሪ 5 ቀናት ጨምር — 99 ብር</span>
+                        <span>➕ ተጨማሪ 5 ቀናት ጨምር — 49 ብር</span>
                     </button>
                     <button class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 14px;" onclick="openPayModal(activeBookKey, 'buy')">
-                        <span>💎 ሙሉውን መጽሐፍ ለዘላለም ግዛ — 499 ብር</span>
+                        <span>💎 ሙሉውን መጽሐፍ ለዘላለም ግዛ — 399 ብር</span>
                     </button>
                     <button class="btn btn-outline" style="width: 100%; padding: 12px; font-size: 14px; border-color: rgba(245, 158, 11, 0.45); color: #fbbf24; background: rgba(245, 158, 11, 0.1);" onclick="openPayModal(activeBookKey, 'rent')">
-                        <span>⏳ ለ 10 ቀናት ተከራይ — 199 ብር (ኪራይ)</span>
+                        <span>⏳ ለ 10 ቀናት ተከራይ — 149 ብር (ኪራይ)</span>
                     </button>
                 </div>
             </div>
@@ -608,7 +608,7 @@ html_content = f'''<!DOCTYPE html>
 
 
     <!-- ══════════════════════════════════════════
-         MODAL: PAYMENT (499 Buy / 199 10d Rent / 99 +5d Extend)
+         MODAL: PAYMENT (399 Buy / 149 10d Rent / 49 +5d Extend)
     ══════════════════════════════════════════ -->
     <div id="modal-pay" class="modal-overlay" onclick="closePayModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -620,18 +620,18 @@ html_content = f'''<!DOCTYPE html>
             <!-- Plan Toggle (Full Purchase vs 10-Day Rental vs +5-Day Extension) -->
             <div id="planGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
                 <button id="planBtnBuy" onclick="selectPayPlan('buy')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid #6366f1; background: rgba(99, 102, 241, 0.18); color: #fff; font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
-                    💎 ሙሉ ግዢ<br><span style="font-size: 13.5px; color: #a5b4fc;">499 ብር (ለዘላለም)</span>
+                    💎 ሙሉ ግዢ<br><span style="font-size: 13.5px; color: #a5b4fc;">399 ብር (ለዘላለም)</span>
                 </button>
                 <button id="planBtnRent" onclick="selectPayPlan('rent')" style="padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
-                    ⏳ የ 10 ቀን ኪራይ<br><span style="font-size: 13.5px; color: #fbbf24;">199 ብር (10 ቀናት)</span>
+                    ⏳ የ 10 ቀን ኪራይ<br><span style="font-size: 13.5px; color: #fbbf24;">149 ብር (10 ቀናት)</span>
                 </button>
                 <button id="planBtnExtend" onclick="selectPayPlan('extend')" style="display: none; grid-column: span 2; padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; text-align: center;">
-                    ➕ ተጨማሪ 5 ቀናት ኪራይ — <span style="font-size: 13.5px; color: #34d399;">99 ብር (+5 ቀናት)</span>
+                    ➕ ተጨማሪ 5 ቀናት ኪራይ — <span style="font-size: 13.5px; color: #34d399;">49 ብር (+5 ቀናት)</span>
                 </button>
             </div>
 
             <p id="modalPayInstruction" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-                እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦
+                እባክዎ <b>399 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦
             </p>
 
             <div class="bank-item">
@@ -774,7 +774,7 @@ html_content = f'''<!DOCTYPE html>
                                <span>✅ ጨርሻለሁ</span>
                            </button>
                            <button class="btn btn-primary" style="flex: 1.35; background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: none;" onclick="openPayModal('${{b.key}}', 'extend')">
-                               <span>➕ 5 ቀን ጨምር (99 ብር)</span>
+                               <span>➕ 5 ቀን ጨምር (49 ብር)</span>
                            </button>
                        </div>
                    </div>`;
@@ -784,11 +784,11 @@ html_content = f'''<!DOCTYPE html>
                            <span>📖 ስለ መጽሐፉ</span>
                        </button>
                        <button class="btn btn-outline" style="flex: 1; flex-direction: column; gap: 2px; padding: 8px 6px; line-height: 1.25; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;" onclick="openPayModal('${{b.key}}', 'rent')">
-                           <span style="font-size: 13px; font-weight: 800;">⏳ 199 ብር</span>
+                           <span style="font-size: 13px; font-weight: 800;">⏳ 149 ብር</span>
                            <span style="font-size: 11px; opacity: 0.9;">(10 ቀን ኪራይ)</span>
                        </button>
                        <button class="btn btn-outline" style="flex: 1; flex-direction: column; gap: 2px; padding: 8px 6px; line-height: 1.25;" onclick="openPayModal('${{b.key}}', 'buy')">
-                           <span style="font-size: 13px; font-weight: 800;">💎 499 ብር</span>
+                           <span style="font-size: 13px; font-weight: 800;">💎 399 ብር</span>
                            <span style="font-size: 11px; opacity: 0.85;">(ግዢ)</span>
                        </button>
                    </div>`;
@@ -1108,22 +1108,22 @@ html_content = f'''<!DOCTYPE html>
                 btnRent.style.border = '1.5px solid #f59e0b';
                 btnRent.style.background = 'rgba(245, 158, 11, 0.18)';
                 btnRent.style.color = '#fff';
-                inst.innerHTML = 'እባክዎ <b>199 ብር (ለ 10 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
-                if (b) document.getElementById('modalBookTitle').innerText = '⏳ ' + b.title + ' — 199 ብር (10 ቀን ኪራይ)';
+                inst.innerHTML = 'እባክዎ <b>149 ብር (ለ 10 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '⏳ ' + b.title + ' — 149 ብር (10 ቀን ኪራይ)';
             }} else if (activePayMode === 'extend') {{
                 if (btnExt) {{
                     btnExt.style.border = '1.5px solid #10b981';
                     btnExt.style.background = 'rgba(16, 185, 129, 0.18)';
                     btnExt.style.color = '#fff';
                 }}
-                inst.innerHTML = 'እባክዎ <b>99 ብር (ለተጨማሪ 5 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
-                if (b) document.getElementById('modalBookTitle').innerText = '➕ ' + b.title + ' — 99 ብር (+5 ቀን)';
+                inst.innerHTML = 'እባክዎ <b>49 ብር (ለተጨማሪ 5 ቀናት ኪራይ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '➕ ' + b.title + ' — 49 ብር (+5 ቀን)';
             }} else {{
                 btnBuy.style.border = '1.5px solid #6366f1';
                 btnBuy.style.background = 'rgba(99, 102, 241, 0.18)';
                 btnBuy.style.color = '#fff';
-                inst.innerHTML = 'እባክዎ <b>499 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
-                if (b) document.getElementById('modalBookTitle').innerText = '💎 ' + b.title + ' — 499 ብር (ግዢ)';
+                inst.innerHTML = 'እባክዎ <b>399 ብር (ለሙሉ ግዢ)</b> በሚከተሉት አማራጮች ያስገቡ፦';
+                if (b) document.getElementById('modalBookTitle').innerText = '💎 ' + b.title + ' — 399 ብር (ግዢ)';
             }}
 
             if (b && USER_ID) {{

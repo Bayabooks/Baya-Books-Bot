@@ -442,8 +442,17 @@ html_content = f'''<!DOCTYPE html>
         .reader-p.highlighted, .reader-li.highlighted, .reader-quote.highlighted {{
             background: rgba(245, 158, 11, 0.16) !important;
             border-left: 3.5px solid #f59e0b !important;
-            padding: 10px 14px;
+            padding: 10px 14px 24px 14px;
             border-radius: 6px 12px 12px 6px;
+            position: relative;
+        }}
+        .reader-p.highlighted::after, .reader-li.highlighted::after, .reader-quote.highlighted::after {{
+            content: '🔖';
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            font-size: 13px;
+            line-height: 1;
         }}
 
         .block-actions {{
@@ -1035,7 +1044,7 @@ html_content = f'''<!DOCTYPE html>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <div>
                     <h3 style="font-size: 16px; font-weight: 800;">🔖 የተቀመጡ ጥቅሶች እና ማስታወሻዎች</h3>
-                    <p style="font-size: 11.5px; color: var(--text-secondary);">አንቀጾችን ረዘም ብለው በመጫን (Long-press) እዚህ ማስቀመጥ ይችላሉ</p>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);">የወደዱትን አንቀጽ ተጭነው በመቆየት (Long-press) እዚህ ማስቀመጥ ይችላሉ</p>
                 </div>
                 <button class="btn-icon" onclick="closeHighlightsModal()">✕</button>
             </div>
@@ -1703,7 +1712,7 @@ html_content = f'''<!DOCTYPE html>
 
             const timePill = document.createElement('div');
             timePill.style.cssText = 'font-size:11.5px; font-weight:700; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid var(--border-light);';
-            timePill.innerText = `⏱ ~${{activeChapterMins}} ደቂቃ ንባብ • 💡 አንቀጽ ረዘም ብለው ይጫኑ ለማስቀመጥ`;
+            timePill.innerText = `⏱ ~${{activeChapterMins}} ደቂቃ ንባብ • 💡 ጥቅስ ለማስቀመጥ አንቀጹን ተጭነው ይቆዩ`;
             badgeRow.appendChild(timePill);
 
             headerCard.appendChild(badgeRow);
@@ -1886,7 +1895,7 @@ html_content = f'''<!DOCTYPE html>
                     <div style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
                         <div style="font-size: 34px; margin-bottom: 8px;">🔖</div>
                         <div style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">ገና የተቀመጠ ጥቅስ የለም</div>
-                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ረዘም ብለው በመጫን (Long-press)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
+                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ተጭነው በመቆየት (Long-press)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
                     </div>
                 `;
             }} else {{

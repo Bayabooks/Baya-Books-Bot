@@ -209,24 +209,37 @@
             background: rgba(13, 16, 23, 0.95); backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border); padding: 10px 14px;
             display: flex; align-items: center; justify-content: space-between;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }
+        .reader-header.zen-hidden {
+            transform: translateY(-110%);
+            opacity: 0;
+            pointer-events: none;
         }
         body.light-theme .reader-header { background: rgba(248, 250, 252, 0.95); }
         body.sepia-theme .reader-header { background: rgba(246, 239, 226, 0.95); }
 
-        .progress-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 100; }
-        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-gradient); transition: width 0.15s ease; }
+        .progress-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 3.5px; z-index: 120; background: rgba(255,255,255,0.04); }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent-gradient); box-shadow: 0 0 8px rgba(99, 102, 241, 0.6); transition: width 0.15s ease; }
 
         .reader-top-title {
             font-size: 13px; font-weight: 700; color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
         }
-        .reader-controls { display: flex; align-items: center; gap: 6px; }
+        .reader-controls { display: flex; align-items: center; gap: 6px; position: relative; }
 
         /* Chapter Tabs Bar */
         .chapter-tabs {
             display: flex; gap: 8px; padding: 12px 16px;
             background: var(--bg-secondary); border-bottom: 1px solid var(--border);
             overflow-x: auto; scrollbar-width: none; position: sticky; top: 57px; z-index: 55;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }
+        .chapter-tabs.zen-hidden {
+            transform: translateY(-180%);
+            opacity: 0;
+            pointer-events: none;
         }
         .chapter-tabs::-webkit-scrollbar { display: none; }
         .ch-tab {
@@ -238,6 +251,9 @@
         .ch-tab.active {
             background: var(--accent); color: #ffffff; border-color: var(--accent);
             box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35);
+        }
+        .ch-tab.done {
+            border-color: rgba(16, 185, 129, 0.4);
         }
         .ch-tab.locked {
             opacity: 0.75;
@@ -253,12 +269,21 @@
             font-size: 17.5px;
             line-height: 2.0;
             color: var(--text-primary);
+            transition: font-size 0.15s ease, line-height 0.15s ease;
         }
 
         .ch-header-card {
             margin-bottom: 30px;
             padding-bottom: 22px;
             border-bottom: 2px solid var(--border);
+        }
+        .ch-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         .ch-badge {
             display: inline-block;
@@ -271,7 +296,19 @@
             background: var(--accent-soft);
             padding: 4px 12px;
             border-radius: 20px;
-            margin-bottom: 10px;
+        }
+        .ch-time-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 20px;
         }
         .ch-main-subtitle {
             font-size: 1.38em;
@@ -279,12 +316,59 @@
             line-height: 1.4;
             color: var(--text-primary);
         }
+        .ch-tip-hint {
+            font-family: var(--font-ui);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
         .reader-p {
             margin-bottom: 1.35em;
             text-align: left;
             letter-spacing: 0.01em;
             word-spacing: 0.04em;
+            border-radius: 10px;
+            transition: background 0.2s ease, padding 0.2s ease;
+            position: relative;
+        }
+        .reader-p.highlighted, .reader-li.highlighted, .reader-quote.highlighted {
+            background: rgba(245, 158, 11, 0.16) !important;
+            border-left: 3.5px solid #f59e0b !important;
+            padding: 10px 14px;
+            border-radius: 6px 12px 12px 6px;
+        }
+
+        .block-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+            font-family: var(--font-ui);
+        }
+        .block-act-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-ui);
+        }
+        .block-act-btn:active { transform: scale(0.95); }
+        .block-act-btn.saved {
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.45);
+            background: rgba(245, 158, 11, 0.12);
         }
 
         .reader-p.lead-p::first-letter {
@@ -309,7 +393,7 @@
             background: var(--accent-soft);
             border-left: 4px solid var(--accent);
             border-radius: 0 14px 14px 0;
-            padding: 18px 20px;
+            padding: 18px 20px 14px;
             margin: 1.8em 0;
         }
         .reader-quote-text {
@@ -360,6 +444,154 @@
             border-top: 1px solid var(--border);
             display: flex;
             gap: 12px;
+        }
+
+        /* Book Progress Bar on Card */
+        .book-progress-wrap {
+            margin: 6px 0 10px;
+        }
+        .book-progress-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .book-progress-bar {
+            height: 5px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .book-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        /* Floating Reading Status Pill */
+        #readingStatusPill {
+            position: fixed;
+            bottom: 18px;
+            right: 16px;
+            z-index: 90;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(12px);
+        }
+
+        /* Toast Notification */
+        #readerToast {
+            position: fixed;
+            bottom: 64px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #10b981;
+            color: #ffffff;
+            font-family: var(--font-ui);
+            font-size: 12.5px;
+            font-weight: 700;
+            padding: 9px 18px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 350;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+        #readerToast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Typography Popover */
+        .typo-popover {
+            position: fixed;
+            top: 58px;
+            right: 14px;
+            width: 265px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            z-index: 150;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+            display: none;
+            font-family: var(--font-ui);
+        }
+        .typo-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .typo-row:last-child { margin-bottom: 0; }
+        .typo-label { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); }
+        .typo-btn {
+            flex: 1;
+            padding: 7px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            text-align: center;
+        }
+        .typo-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        /* TOC & Highlights Drawer List */
+        .drawer-list {
+            max-height: 62vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .toc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .toc-item.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+        .hl-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: 3.5px solid #f59e0b;
+            border-radius: 8px 14px 14px 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
         }
 
         /* Paywall Box */
@@ -422,7 +654,10 @@
                     <p>እያንዳንዱ የሚያነቡት ገጽ ከፍ ወዳለ ማንነት እንዲወስድዎት ተመኘን</p>
                 </div>
             </div>
-            <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <button class="btn-icon" onclick="openHighlightsModal('all')" title="Saved Quotes">🔖</button>
+                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
+            </div>
         </header>
 
         <div class="container">
@@ -448,6 +683,10 @@
                 <div class="filter-pill" id="pill-mybooks" onclick="filterCategory('mybooks', this)">
                     <span>📖 የኔ መጻሕፍት</span>
                     <span class="count-badge" id="mybooks-count">0</span>
+                </div>
+                <div class="filter-pill" onclick="openHighlightsModal('all')">
+                    <span>🔖 ጥቅሶች</span>
+                    <span class="count-badge" id="highlights-count">0</span>
                 </div>
                 <div class="filter-pill" onclick="filterCategory('psychology', this)">🧠 ግንኙነት & ስነ-ልቦና</div>
                 <div class="filter-pill" onclick="filterCategory('productivity', this)">⏱️ ጊዜ & ቢዝነስ</div>
@@ -479,20 +718,48 @@
          VIEW 2: PUBLICATION-GRADE READER
     ══════════════════════════════════════════ -->
     <div id="view-reader">
-        <div class="reader-header">
+        <div class="reader-header" id="readerHeader">
             <button class="btn-icon" onclick="closeReader()" title="Back">‹</button>
-            <div class="reader-top-title" id="readerBookTitle">የመጽሐፍ ርዕስ</div>
+            <div class="reader-top-title" id="readerBookTitle" onclick="openTocModal()" title="ማውጫ ክፈት">የመጽሐፍ ርዕስ ▾</div>
             <div class="reader-controls">
-                <button class="btn-icon" onclick="adjustFontSize(-1)">A-</button>
-                <button class="btn-icon" onclick="adjustFontSize(1)">A+</button>
-                <button class="btn-icon" onclick="toggleTheme()">🌓</button>
+                <button class="btn-icon" onclick="openTocModal()" title="ማውጫ (Chapters)">📑</button>
+                <button class="btn-icon" onclick="openHighlightsModal(activeBookKey)" title="የተቀመጡ ጥቅሶች">🔖</button>
+                <button class="btn-icon" onclick="toggleTypoPopover(event)" title="የፊደል እና ገጽታ ማስተካከያ">Aa</button>
+            </div>
+        </div>
+
+        <!-- Typography & Eye-Comfort Popover -->
+        <div id="typoPopover" class="typo-popover" onclick="event.stopPropagation()">
+            <div class="typo-row">
+                <span class="typo-label">የፊደል መጠን</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(-1)">A-</button>
+                    <span id="fontSizeDisplay" style="font-size: 12px; font-weight: 800; min-width: 38px; text-align: center;">18px</span>
+                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(1)">A+</button>
+                </div>
+            </div>
+            <div class="typo-row">
+                <span class="typo-label">የመስመር ክፍተት</span>
+                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
+                    <button class="typo-btn" id="lh-1.75" onclick="setLineHeight(1.75)">ጥብቅ</button>
+                    <button class="typo-btn active" id="lh-2" onclick="setLineHeight(2.0)">መደበኛ</button>
+                    <button class="typo-btn" id="lh-2.3" onclick="setLineHeight(2.3)">ሰፊ</button>
+                </div>
+            </div>
+            <div class="typo-row">
+                <span class="typo-label">የገጽ ቀለም</span>
+                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
+                    <button class="typo-btn" id="th-dark" onclick="setThemeMode('dark')">🌙 ማታ</button>
+                    <button class="typo-btn" id="th-sepia-theme" onclick="setThemeMode('sepia-theme')">📜 ሴፒያ</button>
+                    <button class="typo-btn" id="th-light-theme" onclick="setThemeMode('light-theme')">☀️ ቀን</button>
+                </div>
             </div>
         </div>
 
         <!-- Chapter Switcher Bar -->
         <div class="chapter-tabs" id="chapterTabs"></div>
 
-        <div class="reader-content" id="readerBody">
+        <div class="reader-content" id="readerBody" onclick="closeTypoPopover()">
             <!-- Dynamic Chapter Content -->
             <div id="readerChapterContent"></div>
 
@@ -516,6 +783,48 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Reading Progress & Time Left Pill -->
+    <div id="readingStatusPill" onclick="openTocModal()">
+        <span id="pillChapterPct">0%</span>
+        <span style="opacity: 0.4;">•</span>
+        <span id="pillTimeLeft">⏱ ቀሪ 5 ደቂቃ</span>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="readerToast">✅ ተቀምጧል!</div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: TABLE OF CONTENTS (📑 ማውጫ)
+    ══════════════════════════════════════════ -->
+    <div id="modal-toc" class="modal-overlay" onclick="closeTocModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">📑 የመጽሐፉ ማውጫ</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);" id="tocProgressSub">0% ተነቧል</p>
+                </div>
+                <button class="btn-icon" onclick="closeTocModal()">✕</button>
+            </div>
+            <div class="drawer-list" id="tocList"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: SAVED HIGHLIGHTS & QUOTES (🔖 ጥቅሶች)
+    ══════════════════════════════════════════ -->
+    <div id="modal-highlights" class="modal-overlay" onclick="closeHighlightsModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800;">🔖 የተቀመጡ ጥቅሶች እና ማስታወሻዎች</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);">አንቀጾችን ሁለቴ በመጫን (Double-tap) እዚህ ማስቀመጥ ይችላሉ</p>
+                </div>
+                <button class="btn-icon" onclick="closeHighlightsModal()">✕</button>
+            </div>
+            <div class="drawer-list" id="highlightsList"></div>
         </div>
     </div>
 
@@ -584,7 +893,7 @@
 
     <script>
         const BOOKS_META = {"narcissist":{"key":"narcissist","title":"የናርስሲስቶች ወጥመድ","subtitle":"ከመርዛማ ግንኙነት የማምለጫ ጥበብ","author":"ዶ/ር ራማኒ ዱርቫሱላ | ትርጉም፦ የአዕምሮ ምግቦች & Baya Books","short_author":"ዶ/ር ራማኒ ዱርቫሱላ","cover":"/static/covers/narcissist_trap.jpg","pages":"274 ገጾች","rating":"⭐ 4.9 (1.2k)","badge":"🔥 በጣም ተነባቢ | 274 ገጾች","badge_style":"","category":"psychology","data_url":"/static/books_data/narcissist_full.json","paywall_desc":"ይህን ሙሉ የ 274 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ከመርዛማ ግንኙነት ራስሽን ነጻ የምታወጪበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም አግኚ።"},"boundaries":{"key":"boundaries","title":"ድንበርህን አብጅ","subtitle":"ምንም ይቅርታ ሳትጠይቅ ጤናማ ድንበር የማስከበር ጥበብ","author":"ኔድራ ግሎቨር ታዋብ | ትርጉም፦ Baya Books","short_author":"ኔድራ ታዋብ","cover":"/static/covers/boundaries.png","pages":"216 ገጾች","rating":"⭐ 4.9 (950+)","badge":"✨ አዲስ የተጨመረ | 216 ገጾች","badge_style":"color: #34d399; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);","category":"psychology","data_url":"/static/books_data/boundaries_full.json","paywall_desc":"ይህን ሙሉ የ 216 ገጽ መጽሐፍ (ሁሉንም 17 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ምንም የጥፋተኝነት ስሜት ሳይሰማዎት ጤናማ ድንበር የሚያበጁበትን ሙሉ መመሪያ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"},"buyback":{"key":"buyback","title":"ጊዜህን አስመልስ (Buy Back Your Time)","subtitle":"ንግድህን እያሳደግክ ነጻነትህን የምታገኝበት ጥበብ","author":"ዳን ማርቴል (Dan Martell) | ትርጉም፦ Baya Books","short_author":"ዳን ማርቴል","cover":"/static/covers/buy_back_time.png","pages":"213 ገጾች","rating":"⭐ 4.8 (890)","badge":"⚡ ምርጥ የቢዝነስ መጽሐፍ | 213 ገጾች","badge_style":"color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);","category":"productivity","data_url":"/static/books_data/buyback_full.json","paywall_desc":"ይህን ሙሉ የ 213 ገጽ መጽሐፍ (ሁሉንም 16 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ ጊዜዎን መልሰው የሚገዙበትን እና ገቢዎን በእጥፍ የሚያሳድጉበትን ሙሉ ቀመር በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"},"meaning":{"key":"meaning","title":"የህይወት ትርጉም","subtitle":"በባዶነት ዘመን ውስጥ የሕይወት ዓላማን የማግኘት ጥበብ","author":"አርተር ሲ. ብሩክስ (Arthur C. Brooks) | ትርጉም፦ Baya Books","short_author":"አርተር ብሩክስ","cover":"/static/covers/meaning.jpg","pages":"176 ገጾች","rating":"⭐ 4.9 (1.1k)","badge":"🌟 #1 NYT Bestseller | 176 ገጾች","badge_style":"color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3);","category":"psychology","data_url":"/static/books_data/meaning_full.json","paywall_desc":"ይህን ሙሉ የ 176 ገጽ መጽሐፍ (ሁሉንም 11 ክፍሎች) አሁኑኑ በ 399 ብር ብቻ በመክፈት፣ እውነተኛ የሕይወት ትርጉምና ዓላማን የሚያገኙበትን ሙሉ ጥበብ በ«📖 የኔ መጻሕፍት» ውስጥ ለዘላለም ያግኙ።"}};
-        const LOADED_CHAPTERS = {"narcissist":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","free":true,"blocks":[{"type":"subtitle","text":"በፍቅር ስም ነፍስሽን እየመጠጠ ያለው የማይታይ ወጥመድ — እና እንዴት ራስሽን ነጻ እንደምታወጪ"},{"type":"p","text":"አንድ ጥያቄ ልጠይቅሽ፦ ከአንድ ሰው ጋር ከተነጋገርሽ በኋላ፣ ምንም ጥፋት እንዳላጠፋሽ እያወቅሽ ግን በውስጥሽ ከባድ የጥፋተኝነት ስሜት፣ ግራ መጋባት እና «ምናልባት እኔ ነኝ እንዴ ችግሩ?» የሚል የራስ ጥርጣሬ ተሰምቶሽ ያውቃል?"},{"type":"p","text":"መጀመሪያ ላይ ያ ሰው በምድር ላይ እንደ እርሱ የሚወድሽ፣ የሚያደንቅሽ እና የሚረዳሽ ሰው የሌለ እስኪመስልሽ ድረስ በፍቅርና በትኩረት አጥለቀለቀሽ (Love Bombing)። «እንደ አንቺ ያለች ሴት አጋጥሞኝ አያውቅም» አለሽ። አንቺም ልብሽን ከፈትሽ፣ ሚስጥርሽን ሰጠሽ፣ ሕይወትሽን አስረከብሽ።"},{"type":"p","text":"ከዚያ ግን... ነገሮች በድንገት ተቀየሩ።"},{"type":"quote","text":"ናርሲሲስታዊ ጥቃት ልክ በግንባርሽ ላይ በየሰከንዱ እንደሚንጠባጠብ የውኃ ጠብታ ስቃይ (Water Torture) ነው። አንዲት የውኃ ጠብታ ብቻዋን አትጎዳም፤ በሺዎች የሚቆጠሩ ጠብታዎች ግን ድንጋይ ይሰብራሉ፣ የሰውንም አእምሮ ያሳብዳሉ።","author":"ዶ/ር ራማኒ ዱርቫሱላ (ከመጽሐፉ የተወሰደ)"},{"type":"h4","text":"ለምን ከዚህ ግንኙነት መውጣት ይህን ያህል ከበደሽ?"},{"type":"p","text":"ብዙ ሰዎች «ታዲያ ይህን ያህል የሚጎዳሽ ከሆነ ለምን ጥለሽው አትወጪም?» ብለው በቀላሉ ይጠይቁሻል። ነገር ግን የናርስሲስቶች ወጥመድ የሚሰራው በድብደባ ብቻ አይደለም፤ የሚሰራው «በሞቃት እና በቀዝቃዛ» (Hot and Cold) የስነ-ልቦና ቁማር ነው።"},{"type":"p","text":"ዛሬ ያዋርድሻል፣ ነገርሽን ሁሉ ያጣጥላል፣ ስሜትሽን «አንቺ በጣም ስሜታዊ ነሽ» እያለ ያጠፋል (Gaslighting)። ልክ ተስፋ ቆርጠሽ ልትርቂ ስትዪ ግን፣ መጀመሪያ ላይ ያሳየሽን ያንን ጣፋጭ፣ አዛኝ እና ማራኪ ሰው ለአንድ ቀን መልሶ ያመጣልሻል። ያቺ አንዲት ቀን «ይቀየራል» የሚል የውሸት ተስፋ ትሰጥሻለች።"},{"type":"h4","text":"በዚህ የ 274 ገጽ መጽሐፍ ውስጥ የምታገኚያቸው ሚስጥሮች፦"},{"type":"li","text":"የናርሲሲስቶችን 4 ጭምብሎች መለየት፦ ግልጽ ተኮፋሽ (Grandiose)፣ ምስኪን መሳይ (Vulnerable)፣ በጎ አድራጊ መሳይ (Communal) እና አደገኛው (Malignant) ናርሲሲስት።"},{"type":"li","text":"ጋዝላይቲንግ (Gaslighting)፦ እውነታሽን አጣምመው «አእምሮዬን እየሳትኩ ነው እንዴ?» እንድትዪ የሚያደርጉበትን የአእምሮ ጨዋታ ማምከኛ ጥበብ።"},{"type":"li","text":"የፍርፋሪ ፍቅር (Breadcrumbing) እና የስሜት ሱስ (Trauma Bond)፦ ለምን የሚጎዳሽን ሰው እንደምትናፍቂ እና ይህንን የአንጎል ሱስ እንዴት እንደምትሰብሪ።"},{"type":"li","text":"ከወጥመዱ በኋላ መፈወስ፦ በትዳር፣ በፍቅር፣ በቤተሰብ ወይም በስራ ቦታ ከናርሲሲስት ጋር ካለሽ እንዴት ራስሽን፣ ሰላምሽን እና በራስ መተማመንሽን መልሰሽ እንደምትገነቢ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ይህ መጽሐፍ ስለ እነርሱ ብቻ አይደለም፤ ስለ አንቺ ነጻነት ነው። ለዓመታት በውስጥሽ ተዳፍኖ የነበረውን እንቆቅልሽ የሚፈታ፣ የጠፋብሽን ማንነትሽን የሚመልስልሽ የሕይወት መመሪያ ነው።"}]},{"id":"meqdim","label":"መቅድም","name":"📖 መቅድም","free":false,"blocks":null},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🛡️ ምዕራፍ 1","free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","free":false,"blocks":null}],"boundaries":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","free":true,"blocks":[{"type":"subtitle","text":"ለሰዎች «እሺ» እያልክ ለራስህ «እምቢ» ማለትህን የምታቆምበት ቀን"},{"type":"p","text":"ስልክህ ሲጠራ ልብህ በድንጋጤ ይመታል? የማትፈልገውን ነገር ሰዎች ሲጠይቁህ፣ በውስጥህ «አልፈልግም! ደክሞኛል!» እያልክ እየጮህክ፣ ከአፍህ ግን «ችግር የለውም፣ አደርገዋለሁ» የሚል ቃል ይወጣል?"},{"type":"p","text":"ከዚያስ? ሰዎቹ ጉዳያቸውን አስፈጽመው በሰላም ይተኛሉ፤ አንተ ግን ሌሊቱን ሙሉ በንዴት፣ በጸጸት እና «ለምንድነው ሁሌ እኔ ብቻ የምሸከመው? ለምንድነው ማንም የእኔን ድካም የማይረዳው?» በሚል ምሬት ትቃጠላለህ።"},{"type":"quote","text":"ድንበር ማበጀት ሰዎችን ለመቅጣት ወይም ለማራቅ የሚገነባ ግድግዳ አይደለም፤ ራስህን ከመቃጠል የምትጠብቅበት እና ግንኙነቶችህ በእውነተኛ ፍቅር እንዲቀጥሉ የምታደርግበት ድልድይ ነው።","author":"ኔድራ ግሎቨር ታዋብ (ከመጽሐፉ የተወሰደ)"},{"type":"h4","text":"የድካምህ እውነተኛ ምንጭ ምንድን ነው?"},{"type":"p","text":"ታዋቂዋ የስነ-ልቦና እና የግንኙነት ባለሙያ ኔድራ ታዋብ ለ14 ዓመታት በሺዎች የሚቆጠሩ ደንበኞችን ካማከረች በኋላ አንድ አስደንጋጭ እውነት ደረሰችበት፦ አብዛኞቻችን የምንሰቃየው በድብርት ወይም በጭንቀት ብቻ አይደለም፤ የምንሰቃየው ጤናማ ድንበር (Boundaries) ስለሌለን ነው!"},{"type":"p","text":"«ጥሩ ሰው» ለመባል ብለን የሌሎችን የገንዘብ፣ የስሜት እና የኃላፊነት ሸክም ሁሉ እንሸከማለን። ሰዎች ድንበራችንን ሲጥሱ «ይቅርታ» እያልን እናልፋለን። በመጨረሻም በጣም ከመድከማችን የተነሳ የምንወዳቸውን ሰዎች ጭምር መጥላትና መሸሽ እንጀምራለን።"},{"type":"h4","text":"በዚህ የ 216 ገጽ ሙሉ መጽሐፍ ውስጥ ምን ይማራሉ?"},{"type":"li","text":"ምንም የጥፋተኝነት ስሜት ሳይሰማህ እና ረጅም ማብራሪያ ሳትሰጥ በአክብሮት «አይሆንም» የማለት ጥበብ።"},{"type":"li","text":"በቤተሰብ፣ በወላጆች፣ በትዳር አጋር፣ በጓደኞች እና በስራ ቦታ የሚፈጠሩ 6ቱን የድንበር አይነቶች እንዴት በተግባር እንደምታስከብር።"},{"type":"li","text":"ሰዎች ድንበርህን ስታስቀምጥ ሲቆጡ፣ ሲያኮርፉ ወይም የጥፋተኝነት ስሜት ሊጭኑብህ ሲሞክሩ እንዴት ሳትናወጥ እንደምትቆም።"},{"type":"li","text":"የሌሎችን ሰዎች ችግር ሁሉ የማዳን ሱስ (Codependency & People-Pleasing) አቁመህ የራስህን የአእምሮ ሰላም እንዴት እንደምታስመልስ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ሰላምህ ዋጋ አለው። ሌሎችን ለማስደሰት ብለህ ራስህን ማድማት ማቆም ከፈለግክ፣ ይህ መጽሐፍ ከዛሬ ጀምሮ የምትጠቀምባቸውን ቀጥተኛ ቃላት እና የተግባር መመሪያዎች በእጅህ ያስጨብጥሃል።"}]},{"id":"meqdim","label":"መቅድም","name":"📖 መቅድም","free":false,"blocks":null},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🛡️ ምዕራፍ 1","free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","free":false,"blocks":null},{"id":"ch10","label":"ምዕራፍ 10","name":"ምዕራፍ 10","free":false,"blocks":null},{"id":"ch11","label":"ምዕራፍ 11","name":"ምዕራፍ 11","free":false,"blocks":null},{"id":"ch12","label":"ምዕራፍ 12","name":"ምዕራፍ 12","free":false,"blocks":null},{"id":"ch13","label":"ምዕራፍ 13","name":"ምዕራፍ 13","free":false,"blocks":null},{"id":"ch14","label":"ምዕራፍ 14","name":"ምዕራፍ 14","free":false,"blocks":null},{"id":"ch15","label":"ምዕራፍ 15","name":"ምዕራፍ 15","free":false,"blocks":null}],"buyback":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","free":true,"blocks":[{"type":"subtitle","text":"ገንዘብ ለማግኘት ብለህ ሕይወትህን ማጣት አቁም — ጊዜህን መልሰህ ግዛው!"},{"type":"p","text":"ጠዋት ከእንቅልፍህ ስትነቃ ገና እግርህ መሬት ሳይነካ ስልክህ ላይ የተከመሩ መልዕክቶችን፣ ጥሪዎችን እና ያልተቋጩ ስራዎችን ስታይ ደረትህ ይጨንቅሃል? «ይህን ወር ብቻ ልጨርስ፣ ይህን ፕሮጀክት ብቻ ልወጣው ከዚያ አርፋለሁ» እያልክ ለራስህ ቃል ከገባህ ስንት ዓመት ሆነህ?"},{"type":"p","text":"የዚህ መጽሐፍ ደራሲ ዳን ማርቴል በ20ዎቹ ዕድሜው በሚሊዮን የሚቆጠር ዶላር የሚያንቀሳቅስ ድርጅት ገንብቶ ነበር። ከውጭ ለሚያየው ሰው የስኬት ጫፍ ላይ ነበር። በውስጡ ግን በሳምንት 80 ሰዓት እየሰራ፣ ጤናውን አጥቶ፣ ከእጮኛው ጋር ለመጋባት አንድ ወር ሲቀረው እጮኛው «አንተ ከእኔ ጋር ሳይሆን ከስራህ ጋር ነው ያገባኸው» ብላ ጥላው ሄደች።"},{"type":"quote","text":"ጊዜህን ለመቆጠብ ብለህ ሰራተኛ አትቅጠር፤ ንግድህን እና ገቢህን ለማሳደግም ብቻ አትቅጠር። ጊዜህን መልሰህ ለመግዛት (To Buy Back Your Time) ቅጠር!","author":"ዳን ማርቴል — Buy Back Your Time"},{"type":"h4","text":"ብዙ ጠንካራ ሰሪዎች የሚወድቁበት ወጥመድ"},{"type":"p","text":"አብዛኞቻችን ስኬታማ ለመሆን ብቸኛው መንገድ «ከሌሎች በላይ ብዙ ሰዓት መስራት» ይመስለናል። ነገር ግን ገቢህ በጨመረ ቁጥር ውጥረትህ እና የጊዜ እጥረትህ አብሮ የሚጨምር ከሆነ፣ አንተ ቢዝነስ ወይም ስራ የለህም — ስራህ ነው አንተን የገዛህ!"},{"type":"p","text":"ዳን ማርቴል ከውድቀቱ በኋላ ህይወቱን የቀየረውን እና በሺዎች የሚቆጠሩ የቢዝነስ መሪዎችን ነጻ ያወጣውን «የጊዜ መልሶ መግዣ መርህ» (The Buyback Principle) አገኘ።"},{"type":"h4","text":"በዚህ የ 213 ገጽ መጽሐፍ ውስጥ የሚያገኟቸው የቢዝነስና የሕይወት ቀመሮች፦"},{"type":"li","text":"የ DRIP ማትሪክስ (The DRIP Matrix)፦ ጉልበትህን የሚመጥጡ እና ገቢ የማያመጡ ስራዎችን ለይተህ ከጫንቃህ ላይ የምታወርድበት ቀመር።"},{"type":"li","text":"የ 10-80-10 ህግ፦ «ከእኔ የተሻለ ማንም አይሰራውም» የሚለውን የቁጥጥር ፍርሃት አሸንፈህ፣ ሌሎች ሰዎች ስራህን በብቃት እንዲያከናውኑ የምታደርግበት ሲስተም።"},{"type":"li","text":"የጊዜ ኦዲት እና የBuyback ስሌት፦ የአንድ ሰዓት ዋጋህ ስንት እንደሆነ አስልተህ፣ ከዚያ በታች ያሉ ስራዎችን ሁሉ በሌሎች የምታሰራበት ተግባራዊ ስልት።"},{"type":"li","text":"የፍጹም ሳምንት ንድፍ (The Perfect Week)፦ ገቢህ እጥፍ እያደገ፣ ለቤተሰብህ፣ ለጤናህ እና ለህልምህ የሚሆን ነጻ ጊዜ የምትፈጥርበት መመሪያ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ተጨማሪ ገንዘብ ሁሌም ማግኘት ትችላለህ፤ ያለፈብህን አንድ ቀን ግን በቢሊዮን ብር እንኳ መልሰህ ልትገዛው አትችልም። ዛሬውኑ ጊዜህን፣ ነጻነትህን እና ሕይወትህን መልሰህ ግዛ!"}]},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"⚡ ምዕራፍ 1","free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","free":false,"blocks":null},{"id":"ch10","label":"ምዕራፍ 10","name":"ምዕራፍ 10","free":false,"blocks":null},{"id":"ch11","label":"ምዕራፍ 11","name":"ምዕራፍ 11","free":false,"blocks":null},{"id":"ch12","label":"ምዕራፍ 12","name":"ምዕራፍ 12","free":false,"blocks":null},{"id":"ch13","label":"ምዕራፍ 13","name":"ምዕራፍ 13","free":false,"blocks":null},{"id":"ch14","label":"ምዕራፍ 14","name":"ምዕራፍ 14","free":false,"blocks":null},{"id":"outro","label":"ማጠቃለያ","name":"ማጠቃለያ","free":false,"blocks":null}],"meaning":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","free":true,"blocks":[{"type":"subtitle","text":"ሁሉም ነገር እያለህ ውስጣዊ ባዶነት የሚሰማህ ለምንድነው? — የሀርቫርድ ፕሮፌሰር ያገኙት የሕይወት ሚስጥር"},{"type":"p","text":"ታዋቂው ሩሲያዊ ደራሲ ሊዮ ቶልስቶይ ዕድሜው 51 ዓመት ሲሞላው በዓለም ላይ ሰው ሊመኘው የሚችለው ነገር ሁሉ ነበረው። «ጦርነትና ሰላም» የተሰኘው መጽሐፉ በሚሊዮኖች ተሽጦለታል፣ ከፍተኛ ሀብትና ዝና ነበረው፣ 13 ልጆችን ያፈራበት የጸና ትዳርና ሙሉ ጤንነት ነበረው።"},{"type":"p","text":"ነገር ግን በዚያ የስኬት ጫፍ ላይ ሆኖ፣ ቶልስቶይ ማታ ማታ ብቻውን ሲሆን ራሱን እንዳያጠፋ ብሎ ከክፍሉ ውስጥ ገመድ ይደብቅ፣ ጠመንጃውንም ይቆልፍ ነበር! ለምን? ምክንያቱም አንድ ጥያቄ እንቅልፍ ነስቶት ነበር፦ «ይህ ሁሉ ድካም ለምንድነው? የሕይወቴ ትርጉም ምንድነው?»"},{"type":"quote","text":"የዘመናችን ትልቁ ወረርሽኝ የገንዘብ ወይም የምቾት እጥረት አይደለም፤ የሕይወትን «እንዴት» (How) አሟልተን የሕይወትን «ለምን» (Why) ማጣታችን ነው።","author":"ፕሮፌሰር አርተር ሲ. ብሩክስ (Arthur C. Brooks)"},{"type":"h4","text":"አንጎልህ እያታለለህ ያለው እንዴት ነው?"},{"type":"p","text":"በሀርቫርድ ዩኒቨርሲቲ የደስታ ሳይንስ ፕሮፌሰር የሆኑት አርተር ብሩክስ በዚህ አስደናቂ መጽሐፋቸው አንድ አዲስ የነርቭ ሳይንስ (Neuroscience) ሚስጥር ይገልጻሉ፦ አንጎላችን በሁለት ተቃራኒ ክፍሎች የተከፈለ ነው።"},{"type":"p","text":"የግራ አንጎልህ (Left Brain) ገንዘብ፣ ስልጣን፣ የማኅበራዊ ሚዲያ ላይክ፣ ድሎት እና ፈጣን ደስታ (Dopamine) እንድታሳድድ ይገፋፋሃል። «ይህን ስታገኝ ደስተኛ ትሆናለህ!» ይልሃል። ነገር ግን እውነተኛ የሕይወት ትርጉም፣ ሰላም፣ ፍቅር እና ዓላማ የሚገኘው በቀኝ አንጎልህ (Right Brain) ውስጥ ብቻ ነው!"},{"type":"h4","text":"በዚህ የ 176 ገጽ ድንቅ መጽሐፍ ውስጥ የሚያገኟቸው ቁልፎች፦"},{"type":"li","text":"ኡንሃይምሊሽ (የባዳነት ሰቀቀን)፦ በገዛ ሕይወትህ ውስጥ ባዳ የመሆን፣ የድብርት እና የውስጥ ባዶነት ስሜት ከየት እንደሚመጣ እና እንዴት እንደሚፈወስ።"},{"type":"li","text":"ልትጠይቃቸው የሚገቡ 3ቱ ታላላቅ ጥያቄዎች፦ ማንኛውም ሰው ከመሞቱ በፊት መልስ ሊሰጣቸው የሚገቡ የሕይወት መሰረታዊ ጥያቄዎች።"},{"type":"li","text":"የጥፋትን አዙሪት መስበር፦ ከስልክ ሱስ፣ ከዶፓሚን ወጥመድ እና ከከንቱ ፉክክር ወጥተህ የቀኝ አንጎልህን የምታነቃቃበት ሳይንሳዊ መንገድ።"},{"type":"li","text":"ጥሪህን መፈለግ እና መከራህን ወደ ኃይል መቀየር፦ በሕይወትህ ያሳለፍካቸውን ህመሞችና ፈተናዎች በከንቱ ሳታባክን ወደ ታላቅ የሕይወት ዓላማ የምትቀይርበት ጥበብ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ሕይወትህ በሩጫ ብቻ እንድታልፍ አትፍቀድ። ይህ #1 New York Times Bestseller መጽሐፍ ነፍስህ የምትናፍቀውን እውነተኛ ትርጉም፣ ሰላም እና ዓላማ እንድታገኝ እጅህን ይዞ ይመራሃል።"}]},{"id":"intro","label":"መግቢያ","name":"📖 መግቢያ","free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🌟 ምዕራፍ 1","free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","free":false,"blocks":null},{"id":"outro","label":"ማጠቃለያ","name":"ማጠቃለያ","free":false,"blocks":null}]};
+        const LOADED_CHAPTERS = {"narcissist":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","subtitle":"በፍቅር ስም ነፍስሽን እየመጠጠ ያለው የማይታይ ወጥመድ — እና እንዴት ራስሽን ነጻ እንደምታወጪ","mins":2,"free":true,"blocks":[{"type":"subtitle","text":"በፍቅር ስም ነፍስሽን እየመጠጠ ያለው የማይታይ ወጥመድ — እና እንዴት ራስሽን ነጻ እንደምታወጪ"},{"type":"p","text":"አንድ ጥያቄ ልጠይቅሽ፦ ከአንድ ሰው ጋር ከተነጋገርሽ በኋላ፣ ምንም ጥፋት እንዳላጠፋሽ እያወቅሽ ግን በውስጥሽ ከባድ የጥፋተኝነት ስሜት፣ ግራ መጋባት እና «ምናልባት እኔ ነኝ እንዴ ችግሩ?» የሚል የራስ ጥርጣሬ ተሰምቶሽ ያውቃል?"},{"type":"p","text":"መጀመሪያ ላይ ያ ሰው በምድር ላይ እንደ እርሱ የሚወድሽ፣ የሚያደንቅሽ እና የሚረዳሽ ሰው የሌለ እስኪመስልሽ ድረስ በፍቅርና በትኩረት አጥለቀለቀሽ (Love Bombing)። «እንደ አንቺ ያለች ሴት አጋጥሞኝ አያውቅም» አለሽ። አንቺም ልብሽን ከፈትሽ፣ ሚስጥርሽን ሰጠሽ፣ ሕይወትሽን አስረከብሽ።"},{"type":"p","text":"ከዚያ ግን... ነገሮች በድንገት ተቀየሩ።"},{"type":"quote","text":"ናርሲሲስታዊ ጥቃት ልክ በግንባርሽ ላይ በየሰከንዱ እንደሚንጠባጠብ የውኃ ጠብታ ስቃይ (Water Torture) ነው። አንዲት የውኃ ጠብታ ብቻዋን አትጎዳም፤ በሺዎች የሚቆጠሩ ጠብታዎች ግን ድንጋይ ይሰብራሉ፣ የሰውንም አእምሮ ያሳብዳሉ።","author":"ዶ/ር ራማኒ ዱርቫሱላ (ከመጽሐፉ የተወሰደ)"},{"type":"h4","text":"ለምን ከዚህ ግንኙነት መውጣት ይህን ያህል ከበደሽ?"},{"type":"p","text":"ብዙ ሰዎች «ታዲያ ይህን ያህል የሚጎዳሽ ከሆነ ለምን ጥለሽው አትወጪም?» ብለው በቀላሉ ይጠይቁሻል። ነገር ግን የናርስሲስቶች ወጥመድ የሚሰራው በድብደባ ብቻ አይደለም፤ የሚሰራው «በሞቃት እና በቀዝቃዛ» (Hot and Cold) የስነ-ልቦና ቁማር ነው።"},{"type":"p","text":"ዛሬ ያዋርድሻል፣ ነገርሽን ሁሉ ያጣጥላል፣ ስሜትሽን «አንቺ በጣም ስሜታዊ ነሽ» እያለ ያጠፋል (Gaslighting)። ልክ ተስፋ ቆርጠሽ ልትርቂ ስትዪ ግን፣ መጀመሪያ ላይ ያሳየሽን ያንን ጣፋጭ፣ አዛኝ እና ማራኪ ሰው ለአንድ ቀን መልሶ ያመጣልሻል። ያቺ አንዲት ቀን «ይቀየራል» የሚል የውሸት ተስፋ ትሰጥሻለች።"},{"type":"h4","text":"በዚህ የ 274 ገጽ መጽሐፍ ውስጥ የምታገኚያቸው ሚስጥሮች፦"},{"type":"li","text":"የናርሲሲስቶችን 4 ጭምብሎች መለየት፦ ግልጽ ተኮፋሽ (Grandiose)፣ ምስኪን መሳይ (Vulnerable)፣ በጎ አድራጊ መሳይ (Communal) እና አደገኛው (Malignant) ናርሲሲስት።"},{"type":"li","text":"ጋዝላይቲንግ (Gaslighting)፦ እውነታሽን አጣምመው «አእምሮዬን እየሳትኩ ነው እንዴ?» እንድትዪ የሚያደርጉበትን የአእምሮ ጨዋታ ማምከኛ ጥበብ።"},{"type":"li","text":"የፍርፋሪ ፍቅር (Breadcrumbing) እና የስሜት ሱስ (Trauma Bond)፦ ለምን የሚጎዳሽን ሰው እንደምትናፍቂ እና ይህንን የአንጎል ሱስ እንዴት እንደምትሰብሪ።"},{"type":"li","text":"ከወጥመዱ በኋላ መፈወስ፦ በትዳር፣ በፍቅር፣ በቤተሰብ ወይም በስራ ቦታ ከናርሲሲስት ጋር ካለሽ እንዴት ራስሽን፣ ሰላምሽን እና በራስ መተማመንሽን መልሰሽ እንደምትገነቢ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ይህ መጽሐፍ ስለ እነርሱ ብቻ አይደለም፤ ስለ አንቺ ነጻነት ነው። ለዓመታት በውስጥሽ ተዳፍኖ የነበረውን እንቆቅልሽ የሚፈታ፣ የጠፋብሽን ማንነትሽን የሚመልስልሽ የሕይወት መመሪያ ነው።"}]},{"id":"meqdim","label":"መቅድም","name":"📖 መቅድም","subtitle":"\"ውዷ እህቴ፣ እስቲ ይህን ታሪክ ላጫውትሽ።\"","mins":3,"free":false,"blocks":null},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","subtitle":"ይህ የአንቺ ታሪክ ይሆን?","mins":17,"free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🛡️ ምዕራፍ 1","subtitle":"የሕልውና ማትረፊያ መመሪያ","mins":12,"free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","subtitle":"ራስ ወዳድነት የዘመኑ አዲስ ፋሽን ሆኗል","mins":31,"free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","subtitle":"ከራስ ወዳድ (ናርሲሲስት) ሰው ጋር የፍቅር ግንኙነት","mins":114,"free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","subtitle":"እንዴት በዚህ ወጥመድ ውስጥ ልትወድቂ ቻልሽ?","mins":63,"free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","subtitle":"ምን ዓይነት ስሜት ይፈጥሩብሻል?","mins":23,"free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","subtitle":"የማዳን የከንቱ ህልምሽን የምትነቅዪበት ጊዜ አሁን ነው","mins":12,"free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","subtitle":"መቆየት አለብኝ?","mins":74,"free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","subtitle":"መሄድ አለብኝ?","mins":48,"free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","subtitle":"ቀጣዩ ምዕራፍ","mins":38,"free":false,"blocks":null}],"boundaries":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","subtitle":"ለሰዎች «እሺ» እያልክ ለራስህ «እምቢ» ማለትህን የምታቆምበት ቀን","mins":2,"free":true,"blocks":[{"type":"subtitle","text":"ለሰዎች «እሺ» እያልክ ለራስህ «እምቢ» ማለትህን የምታቆምበት ቀን"},{"type":"p","text":"ስልክህ ሲጠራ ልብህ በድንጋጤ ይመታል? የማትፈልገውን ነገር ሰዎች ሲጠይቁህ፣ በውስጥህ «አልፈልግም! ደክሞኛል!» እያልክ እየጮህክ፣ ከአፍህ ግን «ችግር የለውም፣ አደርገዋለሁ» የሚል ቃል ይወጣል?"},{"type":"p","text":"ከዚያስ? ሰዎቹ ጉዳያቸውን አስፈጽመው በሰላም ይተኛሉ፤ አንተ ግን ሌሊቱን ሙሉ በንዴት፣ በጸጸት እና «ለምንድነው ሁሌ እኔ ብቻ የምሸከመው? ለምንድነው ማንም የእኔን ድካም የማይረዳው?» በሚል ምሬት ትቃጠላለህ።"},{"type":"quote","text":"ድንበር ማበጀት ሰዎችን ለመቅጣት ወይም ለማራቅ የሚገነባ ግድግዳ አይደለም፤ ራስህን ከመቃጠል የምትጠብቅበት እና ግንኙነቶችህ በእውነተኛ ፍቅር እንዲቀጥሉ የምታደርግበት ድልድይ ነው።","author":"ኔድራ ግሎቨር ታዋብ (ከመጽሐፉ የተወሰደ)"},{"type":"h4","text":"የድካምህ እውነተኛ ምንጭ ምንድን ነው?"},{"type":"p","text":"ታዋቂዋ የስነ-ልቦና እና የግንኙነት ባለሙያ ኔድራ ታዋብ ለ14 ዓመታት በሺዎች የሚቆጠሩ ደንበኞችን ካማከረች በኋላ አንድ አስደንጋጭ እውነት ደረሰችበት፦ አብዛኞቻችን የምንሰቃየው በድብርት ወይም በጭንቀት ብቻ አይደለም፤ የምንሰቃየው ጤናማ ድንበር (Boundaries) ስለሌለን ነው!"},{"type":"p","text":"«ጥሩ ሰው» ለመባል ብለን የሌሎችን የገንዘብ፣ የስሜት እና የኃላፊነት ሸክም ሁሉ እንሸከማለን። ሰዎች ድንበራችንን ሲጥሱ «ይቅርታ» እያልን እናልፋለን። በመጨረሻም በጣም ከመድከማችን የተነሳ የምንወዳቸውን ሰዎች ጭምር መጥላትና መሸሽ እንጀምራለን።"},{"type":"h4","text":"በዚህ የ 216 ገጽ ሙሉ መጽሐፍ ውስጥ ምን ይማራሉ?"},{"type":"li","text":"ምንም የጥፋተኝነት ስሜት ሳይሰማህ እና ረጅም ማብራሪያ ሳትሰጥ በአክብሮት «አይሆንም» የማለት ጥበብ።"},{"type":"li","text":"በቤተሰብ፣ በወላጆች፣ በትዳር አጋር፣ በጓደኞች እና በስራ ቦታ የሚፈጠሩ 6ቱን የድንበር አይነቶች እንዴት በተግባር እንደምታስከብር።"},{"type":"li","text":"ሰዎች ድንበርህን ስታስቀምጥ ሲቆጡ፣ ሲያኮርፉ ወይም የጥፋተኝነት ስሜት ሊጭኑብህ ሲሞክሩ እንዴት ሳትናወጥ እንደምትቆም።"},{"type":"li","text":"የሌሎችን ሰዎች ችግር ሁሉ የማዳን ሱስ (Codependency & People-Pleasing) አቁመህ የራስህን የአእምሮ ሰላም እንዴት እንደምታስመልስ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ሰላምህ ዋጋ አለው። ሌሎችን ለማስደሰት ብለህ ራስህን ማድማት ማቆም ከፈለግክ፣ ይህ መጽሐፍ ከዛሬ ጀምሮ የምትጠቀምባቸውን ቀጥተኛ ቃላት እና የተግባር መመሪያዎች በእጅህ ያስጨብጥሃል።"}]},{"id":"meqdim","label":"መቅድም","name":"📖 መቅድም","subtitle":"📖 መቅድም","mins":2,"free":false,"blocks":null},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","subtitle":"ድንበር ማበጀት ነፃ ያወጣሃል!","mins":7,"free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🛡️ ምዕራፍ 1","subtitle":"ድንበር ስንል ምን ማለታችን ነው?","mins":35,"free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","subtitle":"ጤናማ ድንበር ባለማበጀት የምንከፍለው ዋጋ","mins":31,"free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","subtitle":"ጤናማ የግል ድንበር እንዳይኖረን የሚከለክለን ምንድን ነው?","mins":30,"free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","subtitle":"ስድስቱ የድንበር ዓይነቶች","mins":15,"free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","subtitle":"የድንበር ጥሰቶች ምን ይስላሉ?","mins":24,"free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","subtitle":"ድንበሮችህን ለይተህ እወቅ፣ እንዲሁም አሳውቅ","mins":32,"free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","subtitle":"የደበዘዙ (ያልጠሩ) ድንበሮች ፦ ነገሩን ግልጽ አድርገው","mins":26,"free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","subtitle":"ስነ-ልቦናዊ ጠባሳ (Trauma) እና ድንበሮች","mins":17,"free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","subtitle":"ድንበሮችህን ለማክበር ምን እያደረግክ ነው?","mins":28,"free":false,"blocks":null},{"id":"ch10","label":"ምዕራፍ 10","name":"ምዕራፍ 10","subtitle":"ቤተሰብ","mins":24,"free":false,"blocks":null},{"id":"ch11","label":"ምዕራፍ 11","name":"ምዕራፍ 11","subtitle":"የፍቅር ግንኙነቶች","mins":23,"free":false,"blocks":null},{"id":"ch12","label":"ምዕራፍ 12","name":"ምዕራፍ 12","subtitle":"ጓደኝነት","mins":20,"free":false,"blocks":null},{"id":"ch13","label":"ምዕራፍ 13","name":"ምዕራፍ 13","subtitle":"ሥራ (Work)","mins":20,"free":false,"blocks":null},{"id":"ch14","label":"ምዕራፍ 14","name":"ምዕራፍ 14","subtitle":"ማኅበራዊ ሚዲያ እና ቴክኖሎጂ","mins":20,"free":false,"blocks":null},{"id":"ch15","label":"ምዕራፍ 15","name":"ምዕራፍ 15","subtitle":"ቀጣዩስ ምንድን ነው?","mins":20,"free":false,"blocks":null}],"buyback":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","subtitle":"ገንዘብ ለማግኘት ብለህ ሕይወትህን ማጣት አቁም — ጊዜህን መልሰህ ግዛው!","mins":2,"free":true,"blocks":[{"type":"subtitle","text":"ገንዘብ ለማግኘት ብለህ ሕይወትህን ማጣት አቁም — ጊዜህን መልሰህ ግዛው!"},{"type":"p","text":"ጠዋት ከእንቅልፍህ ስትነቃ ገና እግርህ መሬት ሳይነካ ስልክህ ላይ የተከመሩ መልዕክቶችን፣ ጥሪዎችን እና ያልተቋጩ ስራዎችን ስታይ ደረትህ ይጨንቅሃል? «ይህን ወር ብቻ ልጨርስ፣ ይህን ፕሮጀክት ብቻ ልወጣው ከዚያ አርፋለሁ» እያልክ ለራስህ ቃል ከገባህ ስንት ዓመት ሆነህ?"},{"type":"p","text":"የዚህ መጽሐፍ ደራሲ ዳን ማርቴል በ20ዎቹ ዕድሜው በሚሊዮን የሚቆጠር ዶላር የሚያንቀሳቅስ ድርጅት ገንብቶ ነበር። ከውጭ ለሚያየው ሰው የስኬት ጫፍ ላይ ነበር። በውስጡ ግን በሳምንት 80 ሰዓት እየሰራ፣ ጤናውን አጥቶ፣ ከእጮኛው ጋር ለመጋባት አንድ ወር ሲቀረው እጮኛው «አንተ ከእኔ ጋር ሳይሆን ከስራህ ጋር ነው ያገባኸው» ብላ ጥላው ሄደች።"},{"type":"quote","text":"ጊዜህን ለመቆጠብ ብለህ ሰራተኛ አትቅጠር፤ ንግድህን እና ገቢህን ለማሳደግም ብቻ አትቅጠር። ጊዜህን መልሰህ ለመግዛት (To Buy Back Your Time) ቅጠር!","author":"ዳን ማርቴል — Buy Back Your Time"},{"type":"h4","text":"ብዙ ጠንካራ ሰሪዎች የሚወድቁበት ወጥመድ"},{"type":"p","text":"አብዛኞቻችን ስኬታማ ለመሆን ብቸኛው መንገድ «ከሌሎች በላይ ብዙ ሰዓት መስራት» ይመስለናል። ነገር ግን ገቢህ በጨመረ ቁጥር ውጥረትህ እና የጊዜ እጥረትህ አብሮ የሚጨምር ከሆነ፣ አንተ ቢዝነስ ወይም ስራ የለህም — ስራህ ነው አንተን የገዛህ!"},{"type":"p","text":"ዳን ማርቴል ከውድቀቱ በኋላ ህይወቱን የቀየረውን እና በሺዎች የሚቆጠሩ የቢዝነስ መሪዎችን ነጻ ያወጣውን «የጊዜ መልሶ መግዣ መርህ» (The Buyback Principle) አገኘ።"},{"type":"h4","text":"በዚህ የ 213 ገጽ መጽሐፍ ውስጥ የሚያገኟቸው የቢዝነስና የሕይወት ቀመሮች፦"},{"type":"li","text":"የ DRIP ማትሪክስ (The DRIP Matrix)፦ ጉልበትህን የሚመጥጡ እና ገቢ የማያመጡ ስራዎችን ለይተህ ከጫንቃህ ላይ የምታወርድበት ቀመር።"},{"type":"li","text":"የ 10-80-10 ህግ፦ «ከእኔ የተሻለ ማንም አይሰራውም» የሚለውን የቁጥጥር ፍርሃት አሸንፈህ፣ ሌሎች ሰዎች ስራህን በብቃት እንዲያከናውኑ የምታደርግበት ሲስተም።"},{"type":"li","text":"የጊዜ ኦዲት እና የBuyback ስሌት፦ የአንድ ሰዓት ዋጋህ ስንት እንደሆነ አስልተህ፣ ከዚያ በታች ያሉ ስራዎችን ሁሉ በሌሎች የምታሰራበት ተግባራዊ ስልት።"},{"type":"li","text":"የፍጹም ሳምንት ንድፍ (The Perfect Week)፦ ገቢህ እጥፍ እያደገ፣ ለቤተሰብህ፣ ለጤናህ እና ለህልምህ የሚሆን ነጻ ጊዜ የምትፈጥርበት መመሪያ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ተጨማሪ ገንዘብ ሁሌም ማግኘት ትችላለህ፤ ያለፈብህን አንድ ቀን ግን በቢሊዮን ብር እንኳ መልሰህ ልትገዛው አትችልም። ዛሬውኑ ጊዜህን፣ ነጻነትህን እና ሕይወትህን መልሰህ ግዛ!"}]},{"id":"megbiya","label":"መግቢያ","name":"🔍 መግቢያ","subtitle":"ንግድ ሕይወቴን እንዴት እንዳዳናት እና ውሎ አድሮ ሊያጠፋት እንደተቃረበ","mins":17,"free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"⚡ ምዕራፍ 1","subtitle":"ሕይወቴን እንዴት መልሼ ገዛኋት","mins":33,"free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","subtitle":"የ \"DRIP\" ማትሪክስ (The DRIP Matrix)","mins":27,"free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","subtitle":"አምስቱ የጊዜ ገዳዮች","mins":29,"free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","subtitle":"ወሳኝ የሆኑት ሦስቱ የልውውጥ ደረጃዎች","mins":21,"free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","subtitle":"የመተካት መሰላል","mins":29,"free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","subtitle":"ራስህን አባዛ","mins":20,"free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","subtitle":"የአሠራር መመሪያዎችን ማዘጋጀት","mins":31,"free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","subtitle":"ፍጹሙ ሳምንትህ","mins":25,"free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","subtitle":"የሚያስፈልጉህ 4 የጊዜ ቆጣቢ ዘዴዎች ብቻ","mins":16,"free":false,"blocks":null},{"id":"ch10","label":"ምዕራፍ 10","name":"ምዕራፍ 10","subtitle":"\"በቅድሚያ መፈተን\" (Test-First) የቅጥር ዘዴ","mins":21,"free":false,"blocks":null},{"id":"ch11","label":"ምዕራፍ 11","name":"ምዕራፍ 11","subtitle":"ለውጥ አምጪ አመራር (Transformational Leadership)","mins":22,"free":false,"blocks":null},{"id":"ch12","label":"ምዕራፍ 12","name":"ምዕራፍ 12","subtitle":"ይህ \"ፊደል\" ንግድህን ይታደገዋል (The \"F-Word\" - Feedback)","mins":22,"free":false,"blocks":null},{"id":"ch13","label":"ምዕራፍ 13","name":"ምዕራፍ 13","subtitle":"በትልቁ አልም፤ ከዚያም በላይ አሳካ","mins":31,"free":false,"blocks":null},{"id":"ch14","label":"ምዕራፍ 14","name":"ምዕራፍ 14","subtitle":"ቀድሞ የተጫነ ዓመት (The Preloaded Year)","mins":21,"free":false,"blocks":null},{"id":"outro","label":"ማጠቃለያ","name":"ማጠቃለያ","subtitle":"ጊዜን መልሶ የገዛው ሕይወት","mins":23,"free":false,"blocks":null}],"meaning":[{"id":"about","label":"ስለ መጽሐፉ","name":"✨ ስለ መጽሐፉ","subtitle":"ሁሉም ነገር እያለህ ውስጣዊ ባዶነት የሚሰማህ ለምንድነው? — የሀርቫርድ ፕሮፌሰር ያገኙት የሕይወት ሚስጥር","mins":2,"free":true,"blocks":[{"type":"subtitle","text":"ሁሉም ነገር እያለህ ውስጣዊ ባዶነት የሚሰማህ ለምንድነው? — የሀርቫርድ ፕሮፌሰር ያገኙት የሕይወት ሚስጥር"},{"type":"p","text":"ታዋቂው ሩሲያዊ ደራሲ ሊዮ ቶልስቶይ ዕድሜው 51 ዓመት ሲሞላው በዓለም ላይ ሰው ሊመኘው የሚችለው ነገር ሁሉ ነበረው። «ጦርነትና ሰላም» የተሰኘው መጽሐፉ በሚሊዮኖች ተሽጦለታል፣ ከፍተኛ ሀብትና ዝና ነበረው፣ 13 ልጆችን ያፈራበት የጸና ትዳርና ሙሉ ጤንነት ነበረው።"},{"type":"p","text":"ነገር ግን በዚያ የስኬት ጫፍ ላይ ሆኖ፣ ቶልስቶይ ማታ ማታ ብቻውን ሲሆን ራሱን እንዳያጠፋ ብሎ ከክፍሉ ውስጥ ገመድ ይደብቅ፣ ጠመንጃውንም ይቆልፍ ነበር! ለምን? ምክንያቱም አንድ ጥያቄ እንቅልፍ ነስቶት ነበር፦ «ይህ ሁሉ ድካም ለምንድነው? የሕይወቴ ትርጉም ምንድነው?»"},{"type":"quote","text":"የዘመናችን ትልቁ ወረርሽኝ የገንዘብ ወይም የምቾት እጥረት አይደለም፤ የሕይወትን «እንዴት» (How) አሟልተን የሕይወትን «ለምን» (Why) ማጣታችን ነው።","author":"ፕሮፌሰር አርተር ሲ. ብሩክስ (Arthur C. Brooks)"},{"type":"h4","text":"አንጎልህ እያታለለህ ያለው እንዴት ነው?"},{"type":"p","text":"በሀርቫርድ ዩኒቨርሲቲ የደስታ ሳይንስ ፕሮፌሰር የሆኑት አርተር ብሩክስ በዚህ አስደናቂ መጽሐፋቸው አንድ አዲስ የነርቭ ሳይንስ (Neuroscience) ሚስጥር ይገልጻሉ፦ አንጎላችን በሁለት ተቃራኒ ክፍሎች የተከፈለ ነው።"},{"type":"p","text":"የግራ አንጎልህ (Left Brain) ገንዘብ፣ ስልጣን፣ የማኅበራዊ ሚዲያ ላይክ፣ ድሎት እና ፈጣን ደስታ (Dopamine) እንድታሳድድ ይገፋፋሃል። «ይህን ስታገኝ ደስተኛ ትሆናለህ!» ይልሃል። ነገር ግን እውነተኛ የሕይወት ትርጉም፣ ሰላም፣ ፍቅር እና ዓላማ የሚገኘው በቀኝ አንጎልህ (Right Brain) ውስጥ ብቻ ነው!"},{"type":"h4","text":"በዚህ የ 176 ገጽ ድንቅ መጽሐፍ ውስጥ የሚያገኟቸው ቁልፎች፦"},{"type":"li","text":"ኡንሃይምሊሽ (የባዳነት ሰቀቀን)፦ በገዛ ሕይወትህ ውስጥ ባዳ የመሆን፣ የድብርት እና የውስጥ ባዶነት ስሜት ከየት እንደሚመጣ እና እንዴት እንደሚፈወስ።"},{"type":"li","text":"ልትጠይቃቸው የሚገቡ 3ቱ ታላላቅ ጥያቄዎች፦ ማንኛውም ሰው ከመሞቱ በፊት መልስ ሊሰጣቸው የሚገቡ የሕይወት መሰረታዊ ጥያቄዎች።"},{"type":"li","text":"የጥፋትን አዙሪት መስበር፦ ከስልክ ሱስ፣ ከዶፓሚን ወጥመድ እና ከከንቱ ፉክክር ወጥተህ የቀኝ አንጎልህን የምታነቃቃበት ሳይንሳዊ መንገድ።"},{"type":"li","text":"ጥሪህን መፈለግ እና መከራህን ወደ ኃይል መቀየር፦ በሕይወትህ ያሳለፍካቸውን ህመሞችና ፈተናዎች በከንቱ ሳታባክን ወደ ታላቅ የሕይወት ዓላማ የምትቀይርበት ጥበብ።"},{"type":"divider","text":"✦ ✦ ✦"},{"type":"p","text":"ሕይወትህ በሩጫ ብቻ እንድታልፍ አትፍቀድ። ይህ #1 New York Times Bestseller መጽሐፍ ነፍስህ የምትናፍቀውን እውነተኛ ትርጉም፣ ሰላም እና ዓላማ እንድታገኝ እጅህን ይዞ ይመራሃል።"}]},{"id":"intro","label":"መግቢያ","name":"📖 መግቢያ","subtitle":"ኡንሃይምሊሽ (የባዳነት ሰቀቀን)","mins":37,"free":false,"blocks":null},{"id":"ch1","label":"ምዕራፍ 1","name":"🌟 ምዕራፍ 1","subtitle":"የትርጉም ምሥጢር","mins":29,"free":false,"blocks":null},{"id":"ch2","label":"ምዕራፍ 2","name":"ምዕራፍ 2","subtitle":"የቀኝ አንጎልህ ምሥጢር","mins":31,"free":false,"blocks":null},{"id":"ch3","label":"ምዕራፍ 3","name":"ምዕራፍ 3","subtitle":"የጥፋትን አዙሪት ስበር","mins":41,"free":false,"blocks":null},{"id":"ch4","label":"ምዕራፍ 4","name":"ምዕራፍ 4","subtitle":"ልትጠይቃቸው የሚገቡ 3 ታላላቅ ጥያቄዎች","mins":44,"free":false,"blocks":null},{"id":"ch5","label":"ምዕራፍ 5","name":"ምዕራፍ 5","subtitle":"ልብህን አውጥተህ ስጥ","mins":41,"free":false,"blocks":null},{"id":"ch6","label":"ምዕራፍ 6","name":"ምዕራፍ 6","subtitle":"ከራስህ አልፈህ ተሻገር","mins":46,"free":false,"blocks":null},{"id":"ch7","label":"ምዕራፍ 7","name":"ምዕራፍ 7","subtitle":"ጥሪህን ፈልግ","mins":57,"free":false,"blocks":null},{"id":"ch8","label":"ምዕራፍ 8","name":"ምዕራፍ 8","subtitle":"ራስህን በውበት ክበብ","mins":34,"free":false,"blocks":null},{"id":"ch9","label":"ምዕራፍ 9","name":"ምዕራፍ 9","subtitle":"መከራህን በከንቱ አታባክን","mins":38,"free":false,"blocks":null},{"id":"outro","label":"ማጠቃለያ","name":"ማጠቃለያ","subtitle":"አዲሱ፣ ግን ደግሞ ጥንታዊው ሕይወትህ","mins":11,"free":false,"blocks":null}]};
         const FULL_LOADED_FLAG = {};
         const INFLIGHT_FETCHES = {};
         let ownedBooks = [];
@@ -595,9 +904,130 @@
         let activePayMode = 'buy';
         let activeChapterIdx = 0;
         let currentCategory = 'all';
+        let activeChapterMins = 5;
+        let lastScrollY = 0;
+        let _toastTimer = null;
 
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) { tg.ready(); tg.expand(); }
+
+        // ══════════════════════════════════════════
+        // 1. PERSISTENT STORAGE (Progress, Highlights, Prefs)
+        // ══════════════════════════════════════════
+        const STORAGE_PROGRESS_KEY = 'baya_progress_v1';
+        const STORAGE_HIGHLIGHTS_KEY = 'baya_highlights_v1';
+        const STORAGE_PREFS_KEY = 'baya_prefs_v1';
+
+        function getReadingProgressMap() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_PROGRESS_KEY) || '{}') || {};
+            } catch (e) { return {}; }
+        }
+
+        function saveBookProgress(bookKey, chIdx, scrollPct, markCompleted) {
+            try {
+                const map = getReadingProgressMap();
+                const prev = map[bookKey] || { ch: 1, pct: 0, completed: [] };
+                const completedSet = new Set(Array.isArray(prev.completed) ? prev.completed : []);
+                if (markCompleted && chIdx > 0) completedSet.add(chIdx);
+                map[bookKey] = {
+                    ch: chIdx,
+                    pct: Math.round(scrollPct || 0),
+                    completed: Array.from(completedSet),
+                    updatedAt: Date.now()
+                };
+                localStorage.setItem(STORAGE_PROGRESS_KEY, JSON.stringify(map));
+            } catch (e) {}
+        }
+
+        function getBookOverallPct(bookKey) {
+            const chapters = LOADED_CHAPTERS[bookKey] || [];
+            const totalReadingCh = Math.max(1, chapters.length - 1); // exclude ch 0 overview
+            const prog = getReadingProgressMap()[bookKey];
+            if (!prog) return 0;
+            const completedCount = (prog.completed || []).filter(i => i > 0).length;
+            let pct = Math.round((completedCount / totalReadingCh) * 100);
+            if (prog.ch > 0 && !(prog.completed || []).includes(prog.ch)) {
+                pct += Math.round(((prog.pct || 0) / 100) * (100 / totalReadingCh));
+            }
+            return Math.min(100, Math.max(0, pct));
+        }
+
+        function getSavedHighlights() {
+            try {
+                const arr = JSON.parse(localStorage.getItem(STORAGE_HIGHLIGHTS_KEY) || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) { return []; }
+        }
+
+        function setSavedHighlights(arr) {
+            try {
+                localStorage.setItem(STORAGE_HIGHLIGHTS_KEY, JSON.stringify(arr));
+            } catch (e) {}
+            updateHighlightsBadge();
+        }
+
+        function updateHighlightsBadge() {
+            const el = document.getElementById('highlights-count');
+            if (el) el.innerText = getSavedHighlights().length;
+        }
+
+        function isTextHighlighted(bookKey, chIdx, text) {
+            const list = getSavedHighlights();
+            return list.some(h => h.bookKey === bookKey && h.chIdx === chIdx && h.text === text);
+        }
+
+        function toggleHighlightItem(bookKey, chIdx, chLabel, text) {
+            const clean = (text || '').trim();
+            if (!clean) return false;
+            let list = getSavedHighlights();
+            const existsIdx = list.findIndex(h => h.bookKey === bookKey && h.chIdx === chIdx && h.text === clean);
+            if (existsIdx >= 0) {
+                list.splice(existsIdx, 1);
+                setSavedHighlights(list);
+                showToast('🗑️ ጥቅሱ ከተቀመጡት ተወግዷል');
+                return false;
+            } else {
+                const meta = BOOKS_META[bookKey] || {};
+                list.unshift({
+                    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    bookKey: bookKey,
+                    bookTitle: meta.title || bookKey,
+                    chIdx: chIdx,
+                    chLabel: chLabel || ('ክፍል ' + chIdx),
+                    text: clean,
+                    savedAt: new Date().toLocaleDateString('am-ET')
+                });
+                setSavedHighlights(list);
+                showToast('🔖 ጥቅሱ በ«ጥቅሶች» ውስጥ ተቀምጧል!');
+                return true;
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('readerToast');
+            if (!t) return;
+            t.innerText = msg;
+            t.classList.add('show');
+            if (_toastTimer) clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        function shareQuoteText(text, bookKey) {
+            const meta = BOOKS_META[bookKey] || BOOKS_META[activeBookKey] || {};
+            const title = meta.title || 'Baya Books';
+            const snippet = (text || '').trim();
+            const shareBody = `“${snippet}”
+
+📖 ከ«${title}» መጽሐፍ የተወሰደ
+✨ በ @bayabooks_bot ላይ ያንብቡ`;
+            const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent('https://t.me/bayabooks_bot') + '&text=' + encodeURIComponent(shareBody);
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
+        }
 
         // Determine User ID from query param, Telegram WebApp initData, or localStorage
         function getUserId() {
@@ -626,6 +1056,8 @@
         const USER_ID = getUserId();
 
         async function loadUserBooks() {
+            updateHighlightsBadge();
+            loadSavedReaderPrefs();
             if (USER_ID) {
                 try {
                     const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID));
@@ -667,13 +1099,35 @@
                     ? `<div class="book-badge" style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);">⏰ የ 10 ቀን ኪራይ ጊዜው አልቋል | ${b.pages}</div>`
                     : `<div class="book-badge" style="${b.badge_style}">${b.badge}</div>`);
 
-            const startChIdx = isOwned ? 1 : 0;
+            const prog = getReadingProgressMap()[b.key];
+            const overallPct = isOwned ? getBookOverallPct(b.key) : 0;
+            const resumeCh = (isOwned && prog && prog.ch >= 1) ? prog.ch : (isOwned ? 1 : 0);
+            const chapters = LOADED_CHAPTERS[b.key] || [];
+            const resumeLabel = (chapters[resumeCh] && chapters[resumeCh].label) ? chapters[resumeCh].label : ('ክፍል ' + resumeCh);
+
+            let progressHTML = '';
+            if (isOwned && (overallPct > 0 || (prog && prog.ch > 1))) {
+                progressHTML = `
+                    <div class="book-progress-wrap">
+                        <div class="book-progress-meta">
+                            <span>📊 ${overallPct}% ተነቧል</span>
+                            <span style="color: #a5b4fc; font-weight: 700;">${resumeLabel}</span>
+                        </div>
+                        <div class="book-progress-bar">
+                            <div class="book-progress-fill" style="width: ${Math.max(4, overallPct)}%;"></div>
+                        </div>
+                    </div>`;
+            }
 
             let buttonsHTML = '';
             if (isOwned) {
+                const hasResume = prog && (prog.ch > 1 || (prog.pct && prog.pct > 5));
+                const btnText = hasResume
+                    ? `📖 ካቆሙበት ይቀጥሉ (${resumeLabel})`
+                    : `📖 ሙሉውን መጽሐፍ አንብብ`;
                 buttonsHTML = `<div class="btn-group">
-                       <button class="btn btn-success" onclick="openReader('${b.key}', 1)">
-                           <span>📖 ሙሉውን መጽሐፍ አንብብ</span>
+                       <button class="btn btn-success" onclick="openReader('${b.key}', ${resumeCh}, true)">
+                           <span>${btnText}</span>
                        </button>
                    </div>`;
             } else if (isExpired) {
@@ -709,7 +1163,7 @@
 
             return `
                 <div class="featured-card" data-category="${b.category}" data-owned="${isOwned ? 'true' : 'false'}">
-                    <div class="book-cover-wrap" onclick="openReader('${b.key}', ${startChIdx})" style="cursor:pointer;">
+                    <div class="book-cover-wrap" onclick="openReader('${b.key}', ${resumeCh}, true)" style="cursor:pointer;">
                         <img src="${b.cover}" alt="${b.title}" class="book-cover">
                     </div>
                     <div class="book-details">
@@ -721,6 +1175,7 @@
                                 <span>👤 ${b.short_author}</span>
                                 <span>${b.rating}</span>
                             </div>
+                            ${progressHTML}
                         </div>
                         ${buttonsHTML}
                     </div>
@@ -731,6 +1186,7 @@
         function renderStore() {
             const myBookKeys = [...new Set([...ownedBooks, ...expiredBooks])];
             document.getElementById('mybooks-count').innerText = myBookKeys.length;
+            updateHighlightsBadge();
 
             // Top My Books Highlight Box (shown on 'all' view when user has owned or expired-rental books)
             const mySection = document.getElementById('my-books-section');
@@ -781,13 +1237,53 @@
             renderStore();
         }
 
+        // ══════════════════════════════════════════
+        // 2. SCROLL LISTENER: Progress Bar, Status Pill, Auto-Save & Zen Mode
+        // ══════════════════════════════════════════
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+            const scrolled = height > 0 ? Math.min(100, Math.max(0, (winScroll / height) * 100)) : 0;
             const bar = document.getElementById("readingProgress");
             if (bar) bar.style.width = scrolled + "%";
-        });
+
+            const readerVisible = document.getElementById('view-reader').style.display === 'block';
+            const pill = document.getElementById('readingStatusPill');
+            if (!readerVisible) {
+                if (pill) pill.style.display = 'none';
+                return;
+            }
+
+            if (pill) {
+                pill.style.display = 'flex';
+                const pctRound = Math.round(scrolled);
+                const remMins = Math.max(1, Math.ceil(activeChapterMins * (1 - scrolled / 100)));
+                document.getElementById('pillChapterPct').innerText = pctRound + '%';
+                document.getElementById('pillTimeLeft').innerText = scrolled >= 94
+                    ? '✓ ክፍሉ ተጠናቋል'
+                    : `⏱ ቀሪ ~${remMins} ደቂቃ`;
+            }
+
+            // Auto-save reading progress & mark chapter completed at >= 85% scroll
+            if (activeBookKey && activeChapterIdx > 0) {
+                const markDone = scrolled >= 85;
+                saveBookProgress(activeBookKey, activeChapterIdx, scrolled, markDone);
+            }
+
+            // Zen Mode: hide top header & chapter tabs when scrolling down, show when scrolling up
+            const hdr = document.getElementById('readerHeader');
+            const tabs = document.getElementById('chapterTabs');
+            const delta = winScroll - lastScrollY;
+            if (winScroll > 120 && delta > 9) {
+                if (hdr) hdr.classList.add('zen-hidden');
+                if (tabs) tabs.classList.add('zen-hidden');
+                closeTypoPopover();
+            } else if (delta < -7 || winScroll < 60) {
+                if (hdr) hdr.classList.remove('zen-hidden');
+                if (tabs) tabs.classList.remove('zen-hidden');
+            }
+            lastScrollY = winScroll;
+        }, { passive: true });
 
         function ensureFullBookLoaded(bookKey) {
             if (FULL_LOADED_FLAG[bookKey]) return Promise.resolve(LOADED_CHAPTERS[bookKey]);
@@ -797,7 +1293,12 @@
             INFLIGHT_FETCHES[bookKey] = fetch(meta.data_url)
                 .then(res => res.json())
                 .then(data => {
-                    const arr = Array.isArray(data) ? data : (data.chapters || []);
+                    const prevMeta = LOADED_CHAPTERS[bookKey] || [];
+                    const arr = (Array.isArray(data) ? data : (data.chapters || [])).map((c, idx) => ({
+                        ...c,
+                        mins: (prevMeta[idx] && prevMeta[idx].mins) || c.mins || 5,
+                        subtitle: (prevMeta[idx] && prevMeta[idx].subtitle) || c.subtitle || ''
+                    }));
                     LOADED_CHAPTERS[bookKey] = arr;
                     FULL_LOADED_FLAG[bookKey] = true;
                     delete INFLIGHT_FETCHES[bookKey];
@@ -810,15 +1311,15 @@
             return INFLIGHT_FETCHES[bookKey];
         }
 
-        async function openReader(bookKey, chIdx) {
+        async function openReader(bookKey, chIdx, restoreScroll) {
             const meta = BOOKS_META[bookKey];
             if (!meta) return;
 
             activeBookKey = bookKey;
-            const targetIdx = chIdx || 0;
+            const targetIdx = (typeof chIdx === 'number') ? chIdx : 0;
 
             // Immediately clear previous book DOM so another book's content is NEVER shown
-            document.getElementById('readerBookTitle').innerText = meta.title;
+            document.getElementById('readerBookTitle').innerText = meta.title + ' ▾';
             document.getElementById('paywallDesc').innerText = meta.paywall_desc;
             document.getElementById('chapterTabs').innerHTML = '';
             document.getElementById('readerChapterContent').innerHTML = '';
@@ -827,15 +1328,65 @@
 
             document.getElementById('view-home').style.display = 'none';
             document.getElementById('view-reader').style.display = 'block';
+            document.getElementById('readerHeader').classList.remove('zen-hidden');
+            document.getElementById('chapterTabs').classList.remove('zen-hidden');
 
             // Kick off background fetch of full chapters immediately
             ensureFullBookLoaded(bookKey).catch(() => {});
 
             // Render requested chapter (Chapter 0 is already embedded so it opens in 0ms!)
-            await renderChapter(targetIdx);
+            await renderChapter(targetIdx, restoreScroll);
         }
 
-        async function renderChapter(idx) {
+        function attachHighlightBehavior(el, bookKey, chIdx, chLabel, textContent) {
+            if (isTextHighlighted(bookKey, chIdx, textContent)) {
+                el.classList.add('highlighted');
+            }
+            const actBar = document.createElement('span');
+            actBar.className = 'block-actions';
+
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'block-act-btn';
+            shareBtn.innerText = '📤 አጋራ';
+            shareBtn.onclick = (e) => {
+                e.stopPropagation();
+                shareQuoteText(textContent, bookKey);
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'block-act-btn';
+            delBtn.innerText = '🗑️ አጥፋ';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                removeHighlightFromDom(delBtn, bookKey, chIdx, chLabel, textContent);
+            };
+
+            actBar.appendChild(shareBtn);
+            actBar.appendChild(delBtn);
+            el.appendChild(actBar);
+
+            // Double-tap / double-click to highlight & save quote
+            let lastTap = 0;
+            el.addEventListener('click', (e) => {
+                const now = Date.now();
+                if (now - lastTap < 340) {
+                    e.preventDefault();
+                    const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+                    el.classList.toggle('highlighted', added);
+                    lastTap = 0;
+                } else {
+                    lastTap = now;
+                }
+            });
+        }
+
+        function removeHighlightFromDom(btnEl, bookKey, chIdx, chLabel, textContent) {
+            const parent = btnEl.closest('.highlighted');
+            toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+            if (parent) parent.classList.remove('highlighted');
+        }
+
+        async function renderChapter(idx, restoreScroll) {
             const targetBookKey = activeBookKey;
             let chapters = LOADED_CHAPTERS[targetBookKey] || [];
             const isOwned = ownedBooks.includes(targetBookKey);
@@ -849,17 +1400,23 @@
             }
 
             activeChapterIdx = idx;
+            const prog = getReadingProgressMap()[targetBookKey] || { completed: [] };
+            const completedArr = prog.completed || [];
 
             // Render Chapter Tabs immediately
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
             chapters.forEach((c, i) => {
                 const unlocked = isOwned || c.free;
+                const isDone = completedArr.includes(i);
                 const btn = document.createElement('button');
                 btn.className = 'ch-tab' + (i === idx ? ' active' : '') + (!unlocked ? ' locked' : '');
-                btn.innerText = unlocked ? c.name : ('🔒 ' + c.label);
-                btn.onclick = () => renderChapter(i);
+                btn.innerText = unlocked ? ((isDone ? '✓ ' : '') + c.name) : ('🔒 ' + c.label);
+                btn.onclick = () => renderChapter(i, false);
                 tabsEl.appendChild(btn);
+                if (i === idx) {
+                    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+                }
             });
 
             const contentEl = document.getElementById('readerChapterContent');
@@ -881,15 +1438,37 @@
                 if (!ch || !ch.blocks) return;
             }
 
+            // Calculate estimated reading minutes
+            const wordCount = ch.blocks.reduce((acc, b) => acc + ((b.text || '').split(/\s+/).length), 0);
+            activeChapterMins = ch.mins || Math.max(2, Math.round(wordCount / 135));
+
+            // Save current chapter index
+            if (idx > 0) {
+                const savedPct = (restoreScroll && prog && prog.ch === idx) ? (prog.pct || 0) : 0;
+                saveBookProgress(targetBookKey, idx, savedPct, false);
+            }
+
             // Render Content Blocks
             contentEl.innerHTML = '';
 
             const headerCard = document.createElement('div');
             headerCard.className = 'ch-header-card';
+
+            const badgeRow = document.createElement('div');
+            badgeRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;';
+
             const badge = document.createElement('div');
             badge.className = 'ch-badge';
+            badge.style.marginBottom = '0';
             badge.innerText = ch.label;
-            headerCard.appendChild(badge);
+            badgeRow.appendChild(badge);
+
+            const timePill = document.createElement('div');
+            timePill.style.cssText = 'font-size:11.5px; font-weight:700; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid var(--border-light);';
+            timePill.innerText = `⏱ ~${activeChapterMins} ደቂቃ ንባብ • 💡 አንቀጽ ሁለቴ ይጫኑ ለማስቀመጥ`;
+            badgeRow.appendChild(timePill);
+
+            headerCard.appendChild(badgeRow);
 
             let firstParaRendered = false;
 
@@ -913,6 +1492,28 @@
                         qAuth.innerText = '— ' + b.author;
                         qBox.appendChild(qAuth);
                     }
+                    const qTools = document.createElement('div');
+                    qTools.style.cssText = 'display:flex; justify-content:flex-end; gap:8px; margin-top:10px;';
+
+                    const saveQBtn = document.createElement('button');
+                    saveQBtn.className = 'block-act-btn';
+                    saveQBtn.innerText = '🔖 አስቀምጥ';
+                    saveQBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleHighlightItem(targetBookKey, idx, ch.label, b.text);
+                    };
+
+                    const shareQBtn = document.createElement('button');
+                    shareQBtn.className = 'block-act-btn';
+                    shareQBtn.innerText = '📤 አጋራ';
+                    shareQBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        shareQuoteText(b.text, targetBookKey);
+                    };
+
+                    qTools.appendChild(saveQBtn);
+                    qTools.appendChild(shareQBtn);
+                    qBox.appendChild(qTools);
                     contentEl.appendChild(qBox);
                 } else if (b.type === 'h4') {
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
@@ -925,6 +1526,7 @@
                     const li = document.createElement('div');
                     li.className = 'reader-li';
                     li.innerHTML = `<span class="reader-li-dot">✦</span><div>${b.text}</div>`;
+                    attachHighlightBehavior(li, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(li);
                 } else if (b.type === 'divider') {
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
@@ -938,6 +1540,7 @@
                     p.className = 'reader-p' + (!firstParaRendered ? ' lead-p' : '');
                     firstParaRendered = true;
                     p.innerText = b.text;
+                    attachHighlightBehavior(p, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(p);
                 }
             });
@@ -951,7 +1554,7 @@
                 prevBtn.className = 'btn btn-outline';
                 prevBtn.style.padding = '13px';
                 prevBtn.innerText = '← ' + chapters[idx - 1].label;
-                prevBtn.onclick = () => renderChapter(idx - 1);
+                prevBtn.onclick = () => renderChapter(idx - 1, false);
                 navFooter.appendChild(prevBtn);
             }
 
@@ -965,7 +1568,10 @@
                 nextBtn.className = 'btn btn-primary';
                 nextBtn.style.padding = '13px';
                 nextBtn.innerText = 'ቀጣይ፦ ' + nextCh.label + ' →';
-                nextBtn.onclick = () => renderChapter(idx + 1);
+                nextBtn.onclick = () => {
+                    if (idx > 0) saveBookProgress(targetBookKey, idx, 100, true);
+                    renderChapter(idx + 1, false);
+                };
                 navFooter.appendChild(nextBtn);
                 document.getElementById('readerPaywall').style.display = 'none';
             } else if (!isOwned && nextCh && !nextCh.free) {
@@ -974,26 +1580,214 @@
                 document.getElementById('readerPaywall').style.display = 'none';
             }
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (restoreScroll && prog && prog.ch === idx && prog.pct > 5 && prog.pct < 92) {
+                setTimeout(() => {
+                    const docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    window.scrollTo({ top: Math.round((prog.pct / 100) * docH), behavior: 'smooth' });
+                    showToast(`📖 ካቆሙበት (${prog.pct}%) ቀጥሏል`);
+                }, 120);
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         function closeReader() {
             document.getElementById('view-reader').style.display = 'none';
+            document.getElementById('readingStatusPill').style.display = 'none';
+            closeTypoPopover();
             document.getElementById('view-home').style.display = 'block';
+            renderStore();
             window.scrollTo(0, 0);
         }
 
-        let currFontSize = 17.5;
-        function adjustFontSize(delta) {
-            currFontSize = Math.min(24, Math.max(14, currFontSize + delta));
-            document.getElementById('readerBody').style.fontSize = currFontSize + 'px';
+        // ══════════════════════════════════════════
+        // 3. TABLE OF CONTENTS DRAWER (📑 ማውጫ)
+        // ══════════════════════════════════════════
+        function openTocModal() {
+            const meta = BOOKS_META[activeBookKey];
+            if (!meta) return;
+            const chapters = LOADED_CHAPTERS[activeBookKey] || [];
+            const isOwned = ownedBooks.includes(activeBookKey);
+            const prog = getReadingProgressMap()[activeBookKey] || { completed: [] };
+            const completedArr = prog.completed || [];
+            const overallPct = isOwned ? getBookOverallPct(activeBookKey) : 0;
+
+            document.getElementById('tocBookTitle').innerText = '📑 ' + meta.title;
+            document.getElementById('tocProgressSub').innerText = isOwned
+                ? `${overallPct}% ተነቧል • ${completedArr.length} / ${Math.max(1, chapters.length - 1)} ክፍሎች ተጠናቀዋል`
+                : '🔒 ሙሉውን ማውጫ ለመክፈት መጽሐፉን ይግዙ ወይም ይከራዩ';
+
+            const listEl = document.getElementById('tocList');
+            listEl.innerHTML = chapters.map((c, i) => {
+                const unlocked = isOwned || c.free;
+                const isDone = completedArr.includes(i);
+                const isCurrent = i === activeChapterIdx;
+                const mins = c.mins || 4;
+                const sub = c.subtitle || c.name;
+                const statusBadge = !unlocked
+                    ? '<span style="font-size:12px; color:var(--text-muted);">🔒</span>'
+                    : (isDone
+                        ? '<span style="font-size:11px; color:#34d399; font-weight:800;">✓ ተነቧል</span>'
+                        : (isCurrent ? '<span style="font-size:11px; color:#a5b4fc; font-weight:800;">📖 በማንበብ ላይ</span>' : `<span style="font-size:11px; color:var(--text-muted);">⏱ ~${mins} ደቂቃ</span>`));
+
+                return `
+                    <div class="toc-item ${isCurrent ? 'active' : ''} ${!unlocked ? 'locked' : ''}" onclick="closeTocModal(); renderChapter(${i}, false);">
+                        <div style="min-width: 0; flex: 1; padding-right: 10px;">
+                            <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);">${c.name}</div>
+                            ${sub && sub !== c.name ? `<div style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub}</div>` : ''}
+                        </div>
+                        <div style="flex-shrink: 0;">${statusBadge}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('modal-toc').style.display = 'flex';
         }
 
+        function closeTocModal() {
+            document.getElementById('modal-toc').style.display = 'none';
+        }
+
+        // ══════════════════════════════════════════
+        // 4. HIGHLIGHTS & QUOTES MODAL (🔖 ጥቅሶች)
+        // ══════════════════════════════════════════
+        function openHighlightsModal(filterBookKey) {
+            const all = getSavedHighlights();
+            const list = (filterBookKey && filterBookKey !== 'all')
+                ? all.filter(h => h.bookKey === filterBookKey)
+                : all;
+
+            const container = document.getElementById('highlightsList');
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
+                        <div style="font-size: 34px; margin-bottom: 8px;">🔖</div>
+                        <div style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">ገና የተቀመጠ ጥቅስ የለም</div>
+                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ሁለቴ በመጫን (Double-tap)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = list.map(h => `
+                    <div class="hl-card">
+                        <div class="hl-text">“${h.text}”</div>
+                        <div class="hl-meta">
+                            <span style="cursor:pointer; color:#a5b4fc; font-weight:700;" onclick="closeHighlightsModal(); openReader('${h.bookKey}', ${h.chIdx || 1}, false)">
+                                📖 ${h.bookTitle} (${h.chLabel})
+                            </span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="block-act-btn" onclick="shareHighlightById('${h.id}')">📤 አጋራ</button>
+                                <button class="block-act-btn" onclick="deleteHighlightById('${h.id}', '${filterBookKey || 'all'}')">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('modal-highlights').style.display = 'flex';
+        }
+
+        function shareHighlightById(id) {
+            const item = getSavedHighlights().find(h => h.id === id);
+            if (item) shareQuoteText(item.text, item.bookKey);
+        }
+
+        function deleteHighlightById(id, currentFilter) {
+            const updated = getSavedHighlights().filter(h => h.id !== id);
+            setSavedHighlights(updated);
+            openHighlightsModal(currentFilter);
+        }
+
+        function closeHighlightsModal() {
+            document.getElementById('modal-highlights').style.display = 'none';
+        }
+
+        // ══════════════════════════════════════════
+        // 5. TYPOGRAPHY & EYE-COMFORT SETTINGS
+        // ══════════════════════════════════════════
+        let currFontSize = 17.5;
+        let currLineHeight = 2.0;
         const themes = ['dark', 'light-theme', 'sepia-theme'];
         let themeIdx = 0;
+
+        function saveReaderPrefs() {
+            try {
+                localStorage.setItem(STORAGE_PREFS_KEY, JSON.stringify({
+                    fontSize: currFontSize,
+                    lineHeight: currLineHeight,
+                    theme: themes[themeIdx]
+                }));
+            } catch (e) {}
+        }
+
+        function loadSavedReaderPrefs() {
+            try {
+                const p = JSON.parse(localStorage.getItem(STORAGE_PREFS_KEY) || '{}');
+                if (p.fontSize) currFontSize = Number(p.fontSize) || 17.5;
+                if (p.lineHeight) currLineHeight = Number(p.lineHeight) || 2.0;
+                if (p.theme && themes.includes(p.theme)) {
+                    themeIdx = themes.indexOf(p.theme);
+                }
+            } catch (e) {}
+            applyReaderPrefs();
+        }
+
+        function applyReaderPrefs() {
+            const rb = document.getElementById('readerBody');
+            if (rb) {
+                rb.style.fontSize = currFontSize + 'px';
+                rb.style.lineHeight = String(currLineHeight);
+            }
+            const fsDisp = document.getElementById('fontSizeDisplay');
+            if (fsDisp) fsDisp.innerText = Math.round(currFontSize) + 'px';
+
+            document.body.className = themes[themeIdx];
+
+            // Sync active buttons in popover
+            [1.75, 2, 2.3].forEach(v => {
+                const btn = document.getElementById('lh-' + v);
+                if (btn) btn.classList.toggle('active', Math.abs(currLineHeight - v) < 0.05);
+            });
+            themes.forEach(t => {
+                const btn = document.getElementById('th-' + t);
+                if (btn) btn.classList.toggle('active', themes[themeIdx] === t);
+            });
+        }
+
+        function toggleTypoPopover(e) {
+            if (e) e.stopPropagation();
+            const pop = document.getElementById('typoPopover');
+            if (pop) pop.classList.toggle('open');
+        }
+
+        function closeTypoPopover() {
+            const pop = document.getElementById('typoPopover');
+            if (pop) pop.classList.remove('open');
+        }
+
+        function adjustFontSize(delta) {
+            currFontSize = Math.min(24, Math.max(14, currFontSize + delta));
+            applyReaderPrefs();
+            saveReaderPrefs();
+        }
+
+        function setLineHeight(val) {
+            currLineHeight = val;
+            applyReaderPrefs();
+            saveReaderPrefs();
+        }
+
+        function setThemeMode(themeName) {
+            const idx = themes.indexOf(themeName);
+            if (idx >= 0) {
+                themeIdx = idx;
+                applyReaderPrefs();
+                saveReaderPrefs();
+            }
+        }
+
         function toggleTheme() {
             themeIdx = (themeIdx + 1) % themes.length;
-            document.body.className = themes[themeIdx];
+            applyReaderPrefs();
+            saveReaderPrefs();
         }
 
         function selectPayPlan(mode) {

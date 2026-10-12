@@ -73,16 +73,22 @@ for b_key, b_info in books_meta.items():
             ch_list = json.load(jf)
             if isinstance(ch_list, dict):
                 ch_list = ch_list.get("chapters", [])
-            initial_preview[b_key] = [
-                {
+            preview_chs = []
+            for idx, c in enumerate(ch_list):
+                blocks = c.get("blocks") or []
+                words = sum(len(str(b.get("text", "")).split()) for b in blocks)
+                mins = max(2, round(words / 135))
+                sub = next((b.get("text", "") for b in blocks if b.get("type") == "subtitle"), c.get("name", ""))
+                preview_chs.append({
                     "id": c["id"],
                     "label": c["label"],
                     "name": c["name"],
+                    "subtitle": sub,
+                    "mins": mins,
                     "free": c["free"],
-                    "blocks": c["blocks"] if idx == 0 else None
-                }
-                for idx, c in enumerate(ch_list)
-            ]
+                    "blocks": blocks if idx == 0 else None
+                })
+            initial_preview[b_key] = preview_chs
 initial_preview_js = json.dumps(initial_preview, ensure_ascii=False, separators=(',', ':'))
 
 html_content = f'''<!DOCTYPE html>
@@ -296,24 +302,37 @@ html_content = f'''<!DOCTYPE html>
             background: rgba(13, 16, 23, 0.95); backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border); padding: 10px 14px;
             display: flex; align-items: center; justify-content: space-between;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }}
+        .reader-header.zen-hidden {{
+            transform: translateY(-110%);
+            opacity: 0;
+            pointer-events: none;
         }}
         body.light-theme .reader-header {{ background: rgba(248, 250, 252, 0.95); }}
         body.sepia-theme .reader-header {{ background: rgba(246, 239, 226, 0.95); }}
 
-        .progress-bar-container {{ position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 100; }}
-        .progress-bar-fill {{ height: 100%; width: 0%; background: var(--accent-gradient); transition: width 0.15s ease; }}
+        .progress-bar-container {{ position: fixed; top: 0; left: 0; width: 100%; height: 3.5px; z-index: 120; background: rgba(255,255,255,0.04); }}
+        .progress-bar-fill {{ height: 100%; width: 0%; background: var(--accent-gradient); box-shadow: 0 0 8px rgba(99, 102, 241, 0.6); transition: width 0.15s ease; }}
 
         .reader-top-title {{
             font-size: 13px; font-weight: 700; color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
         }}
-        .reader-controls {{ display: flex; align-items: center; gap: 6px; }}
+        .reader-controls {{ display: flex; align-items: center; gap: 6px; position: relative; }}
 
         /* Chapter Tabs Bar */
         .chapter-tabs {{
             display: flex; gap: 8px; padding: 12px 16px;
             background: var(--bg-secondary); border-bottom: 1px solid var(--border);
             overflow-x: auto; scrollbar-width: none; position: sticky; top: 57px; z-index: 55;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }}
+        .chapter-tabs.zen-hidden {{
+            transform: translateY(-180%);
+            opacity: 0;
+            pointer-events: none;
         }}
         .chapter-tabs::-webkit-scrollbar {{ display: none; }}
         .ch-tab {{
@@ -325,6 +344,9 @@ html_content = f'''<!DOCTYPE html>
         .ch-tab.active {{
             background: var(--accent); color: #ffffff; border-color: var(--accent);
             box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35);
+        }}
+        .ch-tab.done {{
+            border-color: rgba(16, 185, 129, 0.4);
         }}
         .ch-tab.locked {{
             opacity: 0.75;
@@ -340,12 +362,21 @@ html_content = f'''<!DOCTYPE html>
             font-size: 17.5px;
             line-height: 2.0;
             color: var(--text-primary);
+            transition: font-size 0.15s ease, line-height 0.15s ease;
         }}
 
         .ch-header-card {{
             margin-bottom: 30px;
             padding-bottom: 22px;
             border-bottom: 2px solid var(--border);
+        }}
+        .ch-meta-row {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
         }}
         .ch-badge {{
             display: inline-block;
@@ -358,7 +389,19 @@ html_content = f'''<!DOCTYPE html>
             background: var(--accent-soft);
             padding: 4px 12px;
             border-radius: 20px;
-            margin-bottom: 10px;
+        }}
+        .ch-time-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 20px;
         }}
         .ch-main-subtitle {{
             font-size: 1.38em;
@@ -366,12 +409,59 @@ html_content = f'''<!DOCTYPE html>
             line-height: 1.4;
             color: var(--text-primary);
         }}
+        .ch-tip-hint {{
+            font-family: var(--font-ui);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
 
         .reader-p {{
             margin-bottom: 1.35em;
             text-align: left;
             letter-spacing: 0.01em;
             word-spacing: 0.04em;
+            border-radius: 10px;
+            transition: background 0.2s ease, padding 0.2s ease;
+            position: relative;
+        }}
+        .reader-p.highlighted, .reader-li.highlighted, .reader-quote.highlighted {{
+            background: rgba(245, 158, 11, 0.16) !important;
+            border-left: 3.5px solid #f59e0b !important;
+            padding: 10px 14px;
+            border-radius: 6px 12px 12px 6px;
+        }}
+
+        .block-actions {{
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+            font-family: var(--font-ui);
+        }}
+        .block-act-btn {{
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-ui);
+        }}
+        .block-act-btn:active {{ transform: scale(0.95); }}
+        .block-act-btn.saved {{
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.45);
+            background: rgba(245, 158, 11, 0.12);
         }}
 
         .reader-p.lead-p::first-letter {{
@@ -396,7 +486,7 @@ html_content = f'''<!DOCTYPE html>
             background: var(--accent-soft);
             border-left: 4px solid var(--accent);
             border-radius: 0 14px 14px 0;
-            padding: 18px 20px;
+            padding: 18px 20px 14px;
             margin: 1.8em 0;
         }}
         .reader-quote-text {{
@@ -447,6 +537,154 @@ html_content = f'''<!DOCTYPE html>
             border-top: 1px solid var(--border);
             display: flex;
             gap: 12px;
+        }}
+
+        /* Book Progress Bar on Card */
+        .book-progress-wrap {{
+            margin: 6px 0 10px;
+        }}
+        .book-progress-top {{
+            display: flex;
+            justify-content: space-between;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }}
+        .book-progress-bar {{
+            height: 5px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }}
+        .book-progress-fill {{
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }}
+
+        /* Floating Reading Status Pill */
+        #readingStatusPill {{
+            position: fixed;
+            bottom: 18px;
+            right: 16px;
+            z-index: 90;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(12px);
+        }}
+
+        /* Toast Notification */
+        #readerToast {{
+            position: fixed;
+            bottom: 64px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #10b981;
+            color: #ffffff;
+            font-family: var(--font-ui);
+            font-size: 12.5px;
+            font-weight: 700;
+            padding: 9px 18px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 350;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }}
+        #readerToast.show {{
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }}
+
+        /* Typography Popover */
+        .typo-popover {{
+            position: fixed;
+            top: 58px;
+            right: 14px;
+            width: 265px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            z-index: 150;
+            box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+            display: none;
+            font-family: var(--font-ui);
+        }}
+        .typo-row {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+        }}
+        .typo-row:last-child {{ margin-bottom: 0; }}
+        .typo-label {{ font-size: 11.5px; font-weight: 700; color: var(--text-secondary); }}
+        .typo-btn {{
+            flex: 1;
+            padding: 7px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            text-align: center;
+        }}
+        .typo-btn.active {{
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--accent);
+        }}
+
+        /* TOC & Highlights Drawer List */
+        .drawer-list {{
+            max-height: 62vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }}
+        .toc-item {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.18s;
+        }}
+        .toc-item.active {{
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }}
+        .hl-card {{
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: 3.5px solid #f59e0b;
+            border-radius: 8px 14px 14px 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
         }}
 
         /* Paywall Box */
@@ -509,7 +747,10 @@ html_content = f'''<!DOCTYPE html>
                     <p>እያንዳንዱ የሚያነቡት ገጽ ከፍ ወዳለ ማንነት እንዲወስድዎት ተመኘን</p>
                 </div>
             </div>
-            <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <button class="btn-icon" onclick="openHighlightsModal('all')" title="Saved Quotes">🔖</button>
+                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
+            </div>
         </header>
 
         <div class="container">
@@ -535,6 +776,10 @@ html_content = f'''<!DOCTYPE html>
                 <div class="filter-pill" id="pill-mybooks" onclick="filterCategory('mybooks', this)">
                     <span>📖 የኔ መጻሕፍት</span>
                     <span class="count-badge" id="mybooks-count">0</span>
+                </div>
+                <div class="filter-pill" onclick="openHighlightsModal('all')">
+                    <span>🔖 ጥቅሶች</span>
+                    <span class="count-badge" id="highlights-count">0</span>
                 </div>
                 <div class="filter-pill" onclick="filterCategory('psychology', this)">🧠 ግንኙነት & ስነ-ልቦና</div>
                 <div class="filter-pill" onclick="filterCategory('productivity', this)">⏱️ ጊዜ & ቢዝነስ</div>
@@ -566,20 +811,48 @@ html_content = f'''<!DOCTYPE html>
          VIEW 2: PUBLICATION-GRADE READER
     ══════════════════════════════════════════ -->
     <div id="view-reader">
-        <div class="reader-header">
+        <div class="reader-header" id="readerHeader">
             <button class="btn-icon" onclick="closeReader()" title="Back">‹</button>
-            <div class="reader-top-title" id="readerBookTitle">የመጽሐፍ ርዕስ</div>
+            <div class="reader-top-title" id="readerBookTitle" onclick="openTocModal()" title="ማውጫ ክፈት">የመጽሐፍ ርዕስ ▾</div>
             <div class="reader-controls">
-                <button class="btn-icon" onclick="adjustFontSize(-1)">A-</button>
-                <button class="btn-icon" onclick="adjustFontSize(1)">A+</button>
-                <button class="btn-icon" onclick="toggleTheme()">🌓</button>
+                <button class="btn-icon" onclick="openTocModal()" title="ማውጫ (Chapters)">📑</button>
+                <button class="btn-icon" onclick="openHighlightsModal(activeBookKey)" title="የተቀመጡ ጥቅሶች">🔖</button>
+                <button class="btn-icon" onclick="toggleTypoPopover(event)" title="የፊደል እና ገጽታ ማስተካከያ">Aa</button>
+            </div>
+        </div>
+
+        <!-- Typography & Eye-Comfort Popover -->
+        <div id="typoPopover" class="typo-popover" onclick="event.stopPropagation()">
+            <div class="typo-row">
+                <span class="typo-label">የፊደል መጠን</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(-1)">A-</button>
+                    <span id="fontSizeDisplay" style="font-size: 12px; font-weight: 800; min-width: 38px; text-align: center;">18px</span>
+                    <button class="typo-btn" style="padding: 6px 12px;" onclick="adjustFontSize(1)">A+</button>
+                </div>
+            </div>
+            <div class="typo-row">
+                <span class="typo-label">የመስመር ክፍተት</span>
+                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
+                    <button class="typo-btn" id="lh-1.75" onclick="setLineHeight(1.75)">ጥብቅ</button>
+                    <button class="typo-btn active" id="lh-2" onclick="setLineHeight(2.0)">መደበኛ</button>
+                    <button class="typo-btn" id="lh-2.3" onclick="setLineHeight(2.3)">ሰፊ</button>
+                </div>
+            </div>
+            <div class="typo-row">
+                <span class="typo-label">የገጽ ቀለም</span>
+                <div style="display: flex; gap: 5px; flex: 1; justify-content: flex-end;">
+                    <button class="typo-btn" id="th-dark" onclick="setThemeMode('dark')">🌙 ማታ</button>
+                    <button class="typo-btn" id="th-sepia-theme" onclick="setThemeMode('sepia-theme')">📜 ሴፒያ</button>
+                    <button class="typo-btn" id="th-light-theme" onclick="setThemeMode('light-theme')">☀️ ቀን</button>
+                </div>
             </div>
         </div>
 
         <!-- Chapter Switcher Bar -->
         <div class="chapter-tabs" id="chapterTabs"></div>
 
-        <div class="reader-content" id="readerBody">
+        <div class="reader-content" id="readerBody" onclick="closeTypoPopover()">
             <!-- Dynamic Chapter Content -->
             <div id="readerChapterContent"></div>
 
@@ -603,6 +876,48 @@ html_content = f'''<!DOCTYPE html>
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Reading Progress & Time Left Pill -->
+    <div id="readingStatusPill" onclick="openTocModal()">
+        <span id="pillChapterPct">0%</span>
+        <span style="opacity: 0.4;">•</span>
+        <span id="pillTimeLeft">⏱ ቀሪ 5 ደቂቃ</span>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="readerToast">✅ ተቀምጧል!</div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: TABLE OF CONTENTS (📑 ማውጫ)
+    ══════════════════════════════════════════ -->
+    <div id="modal-toc" class="modal-overlay" onclick="closeTocModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">📑 የመጽሐፉ ማውጫ</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);" id="tocProgressSub">0% ተነቧል</p>
+                </div>
+                <button class="btn-icon" onclick="closeTocModal()">✕</button>
+            </div>
+            <div class="drawer-list" id="tocList"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: SAVED HIGHLIGHTS & QUOTES (🔖 ጥቅሶች)
+    ══════════════════════════════════════════ -->
+    <div id="modal-highlights" class="modal-overlay" onclick="closeHighlightsModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800;">🔖 የተቀመጡ ጥቅሶች እና ማስታወሻዎች</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);">አንቀጾችን ሁለቴ በመጫን (Double-tap) እዚህ ማስቀመጥ ይችላሉ</p>
+                </div>
+                <button class="btn-icon" onclick="closeHighlightsModal()">✕</button>
+            </div>
+            <div class="drawer-list" id="highlightsList"></div>
         </div>
     </div>
 
@@ -682,9 +997,127 @@ html_content = f'''<!DOCTYPE html>
         let activePayMode = 'buy';
         let activeChapterIdx = 0;
         let currentCategory = 'all';
+        let activeChapterMins = 5;
+        let lastScrollY = 0;
+        let _toastTimer = null;
 
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) {{ tg.ready(); tg.expand(); }}
+
+        // ══════════════════════════════════════════
+        // 1. PERSISTENT STORAGE (Progress, Highlights, Prefs)
+        // ══════════════════════════════════════════
+        const STORAGE_PROGRESS_KEY = 'baya_progress_v1';
+        const STORAGE_HIGHLIGHTS_KEY = 'baya_highlights_v1';
+        const STORAGE_PREFS_KEY = 'baya_prefs_v1';
+
+        function getReadingProgressMap() {{
+            try {{
+                return JSON.parse(localStorage.getItem(STORAGE_PROGRESS_KEY) || '{{}}') || {{}};
+            }} catch (e) {{ return {{}}; }}
+        }}
+
+        function saveBookProgress(bookKey, chIdx, scrollPct, markCompleted) {{
+            try {{
+                const map = getReadingProgressMap();
+                const prev = map[bookKey] || {{ ch: 1, pct: 0, completed: [] }};
+                const completedSet = new Set(Array.isArray(prev.completed) ? prev.completed : []);
+                if (markCompleted && chIdx > 0) completedSet.add(chIdx);
+                map[bookKey] = {{
+                    ch: chIdx,
+                    pct: Math.round(scrollPct || 0),
+                    completed: Array.from(completedSet),
+                    updatedAt: Date.now()
+                }};
+                localStorage.setItem(STORAGE_PROGRESS_KEY, JSON.stringify(map));
+            }} catch (e) {{}}
+        }}
+
+        function getBookOverallPct(bookKey) {{
+            const chapters = LOADED_CHAPTERS[bookKey] || [];
+            const totalReadingCh = Math.max(1, chapters.length - 1); // exclude ch 0 overview
+            const prog = getReadingProgressMap()[bookKey];
+            if (!prog) return 0;
+            const completedCount = (prog.completed || []).filter(i => i > 0).length;
+            let pct = Math.round((completedCount / totalReadingCh) * 100);
+            if (prog.ch > 0 && !(prog.completed || []).includes(prog.ch)) {{
+                pct += Math.round(((prog.pct || 0) / 100) * (100 / totalReadingCh));
+            }}
+            return Math.min(100, Math.max(0, pct));
+        }}
+
+        function getSavedHighlights() {{
+            try {{
+                const arr = JSON.parse(localStorage.getItem(STORAGE_HIGHLIGHTS_KEY) || '[]');
+                return Array.isArray(arr) ? arr : [];
+            }} catch (e) {{ return []; }}
+        }}
+
+        function setSavedHighlights(arr) {{
+            try {{
+                localStorage.setItem(STORAGE_HIGHLIGHTS_KEY, JSON.stringify(arr));
+            }} catch (e) {{}}
+            updateHighlightsBadge();
+        }}
+
+        function updateHighlightsBadge() {{
+            const el = document.getElementById('highlights-count');
+            if (el) el.innerText = getSavedHighlights().length;
+        }}
+
+        function isTextHighlighted(bookKey, chIdx, text) {{
+            const list = getSavedHighlights();
+            return list.some(h => h.bookKey === bookKey && h.chIdx === chIdx && h.text === text);
+        }}
+
+        function toggleHighlightItem(bookKey, chIdx, chLabel, text) {{
+            const clean = (text || '').trim();
+            if (!clean) return false;
+            let list = getSavedHighlights();
+            const existsIdx = list.findIndex(h => h.bookKey === bookKey && h.chIdx === chIdx && h.text === clean);
+            if (existsIdx >= 0) {{
+                list.splice(existsIdx, 1);
+                setSavedHighlights(list);
+                showToast('🗑️ ጥቅሱ ከተቀመጡት ተወግዷል');
+                return false;
+            }} else {{
+                const meta = BOOKS_META[bookKey] || {{}};
+                list.unshift({{
+                    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    bookKey: bookKey,
+                    bookTitle: meta.title || bookKey,
+                    chIdx: chIdx,
+                    chLabel: chLabel || ('ክፍል ' + chIdx),
+                    text: clean,
+                    savedAt: new Date().toLocaleDateString('am-ET')
+                }});
+                setSavedHighlights(list);
+                showToast('🔖 ጥቅሱ በ«ጥቅሶች» ውስጥ ተቀምጧል!');
+                return true;
+            }}
+        }}
+
+        function showToast(msg) {{
+            const t = document.getElementById('readerToast');
+            if (!t) return;
+            t.innerText = msg;
+            t.classList.add('show');
+            if (_toastTimer) clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+        }}
+
+        function shareQuoteText(text, bookKey) {{
+            const meta = BOOKS_META[bookKey] || BOOKS_META[activeBookKey] || {{}};
+            const title = meta.title || 'Baya Books';
+            const snippet = (text || '').trim();
+            const shareBody = `“${{snippet}}”\n\n📖 ከ«${{title}}» መጽሐፍ የተወሰደ\n✨ በ @bayabooks_bot ላይ ያንብቡ`;
+            const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent('https://t.me/bayabooks_bot') + '&text=' + encodeURIComponent(shareBody);
+            if (tg && tg.openTelegramLink) {{
+                tg.openTelegramLink(shareUrl);
+            }} else {{
+                window.open(shareUrl, '_blank');
+            }}
+        }}
 
         // Determine User ID from query param, Telegram WebApp initData, or localStorage
         function getUserId() {{
@@ -713,6 +1146,8 @@ html_content = f'''<!DOCTYPE html>
         const USER_ID = getUserId();
 
         async function loadUserBooks() {{
+            updateHighlightsBadge();
+            loadSavedReaderPrefs();
             if (USER_ID) {{
                 try {{
                     const res = await fetch('/api/user_books?uid=' + encodeURIComponent(USER_ID));
@@ -754,13 +1189,35 @@ html_content = f'''<!DOCTYPE html>
                     ? `<div class="book-badge" style="background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);">⏰ የ 10 ቀን ኪራይ ጊዜው አልቋል | ${{b.pages}}</div>`
                     : `<div class="book-badge" style="${{b.badge_style}}">${{b.badge}}</div>`);
 
-            const startChIdx = isOwned ? 1 : 0;
+            const prog = getReadingProgressMap()[b.key];
+            const overallPct = isOwned ? getBookOverallPct(b.key) : 0;
+            const resumeCh = (isOwned && prog && prog.ch >= 1) ? prog.ch : (isOwned ? 1 : 0);
+            const chapters = LOADED_CHAPTERS[b.key] || [];
+            const resumeLabel = (chapters[resumeCh] && chapters[resumeCh].label) ? chapters[resumeCh].label : ('ክፍል ' + resumeCh);
+
+            let progressHTML = '';
+            if (isOwned && (overallPct > 0 || (prog && prog.ch > 1))) {{
+                progressHTML = `
+                    <div class="book-progress-wrap">
+                        <div class="book-progress-meta">
+                            <span>📊 ${{overallPct}}% ተነቧል</span>
+                            <span style="color: #a5b4fc; font-weight: 700;">${{resumeLabel}}</span>
+                        </div>
+                        <div class="book-progress-bar">
+                            <div class="book-progress-fill" style="width: ${{Math.max(4, overallPct)}}%;"></div>
+                        </div>
+                    </div>`;
+            }}
 
             let buttonsHTML = '';
             if (isOwned) {{
+                const hasResume = prog && (prog.ch > 1 || (prog.pct && prog.pct > 5));
+                const btnText = hasResume
+                    ? `📖 ካቆሙበት ይቀጥሉ (${{resumeLabel}})`
+                    : `📖 ሙሉውን መጽሐፍ አንብብ`;
                 buttonsHTML = `<div class="btn-group">
-                       <button class="btn btn-success" onclick="openReader('${{b.key}}', 1)">
-                           <span>📖 ሙሉውን መጽሐፍ አንብብ</span>
+                       <button class="btn btn-success" onclick="openReader('${{b.key}}', ${{resumeCh}}, true)">
+                           <span>${{btnText}}</span>
                        </button>
                    </div>`;
             }} else if (isExpired) {{
@@ -796,7 +1253,7 @@ html_content = f'''<!DOCTYPE html>
 
             return `
                 <div class="featured-card" data-category="${{b.category}}" data-owned="${{isOwned ? 'true' : 'false'}}">
-                    <div class="book-cover-wrap" onclick="openReader('${{b.key}}', ${{startChIdx}})" style="cursor:pointer;">
+                    <div class="book-cover-wrap" onclick="openReader('${{b.key}}', ${{resumeCh}}, true)" style="cursor:pointer;">
                         <img src="${{b.cover}}" alt="${{b.title}}" class="book-cover">
                     </div>
                     <div class="book-details">
@@ -808,6 +1265,7 @@ html_content = f'''<!DOCTYPE html>
                                 <span>👤 ${{b.short_author}}</span>
                                 <span>${{b.rating}}</span>
                             </div>
+                            ${{progressHTML}}
                         </div>
                         ${{buttonsHTML}}
                     </div>
@@ -818,6 +1276,7 @@ html_content = f'''<!DOCTYPE html>
         function renderStore() {{
             const myBookKeys = [...new Set([...ownedBooks, ...expiredBooks])];
             document.getElementById('mybooks-count').innerText = myBookKeys.length;
+            updateHighlightsBadge();
 
             // Top My Books Highlight Box (shown on 'all' view when user has owned or expired-rental books)
             const mySection = document.getElementById('my-books-section');
@@ -868,13 +1327,53 @@ html_content = f'''<!DOCTYPE html>
             renderStore();
         }}
 
+        // ══════════════════════════════════════════
+        // 2. SCROLL LISTENER: Progress Bar, Status Pill, Auto-Save & Zen Mode
+        // ══════════════════════════════════════════
         window.addEventListener('scroll', () => {{
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+            const scrolled = height > 0 ? Math.min(100, Math.max(0, (winScroll / height) * 100)) : 0;
             const bar = document.getElementById("readingProgress");
             if (bar) bar.style.width = scrolled + "%";
-        }});
+
+            const readerVisible = document.getElementById('view-reader').style.display === 'block';
+            const pill = document.getElementById('readingStatusPill');
+            if (!readerVisible) {{
+                if (pill) pill.style.display = 'none';
+                return;
+            }}
+
+            if (pill) {{
+                pill.style.display = 'flex';
+                const pctRound = Math.round(scrolled);
+                const remMins = Math.max(1, Math.ceil(activeChapterMins * (1 - scrolled / 100)));
+                document.getElementById('pillChapterPct').innerText = pctRound + '%';
+                document.getElementById('pillTimeLeft').innerText = scrolled >= 94
+                    ? '✓ ክፍሉ ተጠናቋል'
+                    : `⏱ ቀሪ ~${{remMins}} ደቂቃ`;
+            }}
+
+            // Auto-save reading progress & mark chapter completed at >= 85% scroll
+            if (activeBookKey && activeChapterIdx > 0) {{
+                const markDone = scrolled >= 85;
+                saveBookProgress(activeBookKey, activeChapterIdx, scrolled, markDone);
+            }}
+
+            // Zen Mode: hide top header & chapter tabs when scrolling down, show when scrolling up
+            const hdr = document.getElementById('readerHeader');
+            const tabs = document.getElementById('chapterTabs');
+            const delta = winScroll - lastScrollY;
+            if (winScroll > 120 && delta > 9) {{
+                if (hdr) hdr.classList.add('zen-hidden');
+                if (tabs) tabs.classList.add('zen-hidden');
+                closeTypoPopover();
+            }} else if (delta < -7 || winScroll < 60) {{
+                if (hdr) hdr.classList.remove('zen-hidden');
+                if (tabs) tabs.classList.remove('zen-hidden');
+            }}
+            lastScrollY = winScroll;
+        }}, {{ passive: true }});
 
         function ensureFullBookLoaded(bookKey) {{
             if (FULL_LOADED_FLAG[bookKey]) return Promise.resolve(LOADED_CHAPTERS[bookKey]);
@@ -884,7 +1383,12 @@ html_content = f'''<!DOCTYPE html>
             INFLIGHT_FETCHES[bookKey] = fetch(meta.data_url)
                 .then(res => res.json())
                 .then(data => {{
-                    const arr = Array.isArray(data) ? data : (data.chapters || []);
+                    const prevMeta = LOADED_CHAPTERS[bookKey] || [];
+                    const arr = (Array.isArray(data) ? data : (data.chapters || [])).map((c, idx) => ({{
+                        ...c,
+                        mins: (prevMeta[idx] && prevMeta[idx].mins) || c.mins || 5,
+                        subtitle: (prevMeta[idx] && prevMeta[idx].subtitle) || c.subtitle || ''
+                    }}));
                     LOADED_CHAPTERS[bookKey] = arr;
                     FULL_LOADED_FLAG[bookKey] = true;
                     delete INFLIGHT_FETCHES[bookKey];
@@ -897,15 +1401,15 @@ html_content = f'''<!DOCTYPE html>
             return INFLIGHT_FETCHES[bookKey];
         }}
 
-        async function openReader(bookKey, chIdx) {{
+        async function openReader(bookKey, chIdx, restoreScroll) {{
             const meta = BOOKS_META[bookKey];
             if (!meta) return;
 
             activeBookKey = bookKey;
-            const targetIdx = chIdx || 0;
+            const targetIdx = (typeof chIdx === 'number') ? chIdx : 0;
 
             // Immediately clear previous book DOM so another book's content is NEVER shown
-            document.getElementById('readerBookTitle').innerText = meta.title;
+            document.getElementById('readerBookTitle').innerText = meta.title + ' ▾';
             document.getElementById('paywallDesc').innerText = meta.paywall_desc;
             document.getElementById('chapterTabs').innerHTML = '';
             document.getElementById('readerChapterContent').innerHTML = '';
@@ -914,15 +1418,65 @@ html_content = f'''<!DOCTYPE html>
 
             document.getElementById('view-home').style.display = 'none';
             document.getElementById('view-reader').style.display = 'block';
+            document.getElementById('readerHeader').classList.remove('zen-hidden');
+            document.getElementById('chapterTabs').classList.remove('zen-hidden');
 
             // Kick off background fetch of full chapters immediately
             ensureFullBookLoaded(bookKey).catch(() => {{}});
 
             // Render requested chapter (Chapter 0 is already embedded so it opens in 0ms!)
-            await renderChapter(targetIdx);
+            await renderChapter(targetIdx, restoreScroll);
         }}
 
-        async function renderChapter(idx) {{
+        function attachHighlightBehavior(el, bookKey, chIdx, chLabel, textContent) {{
+            if (isTextHighlighted(bookKey, chIdx, textContent)) {{
+                el.classList.add('highlighted');
+            }}
+            const actBar = document.createElement('span');
+            actBar.className = 'block-actions';
+
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'block-act-btn';
+            shareBtn.innerText = '📤 አጋራ';
+            shareBtn.onclick = (e) => {{
+                e.stopPropagation();
+                shareQuoteText(textContent, bookKey);
+            }};
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'block-act-btn';
+            delBtn.innerText = '🗑️ አጥፋ';
+            delBtn.onclick = (e) => {{
+                e.stopPropagation();
+                removeHighlightFromDom(delBtn, bookKey, chIdx, chLabel, textContent);
+            }};
+
+            actBar.appendChild(shareBtn);
+            actBar.appendChild(delBtn);
+            el.appendChild(actBar);
+
+            // Double-tap / double-click to highlight & save quote
+            let lastTap = 0;
+            el.addEventListener('click', (e) => {{
+                const now = Date.now();
+                if (now - lastTap < 340) {{
+                    e.preventDefault();
+                    const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+                    el.classList.toggle('highlighted', added);
+                    lastTap = 0;
+                }} else {{
+                    lastTap = now;
+                }}
+            }});
+        }}
+
+        function removeHighlightFromDom(btnEl, bookKey, chIdx, chLabel, textContent) {{
+            const parent = btnEl.closest('.highlighted');
+            toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+            if (parent) parent.classList.remove('highlighted');
+        }}
+
+        async function renderChapter(idx, restoreScroll) {{
             const targetBookKey = activeBookKey;
             let chapters = LOADED_CHAPTERS[targetBookKey] || [];
             const isOwned = ownedBooks.includes(targetBookKey);
@@ -936,17 +1490,23 @@ html_content = f'''<!DOCTYPE html>
             }}
 
             activeChapterIdx = idx;
+            const prog = getReadingProgressMap()[targetBookKey] || {{ completed: [] }};
+            const completedArr = prog.completed || [];
 
             // Render Chapter Tabs immediately
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
             chapters.forEach((c, i) => {{
                 const unlocked = isOwned || c.free;
+                const isDone = completedArr.includes(i);
                 const btn = document.createElement('button');
                 btn.className = 'ch-tab' + (i === idx ? ' active' : '') + (!unlocked ? ' locked' : '');
-                btn.innerText = unlocked ? c.name : ('🔒 ' + c.label);
-                btn.onclick = () => renderChapter(i);
+                btn.innerText = unlocked ? ((isDone ? '✓ ' : '') + c.name) : ('🔒 ' + c.label);
+                btn.onclick = () => renderChapter(i, false);
                 tabsEl.appendChild(btn);
+                if (i === idx) {{
+                    setTimeout(() => btn.scrollIntoView({{ behavior: 'smooth', inline: 'center', block: 'nearest' }}), 50);
+                }}
             }});
 
             const contentEl = document.getElementById('readerChapterContent');
@@ -968,15 +1528,37 @@ html_content = f'''<!DOCTYPE html>
                 if (!ch || !ch.blocks) return;
             }}
 
+            // Calculate estimated reading minutes
+            const wordCount = ch.blocks.reduce((acc, b) => acc + ((b.text || '').split(/\\s+/).length), 0);
+            activeChapterMins = ch.mins || Math.max(2, Math.round(wordCount / 135));
+
+            // Save current chapter index
+            if (idx > 0) {{
+                const savedPct = (restoreScroll && prog && prog.ch === idx) ? (prog.pct || 0) : 0;
+                saveBookProgress(targetBookKey, idx, savedPct, false);
+            }}
+
             // Render Content Blocks
             contentEl.innerHTML = '';
 
             const headerCard = document.createElement('div');
             headerCard.className = 'ch-header-card';
+
+            const badgeRow = document.createElement('div');
+            badgeRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;';
+
             const badge = document.createElement('div');
             badge.className = 'ch-badge';
+            badge.style.marginBottom = '0';
             badge.innerText = ch.label;
-            headerCard.appendChild(badge);
+            badgeRow.appendChild(badge);
+
+            const timePill = document.createElement('div');
+            timePill.style.cssText = 'font-size:11.5px; font-weight:700; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid var(--border-light);';
+            timePill.innerText = `⏱ ~${{activeChapterMins}} ደቂቃ ንባብ • 💡 አንቀጽ ሁለቴ ይጫኑ ለማስቀመጥ`;
+            badgeRow.appendChild(timePill);
+
+            headerCard.appendChild(badgeRow);
 
             let firstParaRendered = false;
 
@@ -1000,6 +1582,28 @@ html_content = f'''<!DOCTYPE html>
                         qAuth.innerText = '— ' + b.author;
                         qBox.appendChild(qAuth);
                     }}
+                    const qTools = document.createElement('div');
+                    qTools.style.cssText = 'display:flex; justify-content:flex-end; gap:8px; margin-top:10px;';
+
+                    const saveQBtn = document.createElement('button');
+                    saveQBtn.className = 'block-act-btn';
+                    saveQBtn.innerText = '🔖 አስቀምጥ';
+                    saveQBtn.onclick = (e) => {{
+                        e.stopPropagation();
+                        toggleHighlightItem(targetBookKey, idx, ch.label, b.text);
+                    }};
+
+                    const shareQBtn = document.createElement('button');
+                    shareQBtn.className = 'block-act-btn';
+                    shareQBtn.innerText = '📤 አጋራ';
+                    shareQBtn.onclick = (e) => {{
+                        e.stopPropagation();
+                        shareQuoteText(b.text, targetBookKey);
+                    }};
+
+                    qTools.appendChild(saveQBtn);
+                    qTools.appendChild(shareQBtn);
+                    qBox.appendChild(qTools);
                     contentEl.appendChild(qBox);
                 }} else if (b.type === 'h4') {{
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
@@ -1012,6 +1616,7 @@ html_content = f'''<!DOCTYPE html>
                     const li = document.createElement('div');
                     li.className = 'reader-li';
                     li.innerHTML = `<span class="reader-li-dot">✦</span><div>${{b.text}}</div>`;
+                    attachHighlightBehavior(li, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(li);
                 }} else if (b.type === 'divider') {{
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
@@ -1025,6 +1630,7 @@ html_content = f'''<!DOCTYPE html>
                     p.className = 'reader-p' + (!firstParaRendered ? ' lead-p' : '');
                     firstParaRendered = true;
                     p.innerText = b.text;
+                    attachHighlightBehavior(p, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(p);
                 }}
             }});
@@ -1038,7 +1644,7 @@ html_content = f'''<!DOCTYPE html>
                 prevBtn.className = 'btn btn-outline';
                 prevBtn.style.padding = '13px';
                 prevBtn.innerText = '← ' + chapters[idx - 1].label;
-                prevBtn.onclick = () => renderChapter(idx - 1);
+                prevBtn.onclick = () => renderChapter(idx - 1, false);
                 navFooter.appendChild(prevBtn);
             }}
 
@@ -1052,7 +1658,10 @@ html_content = f'''<!DOCTYPE html>
                 nextBtn.className = 'btn btn-primary';
                 nextBtn.style.padding = '13px';
                 nextBtn.innerText = 'ቀጣይ፦ ' + nextCh.label + ' →';
-                nextBtn.onclick = () => renderChapter(idx + 1);
+                nextBtn.onclick = () => {{
+                    if (idx > 0) saveBookProgress(targetBookKey, idx, 100, true);
+                    renderChapter(idx + 1, false);
+                }};
                 navFooter.appendChild(nextBtn);
                 document.getElementById('readerPaywall').style.display = 'none';
             }} else if (!isOwned && nextCh && !nextCh.free) {{
@@ -1061,26 +1670,214 @@ html_content = f'''<!DOCTYPE html>
                 document.getElementById('readerPaywall').style.display = 'none';
             }}
 
-            window.scrollTo({{ top: 0, behavior: 'smooth' }});
+            if (restoreScroll && prog && prog.ch === idx && prog.pct > 5 && prog.pct < 92) {{
+                setTimeout(() => {{
+                    const docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    window.scrollTo({{ top: Math.round((prog.pct / 100) * docH), behavior: 'smooth' }});
+                    showToast(`📖 ካቆሙበት (${{prog.pct}}%) ቀጥሏል`);
+                }}, 120);
+            }} else {{
+                window.scrollTo({{ top: 0, behavior: 'smooth' }});
+            }}
         }}
 
         function closeReader() {{
             document.getElementById('view-reader').style.display = 'none';
+            document.getElementById('readingStatusPill').style.display = 'none';
+            closeTypoPopover();
             document.getElementById('view-home').style.display = 'block';
+            renderStore();
             window.scrollTo(0, 0);
         }}
 
-        let currFontSize = 17.5;
-        function adjustFontSize(delta) {{
-            currFontSize = Math.min(24, Math.max(14, currFontSize + delta));
-            document.getElementById('readerBody').style.fontSize = currFontSize + 'px';
+        // ══════════════════════════════════════════
+        // 3. TABLE OF CONTENTS DRAWER (📑 ማውጫ)
+        // ══════════════════════════════════════════
+        function openTocModal() {{
+            const meta = BOOKS_META[activeBookKey];
+            if (!meta) return;
+            const chapters = LOADED_CHAPTERS[activeBookKey] || [];
+            const isOwned = ownedBooks.includes(activeBookKey);
+            const prog = getReadingProgressMap()[activeBookKey] || {{ completed: [] }};
+            const completedArr = prog.completed || [];
+            const overallPct = isOwned ? getBookOverallPct(activeBookKey) : 0;
+
+            document.getElementById('tocBookTitle').innerText = '📑 ' + meta.title;
+            document.getElementById('tocProgressSub').innerText = isOwned
+                ? `${{overallPct}}% ተነቧል • ${{completedArr.length}} / ${{Math.max(1, chapters.length - 1)}} ክፍሎች ተጠናቀዋል`
+                : '🔒 ሙሉውን ማውጫ ለመክፈት መጽሐፉን ይግዙ ወይም ይከራዩ';
+
+            const listEl = document.getElementById('tocList');
+            listEl.innerHTML = chapters.map((c, i) => {{
+                const unlocked = isOwned || c.free;
+                const isDone = completedArr.includes(i);
+                const isCurrent = i === activeChapterIdx;
+                const mins = c.mins || 4;
+                const sub = c.subtitle || c.name;
+                const statusBadge = !unlocked
+                    ? '<span style="font-size:12px; color:var(--text-muted);">🔒</span>'
+                    : (isDone
+                        ? '<span style="font-size:11px; color:#34d399; font-weight:800;">✓ ተነቧል</span>'
+                        : (isCurrent ? '<span style="font-size:11px; color:#a5b4fc; font-weight:800;">📖 በማንበብ ላይ</span>' : `<span style="font-size:11px; color:var(--text-muted);">⏱ ~${{mins}} ደቂቃ</span>`));
+
+                return `
+                    <div class="toc-item ${{isCurrent ? 'active' : ''}} ${{!unlocked ? 'locked' : ''}}" onclick="closeTocModal(); renderChapter(${{i}}, false);">
+                        <div style="min-width: 0; flex: 1; padding-right: 10px;">
+                            <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);">${{c.name}}</div>
+                            ${{sub && sub !== c.name ? `<div style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${{sub}}</div>` : ''}}
+                        </div>
+                        <div style="flex-shrink: 0;">${{statusBadge}}</div>
+                    </div>
+                `;
+            }}).join('');
+
+            document.getElementById('modal-toc').style.display = 'flex';
         }}
 
+        function closeTocModal() {{
+            document.getElementById('modal-toc').style.display = 'none';
+        }}
+
+        // ══════════════════════════════════════════
+        // 4. HIGHLIGHTS & QUOTES MODAL (🔖 ጥቅሶች)
+        // ══════════════════════════════════════════
+        function openHighlightsModal(filterBookKey) {{
+            const all = getSavedHighlights();
+            const list = (filterBookKey && filterBookKey !== 'all')
+                ? all.filter(h => h.bookKey === filterBookKey)
+                : all;
+
+            const container = document.getElementById('highlightsList');
+            if (list.length === 0) {{
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
+                        <div style="font-size: 34px; margin-bottom: 8px;">🔖</div>
+                        <div style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">ገና የተቀመጠ ጥቅስ የለም</div>
+                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ሁለቴ በመጫን (Double-tap)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
+                    </div>
+                `;
+            }} else {{
+                container.innerHTML = list.map(h => `
+                    <div class="hl-card">
+                        <div class="hl-text">“${{h.text}}”</div>
+                        <div class="hl-meta">
+                            <span style="cursor:pointer; color:#a5b4fc; font-weight:700;" onclick="closeHighlightsModal(); openReader('${{h.bookKey}}', ${{h.chIdx || 1}}, false)">
+                                📖 ${{h.bookTitle}} (${{h.chLabel}})
+                            </span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="block-act-btn" onclick="shareHighlightById('${{h.id}}')">📤 አጋራ</button>
+                                <button class="block-act-btn" onclick="deleteHighlightById('${{h.id}}', '${{filterBookKey || 'all'}}')">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }}
+            document.getElementById('modal-highlights').style.display = 'flex';
+        }}
+
+        function shareHighlightById(id) {{
+            const item = getSavedHighlights().find(h => h.id === id);
+            if (item) shareQuoteText(item.text, item.bookKey);
+        }}
+
+        function deleteHighlightById(id, currentFilter) {{
+            const updated = getSavedHighlights().filter(h => h.id !== id);
+            setSavedHighlights(updated);
+            openHighlightsModal(currentFilter);
+        }}
+
+        function closeHighlightsModal() {{
+            document.getElementById('modal-highlights').style.display = 'none';
+        }}
+
+        // ══════════════════════════════════════════
+        // 5. TYPOGRAPHY & EYE-COMFORT SETTINGS
+        // ══════════════════════════════════════════
+        let currFontSize = 17.5;
+        let currLineHeight = 2.0;
         const themes = ['dark', 'light-theme', 'sepia-theme'];
         let themeIdx = 0;
+
+        function saveReaderPrefs() {{
+            try {{
+                localStorage.setItem(STORAGE_PREFS_KEY, JSON.stringify({{
+                    fontSize: currFontSize,
+                    lineHeight: currLineHeight,
+                    theme: themes[themeIdx]
+                }}));
+            }} catch (e) {{}}
+        }}
+
+        function loadSavedReaderPrefs() {{
+            try {{
+                const p = JSON.parse(localStorage.getItem(STORAGE_PREFS_KEY) || '{{}}');
+                if (p.fontSize) currFontSize = Number(p.fontSize) || 17.5;
+                if (p.lineHeight) currLineHeight = Number(p.lineHeight) || 2.0;
+                if (p.theme && themes.includes(p.theme)) {{
+                    themeIdx = themes.indexOf(p.theme);
+                }}
+            }} catch (e) {{}}
+            applyReaderPrefs();
+        }}
+
+        function applyReaderPrefs() {{
+            const rb = document.getElementById('readerBody');
+            if (rb) {{
+                rb.style.fontSize = currFontSize + 'px';
+                rb.style.lineHeight = String(currLineHeight);
+            }}
+            const fsDisp = document.getElementById('fontSizeDisplay');
+            if (fsDisp) fsDisp.innerText = Math.round(currFontSize) + 'px';
+
+            document.body.className = themes[themeIdx];
+
+            // Sync active buttons in popover
+            [1.75, 2, 2.3].forEach(v => {{
+                const btn = document.getElementById('lh-' + v);
+                if (btn) btn.classList.toggle('active', Math.abs(currLineHeight - v) < 0.05);
+            }});
+            themes.forEach(t => {{
+                const btn = document.getElementById('th-' + t);
+                if (btn) btn.classList.toggle('active', themes[themeIdx] === t);
+            }});
+        }}
+
+        function toggleTypoPopover(e) {{
+            if (e) e.stopPropagation();
+            const pop = document.getElementById('typoPopover');
+            if (pop) pop.classList.toggle('open');
+        }}
+
+        function closeTypoPopover() {{
+            const pop = document.getElementById('typoPopover');
+            if (pop) pop.classList.remove('open');
+        }}
+
+        function adjustFontSize(delta) {{
+            currFontSize = Math.min(24, Math.max(14, currFontSize + delta));
+            applyReaderPrefs();
+            saveReaderPrefs();
+        }}
+
+        function setLineHeight(val) {{
+            currLineHeight = val;
+            applyReaderPrefs();
+            saveReaderPrefs();
+        }}
+
+        function setThemeMode(themeName) {{
+            const idx = themes.indexOf(themeName);
+            if (idx >= 0) {{
+                themeIdx = idx;
+                applyReaderPrefs();
+                saveReaderPrefs();
+            }}
+        }}
+
         function toggleTheme() {{
             themeIdx = (themeIdx + 1) % themes.length;
-            document.body.className = themes[themeIdx];
+            applyReaderPrefs();
+            saveReaderPrefs();
         }}
 
         function selectPayPlan(mode) {{

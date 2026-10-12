@@ -322,15 +322,51 @@ html_content = f'''<!DOCTYPE html>
         }}
         .reader-controls {{ display: flex; align-items: center; gap: 6px; flex-shrink: 0; }}
 
+        /* Dedicated Row for 🚪 ማውጫ, 🔍 ፈልግ, 🔖 ጥቅሶች */
+        .reader-tools-row {{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 57px;
+            z-index: 56;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+        }}
+        .reader-tools-row.zen-hidden {{
+            transform: translateY(-180%);
+            opacity: 0;
+            pointer-events: none;
+        }}
+        .reader-tool-btn {{
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-family: var(--font-ui);
+            transition: all 0.2s;
+        }}
+        .reader-tool-btn:active {{ transform: scale(0.96); }}
+
         /* Chapter Tabs Bar */
         .chapter-tabs {{
-            display: flex; gap: 8px; padding: 12px 16px;
+            display: flex; gap: 8px; padding: 10px 16px;
             background: var(--bg-secondary); border-bottom: 1px solid var(--border);
-            overflow-x: auto; scrollbar-width: none; position: sticky; top: 57px; z-index: 55;
+            overflow-x: auto; scrollbar-width: none; position: sticky; top: 104px; z-index: 55;
             transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
         }}
         .chapter-tabs.zen-hidden {{
-            transform: translateY(-180%);
+            transform: translateY(-240%);
             opacity: 0;
             pointer-events: none;
         }}
@@ -442,17 +478,28 @@ html_content = f'''<!DOCTYPE html>
         .reader-p.highlighted, .reader-li.highlighted, .reader-quote.highlighted {{
             background: rgba(245, 158, 11, 0.16) !important;
             border-left: 3.5px solid #f59e0b !important;
-            padding: 10px 14px 24px 14px;
+            padding: 10px 14px 28px 14px;
             border-radius: 6px 12px 12px 6px;
             position: relative;
         }}
-        .reader-p.highlighted::after, .reader-li.highlighted::after, .reader-quote.highlighted::after {{
-            content: '🔖';
+        .hl-pin-btn {{
+            display: none;
             position: absolute;
-            bottom: 5px;
-            right: 10px;
-            font-size: 13px;
-            line-height: 1;
+            bottom: 4px;
+            right: 8px;
+            background: rgba(245, 158, 11, 0.22);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            line-height: 1.2;
+            cursor: pointer;
+            z-index: 5;
+        }}
+        .highlighted .hl-pin-btn {{
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
         }}
 
         .block-actions {{
@@ -946,6 +993,13 @@ html_content = f'''<!DOCTYPE html>
             </div>
         </div>
 
+        <!-- Dedicated Row for 🚪 ማውጫ, 🔍 ፈልግ, 🔖 ጥቅሶች -->
+        <div class="reader-tools-row" id="readerToolsRow">
+            <button class="reader-tool-btn" onclick="openTocModal()">🚪 ማውጫ</button>
+            <button class="reader-tool-btn" onclick="openSearchModal()">🔍 ፈልግ</button>
+            <button class="reader-tool-btn" onclick="openHighlightsModal(activeBookKey)">🔖 ጥቅሶች</button>
+        </div>
+
         <!-- Chapter Switcher Bar -->
         <div class="chapter-tabs" id="chapterTabs"></div>
 
@@ -1021,13 +1075,13 @@ html_content = f'''<!DOCTYPE html>
     </div>
 
     <!-- ══════════════════════════════════════════
-         MODAL: TABLE OF CONTENTS (📑 ማውጫ)
+         MODAL: TABLE OF CONTENTS (🚪 ማውጫ)
     ══════════════════════════════════════════ -->
     <div id="modal-toc" class="modal-overlay" onclick="closeTocModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">📑 የመጽሐፉ ማውጫ</h3>
+                    <h3 style="font-size: 16px; font-weight: 800;" id="tocBookTitle">🚪 የመጽሐፉ ማውጫ</h3>
                     <p style="font-size: 11.5px; color: var(--text-secondary);" id="tocProgressSub">0% ተነቧል</p>
                 </div>
                 <button class="btn-icon" onclick="closeTocModal()">✕</button>
@@ -1496,16 +1550,19 @@ html_content = f'''<!DOCTYPE html>
                 saveBookProgress(activeBookKey, activeChapterIdx, scrolled, markDone);
             }}
 
-            // Zen Mode: hide top header & chapter tabs when scrolling down, show when scrolling up
+            // Zen Mode: hide top header, tools row & chapter tabs when scrolling down, show when scrolling up
             const hdr = document.getElementById('readerHeader');
+            const toolsRow = document.getElementById('readerToolsRow');
             const tabs = document.getElementById('chapterTabs');
             const delta = winScroll - lastScrollY;
             if (winScroll > 120 && delta > 9) {{
                 if (hdr) hdr.classList.add('zen-hidden');
+                if (toolsRow) toolsRow.classList.add('zen-hidden');
                 if (tabs) tabs.classList.add('zen-hidden');
                 closeTypoPopover();
             }} else if (delta < -7 || winScroll < 60) {{
                 if (hdr) hdr.classList.remove('zen-hidden');
+                if (toolsRow) toolsRow.classList.remove('zen-hidden');
                 if (tabs) tabs.classList.remove('zen-hidden');
             }}
             lastScrollY = winScroll;
@@ -1568,6 +1625,8 @@ html_content = f'''<!DOCTYPE html>
             document.getElementById('view-home').style.display = 'none';
             document.getElementById('view-reader').style.display = 'block';
             document.getElementById('readerHeader').classList.remove('zen-hidden');
+            const toolsRow = document.getElementById('readerToolsRow');
+            if (toolsRow) toolsRow.classList.remove('zen-hidden');
             document.getElementById('chapterTabs').classList.remove('zen-hidden');
 
             // Kick off background fetch of full chapters immediately
@@ -1581,6 +1640,17 @@ html_content = f'''<!DOCTYPE html>
             if (isTextHighlighted(bookKey, chIdx, textContent)) {{
                 el.classList.add('highlighted');
             }}
+
+            // Clickable 🔖 badge at the bottom of highlighted paragraphs
+            const pinBtn = document.createElement('button');
+            pinBtn.className = 'hl-pin-btn';
+            pinBtn.title = 'የተቀመጡ ጥቅሶችን ክፈት';
+            pinBtn.innerText = '🔖';
+            pinBtn.onclick = (e) => {{
+                e.stopPropagation();
+                openHighlightsModal(bookKey);
+            }};
+            el.appendChild(pinBtn);
 
             // Long-press (500ms) to highlight & save quote (or long-press again to un-highlight)
             let _lpTimer = null;
@@ -1597,7 +1667,8 @@ html_content = f'''<!DOCTYPE html>
                 if (_lpTimer) {{ clearTimeout(_lpTimer); _lpTimer = null; }}
             }}
 
-            el.addEventListener('touchstart', () => {{
+            el.addEventListener('touchstart', (e) => {{
+                if (e.target.closest('.hl-pin-btn')) return;
                 _lpFired = false;
                 _lpTimer = setTimeout(fireLongPress, 500);
             }}, {{ passive: true }});
@@ -1611,6 +1682,7 @@ html_content = f'''<!DOCTYPE html>
 
             // Fallback for desktop: double-click
             el.addEventListener('dblclick', (e) => {{
+                if (e.target.closest('.hl-pin-btn')) return;
                 e.preventDefault();
                 const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
                 el.classList.toggle('highlighted', added);
@@ -1638,20 +1710,6 @@ html_content = f'''<!DOCTYPE html>
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
 
-            // Quick utility pills in the chapter bar (keeps top title header 100% unobstructed)
-            [
-                {{ label: '📑 ማውጫ', action: () => openTocModal() }},
-                {{ label: '🔍 ፈልግ', action: () => openSearchModal() }},
-                {{ label: '🔖 ጥቅሶች', action: () => openHighlightsModal(targetBookKey) }}
-            ].forEach(item => {{
-                const uBtn = document.createElement('button');
-                uBtn.className = 'ch-tab';
-                uBtn.style.borderColor = 'rgba(99, 102, 241, 0.35)';
-                uBtn.innerText = item.label;
-                uBtn.onclick = item.action;
-                tabsEl.appendChild(uBtn);
-            }});
-
             chapters.forEach((c, i) => {{
                 if (isOwned && i === 0) return;
                 const unlocked = isOwned || c.free;
@@ -1661,7 +1719,7 @@ html_content = f'''<!DOCTYPE html>
                 btn.innerText = unlocked ? ((isDone ? '✓ ' : '') + c.name) : ('🔒 ' + c.label);
                 btn.onclick = () => renderChapter(i, false);
                 tabsEl.appendChild(btn);
-                if (i === idx && idx > 1) {{
+                if (i === idx) {{
                     setTimeout(() => btn.scrollIntoView({{ behavior: 'smooth', inline: 'center', block: 'nearest' }}), 50);
                 }}
             }});
@@ -1843,7 +1901,7 @@ html_content = f'''<!DOCTYPE html>
             const completedArr = prog.completed || [];
             const overallPct = isOwned ? getBookOverallPct(activeBookKey) : 0;
 
-            document.getElementById('tocBookTitle').innerText = '📑 ' + meta.title;
+            document.getElementById('tocBookTitle').innerText = '🚪 ' + meta.title;
             document.getElementById('tocProgressSub').innerText = isOwned
                 ? `${{overallPct}}% ተነቧል • ${{completedArr.length}} / ${{Math.max(1, chapters.length - 1)}} ክፍሎች ተጠናቀዋል`
                 : '🔒 ሙሉውን ማውጫ ለመክፈት መጽሐፉን ይግዙ ወይም ይከራዩ';
@@ -2030,22 +2088,88 @@ html_content = f'''<!DOCTYPE html>
             document.getElementById('modal-quote-card').style.display = 'none';
         }}
 
-        function downloadQuoteCanvas() {{
+        async function downloadQuoteCanvas() {{
             const canvas = document.getElementById('quoteCanvas');
             if (!canvas) return;
+            const dataUrl = canvas.toDataURL('image/png');
+            showToast('⏳ ምስሉን በማውረድ ላይ...');
             try {{
-                const link = document.createElement('a');
-                link.download = 'baya-quote.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('📥 የጥቅስ ምስሉ ወርዷል!');
-            }} catch (e) {{
-                shareQuoteText(_activeCardQuote, _activeCardBookKey);
-            }}
+                const res = await fetch('/api/quote_card', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        uid: USER_ID,
+                        image: dataUrl,
+                        action: 'download'
+                    }})
+                }});
+                const data = await res.json();
+                if (data && data.download_url) {{
+                    const fullUrl = window.location.origin + data.download_url;
+                    if (tg && typeof tg.downloadFile === 'function') {{
+                        tg.downloadFile({{ url: fullUrl, file_name: 'baya-quote.png' }});
+                        showToast('📥 የጥቅስ ምስሉ ወርዷል!');
+                        return;
+                    }}
+                    const a = document.createElement('a');
+                    a.href = fullUrl;
+                    a.download = 'baya-quote.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    showToast('📥 የጥቅስ ምስሉ ወርዷል!');
+                    return;
+                }}
+            }} catch (err) {{}}
+            // Fallback local dataURL download
+            const link = document.createElement('a');
+            link.download = 'baya-quote.png';
+            link.href = dataUrl;
+            link.click();
+            showToast('📥 የጥቅስ ምስሉ ወርዷል!');
         }}
 
-        function shareCurrentQuoteCard() {{
-            shareQuoteText(_activeCardQuote, _activeCardBookKey);
+        async function shareCurrentQuoteCard() {{
+            const canvas = document.getElementById('quoteCanvas');
+            if (!canvas) return;
+            const meta = BOOKS_META[_activeCardBookKey] || {{}};
+            const caption = `“${{_activeCardQuote}}”\\n\\n— 📖 ${{meta.title || 'Baya Books'}}\\n✨ @bayabooks_bot`;
+            const dataUrl = canvas.toDataURL('image/png');
+
+            showToast('📤 ምስሉን በመላክ ላይ...');
+
+            // 1. Send the real PNG photo directly to the user's Telegram chat via Bot API
+            fetch('/api/quote_card', {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                body: JSON.stringify({{
+                    uid: USER_ID,
+                    image: dataUrl,
+                    caption: caption,
+                    action: 'send'
+                }})
+            }}).then(r => r.json()).then(d => {{
+                if (d && d.sent) {{
+                    showToast('✅ ምስሉ ወደ ቴሌግራም ቻትዎ ተልኳል! ለጓደኛዎ ያጋሩት');
+                }}
+            }}).catch(() => {{}});
+
+            // 2. Also open native OS image file share sheet if supported on mobile
+            if (navigator.canShare && canvas.toBlob) {{
+                canvas.toBlob(async (blob) => {{
+                    if (!blob) return;
+                    const file = new File([blob], 'baya-quote.png', {{ type: 'image/png' }});
+                    if (navigator.canShare({{ files: [file] }})) {{
+                        try {{
+                            await navigator.share({{
+                                files: [file],
+                                title: meta.title || 'Baya Books',
+                                text: caption
+                            }});
+                        }} catch (e) {{}}
+                    }}
+                }}, 'image/png');
+            }}
         }}
 
         // ══════════════════════════════════════════

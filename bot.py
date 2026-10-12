@@ -2836,6 +2836,8 @@ def handle_messages(message):
 # ══════════════════════════════════════════
 #  WEBHOOK HTTP SERVER (Render & Chapa)
 # ══════════════════════════════════════════
+import io
+_QUOTE_CARD_CACHE = {}
 
 def process_payment_success(tx_ref):
     if database.is_tx_ref_used(tx_ref):
@@ -3058,6 +3060,21 @@ class DummyHandler(BaseHTTPRequestHandler):
             return
 
 
+        if self.path.startswith('/api/quote_card_dl/'):
+            img_id = self.path.split('/')[-1].split('?')[0].replace('.png', '')
+            png_bytes = _QUOTE_CARD_CACHE.get(img_id)
+            if png_bytes:
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Disposition", 'attachment; filename="baya-quote.png"')
+                self.send_header("Content-Length", str(len(png_bytes)))
+                self.end_headers()
+                self.wfile.write(png_bytes)
+            else:
+                self.send_response(404)
+                self.end_headers()
+            return
+
         if self.path.startswith('/auto-verify-shegerpay/'):
             tx_ref = self.path.split('/')[-1]
             import shegerpay
@@ -3076,6 +3093,48 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"Baya Books Bot is running!")
             
     def do_POST(self):
+        if self.path == '/api/quote_card':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                import base64
+                data = json.loads(post_data.decode('utf-8'))
+                uid = str(data.get('uid') or '').strip()
+                img_b64 = data.get('image') or ''
+                caption = data.get('caption') or ''
+                action = data.get('action') or 'send'
+                if ',' in img_b64:
+                    img_b64 = img_b64.split(',', 1)[1]
+                png_bytes = base64.b64decode(img_b64)
+                img_id = uuid.uuid4().hex[:12]
+                if len(_QUOTE_CARD_CACHE) > 60:
+                    _QUOTE_CARD_CACHE.clear()
+                _QUOTE_CARD_CACHE[img_id] = png_bytes
+                sent_to_tg = False
+                if uid and uid.isdigit() and action == 'send':
+                    try:
+                        bio = io.BytesIO(png_bytes)
+                        bio.name = 'baya-quote.png'
+                        bot.send_photo(int(uid), bio, caption=caption)
+                        sent_to_tg = True
+                    except Exception as tg_err:
+                        logging.error(f"Failed to send quote photo to {uid}: {tg_err}")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "ok": True,
+                    "sent": sent_to_tg,
+                    "download_url": f"/api/quote_card_dl/{img_id}.png"
+                }).encode('utf-8'))
+            except Exception as e:
+                logging.error(f"/api/quote_card error: {e}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
         if self.path == '/shegerpay-webhook':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)

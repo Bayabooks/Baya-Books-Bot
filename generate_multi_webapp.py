@@ -316,11 +316,11 @@ html_content = f'''<!DOCTYPE html>
         .progress-bar-fill {{ height: 100%; width: 0%; background: var(--accent-gradient); box-shadow: 0 0 8px rgba(99, 102, 241, 0.6); transition: width 0.15s ease; }}
 
         .reader-top-title {{
-            font-size: 13px; font-weight: 700; color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
-            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            font-size: 13.5px; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            flex: 1; min-width: 0; margin: 0 10px; cursor: pointer; display: block;
         }}
-        .reader-controls {{ display: flex; align-items: center; gap: 6px; position: relative; }}
+        .reader-controls {{ display: flex; align-items: center; gap: 6px; flex-shrink: 0; }}
 
         /* Chapter Tabs Bar */
         .chapter-tabs {{
@@ -931,9 +931,6 @@ html_content = f'''<!DOCTYPE html>
             <button class="btn-icon" onclick="closeReader()" title="Back">‹</button>
             <div class="reader-top-title" id="readerBookTitle" onclick="openTocModal()" title="ማውጫ ክፈት">የመጽሐፍ ርዕስ ▾</div>
             <div class="reader-controls">
-                <button class="btn-icon" onclick="openSearchModal()" title="በመጽሐፉ ውስጥ ፈልግ">🔍</button>
-                <button class="btn-icon" onclick="openTocModal()" title="ማውጫ (Chapters)">📑</button>
-                <button class="btn-icon" onclick="openHighlightsModal(activeBookKey)" title="የተቀመጡ ጥቅሶች">🔖</button>
                 <button class="btn-icon" onclick="adjustFontSize(-1)" title="Smaller">A-</button>
                 <button class="btn-icon" onclick="adjustFontSize(1)" title="Larger">A+</button>
                 <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
@@ -1631,6 +1628,21 @@ html_content = f'''<!DOCTYPE html>
             // Render Chapter Tabs immediately (skip Chapter 0 overview for owned books)
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
+
+            // Quick utility pills in the chapter bar (keeps top title header 100% unobstructed)
+            [
+                {{ label: '📑 ማውጫ', action: () => openTocModal() }},
+                {{ label: '🔍 ፈልግ', action: () => openSearchModal() }},
+                {{ label: '🔖 ጥቅሶች', action: () => openHighlightsModal(targetBookKey) }}
+            ].forEach(item => {{
+                const uBtn = document.createElement('button');
+                uBtn.className = 'ch-tab';
+                uBtn.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                uBtn.innerText = item.label;
+                uBtn.onclick = item.action;
+                tabsEl.appendChild(uBtn);
+            }});
+
             chapters.forEach((c, i) => {{
                 if (isOwned && i === 0) return;
                 const unlocked = isOwned || c.free;
@@ -1640,7 +1652,7 @@ html_content = f'''<!DOCTYPE html>
                 btn.innerText = unlocked ? ((isDone ? '✓ ' : '') + c.name) : ('🔒 ' + c.label);
                 btn.onclick = () => renderChapter(i, false);
                 tabsEl.appendChild(btn);
-                if (i === idx) {{
+                if (i === idx && idx > 1) {{
                     setTimeout(() => btn.scrollIntoView({{ behavior: 'smooth', inline: 'center', block: 'nearest' }}), 50);
                 }}
             }});

@@ -234,6 +234,7 @@ ADMIN_MENU_COMMANDS = [
     BotCommand("del_last", "🗑️ Delete last payment record"),
     BotCommand("getlogs", "📋 View recent server logs"),
     BotCommand("reset_advice", "🔄 Reset my conversation history"),
+    BotCommand("refresh_menus", "🔄 Push new menu to all users"),
     BotCommand("bayacontrol", "⚙️ Admin Control Panel"),
 ]
 
@@ -467,14 +468,17 @@ def get_bottom_markup(lang='am', uid=None):
         KeyboardButton(S(lang, 'menu_invite')),
         KeyboardButton(S(lang, 'menu_lang'))
     )
+    
+    # Library Mini App Button (Active for all users)
+    lib_url = f"{config.BASE_URL}/app?uid={uid}" if uid else f"{config.BASE_URL}/app"
+    m.add(
+        KeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=lib_url))
+    )
+    
     if uid and is_admin_uid(uid):
-        from telebot.types import WebAppInfo
         m.add(
             KeyboardButton(S(lang, 'menu_support')),
             KeyboardButton("⚙️ Dashboard")
-        )
-        m.add(
-            KeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}"))
         )
     else:
         m.add(
@@ -1223,6 +1227,81 @@ def perform_admin_user_lookup(chat_id, caller_user, query_text="", forwarded_msg
     bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
     return True
 
+def run_refresh_all_menus(chat_id_to_report):
+    users = database.get_all_user_ids()
+    total = len(users)
+    bot.send_message(
+        chat_id_to_report,
+        f"🔄 <b>Starting Menu Refresh for all {total} users...</b>\nThis runs in the background and will notify you when complete.",
+        parse_mode="HTML"
+    )
+
+    def worker():
+        import time
+        success, failed = 0, 0
+        for u in users:
+            try:
+                u_lang = database.get_bot_language(u) or 'am'
+                announcements = {
+                    'am': (
+                        "📚 <b>ታላቅ ዜና! አዲሱ የ Baya Books ዲጂታል መጻሕፍት ቤት ክፍት ሆኗል!</b> 🎉\n\n"
+                        "ምርጥ የህይወት፣ የስነ-ልቦና እና የቢዝነስ መጻሕፍትን በነጻ ማሳያ ለማንበብ ወይም በቅናሽ ለመከራየት "
+                        "ከታች በሜኑ ላይ የተጨመረውን <b>«📚 መጻሕፍት ቤት (Library)»</b> አሁኑኑ ይጫኑ!\n\n"
+                        "👇 <i>የታደሰውን የቦት ሜኑ ከታች ይመልከቱ፦</i>"
+                    ),
+                    'en': (
+                        "📚 <b>Big News! The new Baya Books Digital Library is now LIVE!</b> 🎉\n\n"
+                        "Explore bestselling books, read free chapters, and rent full books by tapping "
+                        "<b>«📚 መጻሕፍት ቤት (Library)»</b> on your bottom menu below!\n\n"
+                        "👇 <i>Check out your refreshed menu below:</i>"
+                    ),
+                    'ti': (
+                        "📚 <b>ዓቢ ዜና! ሓዱሽ ዲጂታል ቤት መጻሕፍቲ Baya Books ተኸፊቱ ኣሎ!</b> 🎉\n\n"
+                        "ካብ ታሕቲ ዘሎ <b>«📚 መጻሕፍት ቤት (Library)»</b> ብምጥዋቕ መጻሕፍቲ ብነጻ ኣንብቡ ወይ ብሕሳብ ተኻረዩ!\n\n"
+                        "👇 <i>ነቲ ዝተሓደሰ ሜኑ ኣብ ታሕቲ ርኣይዎ፦</i>"
+                    ),
+                    'om': (
+                        "📚 <b>Oduu Gammachiisaa! Mana Kitaabaa Diijitaalaa Baya Books haaraa banameera!</b> 🎉\n\n"
+                        "Kitaabota filatamoo dubbisuuf ykn kireeffachuuf baafata armaan gadii irraa "
+                        "<b>«📚 መጻሕፍት ቤት (Library)»</b> isa jedhu tuqaa!\n\n"
+                        "👇 <i>Baafata haarome armaan gaditti ilaalaa:</i>"
+                    )
+                }
+                announcement = announcements.get(u_lang) or announcements['am']
+                
+                bot.send_message(
+                    u,
+                    announcement,
+                    parse_mode="HTML",
+                    reply_markup=get_bottom_markup(u_lang, u)
+                )
+                success += 1
+                database.mark_user_blocked(u, 0)
+            except Exception:
+                failed += 1
+                database.mark_user_blocked(u, 1)
+            time.sleep(0.05)  # Telegram rate limit safety
+            
+        try:
+            bot.send_message(
+                chat_id_to_report,
+                f"✅ <b>All Menus Refreshed Successfully!</b>\n\n"
+                f"✔️ <b>{success}</b> users received the new bottom menu\n"
+                f"❌ <b>{failed}</b> users skipped (blocked/inactive)",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+
+    threading.Thread(target=worker, daemon=True).start()
+
+@bot.message_handler(commands=["refresh_menus", "refresh_menu"])
+def cmd_refresh_menus(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    run_refresh_all_menus(message.chat.id)
+
 def show_admin_menu(chat_id, user):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -1240,6 +1319,9 @@ def show_admin_menu(chat_id, user):
     markup.add(
         InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
+    )
+    markup.add(
+        InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
     )
     
     total_users = database.get_total_user_count()
@@ -1644,6 +1726,12 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
         show_admin_menu(chat_id, call.from_user)
+        return
+
+    if data == "adm_refresh_menus":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "🔄 Starting refresh...", show_alert=False)
+        run_refresh_all_menus(chat_id)
         return
     
     # ── Admin: User Search ────────────────────

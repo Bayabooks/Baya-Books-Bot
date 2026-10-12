@@ -1143,7 +1143,10 @@ html_content = f'''<!DOCTYPE html>
         function closePayModal() {{
             document.getElementById('modal-pay').style.display = 'none';
         }}
+        let _isReturningToBot = false;
         async function returnToBot() {{
+            if (_isReturningToBot) return;
+            _isReturningToBot = true;
             const b = BOOKS_META[activePayBookKey] || BOOKS_META[activeBookKey];
             const uid = getUserId();
             const btn = document.querySelector('#modal-pay .btn-primary');
@@ -1151,30 +1154,19 @@ html_content = f'''<!DOCTYPE html>
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳ ወደ ቦቱ በመላክ ላይ...</span>';
             }}
-            if (tg && typeof tg.sendData === 'function' && b) {{
-                try {{
-                    tg.sendData(JSON.stringify({{
-                        action: 'select_book',
-                        book: b.key,
-                        mode: activePayMode
-                    }}));
-                }} catch (e) {{}}
-            }}
             if (b && uid) {{
                 const url = '/api/select_book?uid=' + encodeURIComponent(uid) + '&book=' + encodeURIComponent(b.key) + '&mode=' + encodeURIComponent(activePayMode) + '&notify=1';
                 try {{
-                    if (navigator.sendBeacon) {{
-                        try {{ navigator.sendBeacon(url); }} catch (e) {{}}
-                    }}
                     await fetch(url, {{ keepalive: true, cache: 'no-store' }});
                 }} catch (e) {{
                     console.error('select_book error:', e);
                 }}
             }}
             setTimeout(() => {{
+                _isReturningToBot = false;
                 if (tg) tg.close();
                 else closePayModal();
-            }}, 300);
+            }}, 150);
         }}
 
         // Initialize Store on Load

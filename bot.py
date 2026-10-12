@@ -909,8 +909,19 @@ def notify_user_book_unlocked(uid, book_key, days=None):
     except Exception as e:
         logging.error(f"Failed to notify user {uid} of unlocked book: {e}")
 
+_book_prompt_lock = threading.Lock()
+_last_book_prompt = {}
+
 def send_book_checkout_prompt(uid_int, book_key, mode):
     try:
+        import time as _time
+        now_ts = _time.time()
+        with _book_prompt_lock:
+            prev = _last_book_prompt.get(uid_int)
+            if prev and prev[0] == book_key and prev[1] == mode and (now_ts - prev[2]) < 5.0:
+                return True
+            _last_book_prompt[uid_int] = (book_key, mode, now_ts)
+
         rand_suffix = uuid.uuid4().hex[:6].upper()
         b_title = BOOK_TITLES.get(book_key, book_key)
         if mode == 'rent':

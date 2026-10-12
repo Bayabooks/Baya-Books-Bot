@@ -335,6 +335,17 @@ html_content = f'''<!DOCTYPE html>
             pointer-events: none;
         }}
         .chapter-tabs::-webkit-scrollbar {{ display: none; }}
+        .chapter-tabs::after {{
+            content: '';
+            position: sticky;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            min-width: 32px;
+            flex-shrink: 0;
+            background: linear-gradient(to right, transparent, var(--bg-secondary) 85%);
+            pointer-events: none;
+        }}
         .ch-tab {{
             padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 700;
             background: var(--bg-card); color: var(--text-secondary);
@@ -585,6 +596,12 @@ html_content = f'''<!DOCTYPE html>
             align-items: center;
             gap: 8px;
             backdrop-filter: blur(12px);
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }}
+        #readingStatusPill.faded {{
+            opacity: 0;
+            pointer-events: none;
         }}
 
         /* Toast Notification */
@@ -727,6 +744,91 @@ html_content = f'''<!DOCTYPE html>
         }}
         .bank-name {{ font-size: 11px; color: var(--text-muted); }}
         .bank-acc {{ font-size: 14px; font-weight: 700; user-select: all; }}
+
+        /* Reading Streak & Daily Goal Bar */
+        .streak-goal-card {{
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: var(--shadow);
+        }}
+        .streak-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 158, 11, 0.14);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #fbbf24;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }}
+        .goal-progress-wrap {{
+            flex: 1;
+            min-width: 0;
+        }}
+        .goal-progress-top {{
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }}
+        .goal-bar-bg {{
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 99px;
+            overflow: hidden;
+        }}
+        .goal-bar-fill {{
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #10b981);
+            border-radius: 99px;
+            transition: width 0.35s ease;
+        }}
+
+        /* Search Input & Results */
+        .search-input {{
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 13.5px;
+            outline: none;
+            margin-bottom: 12px;
+        }}
+        .search-input:focus {{
+            border-color: var(--accent);
+        }}
+        .search-hit-mark {{
+            background: rgba(245, 158, 11, 0.35);
+            color: #fde68a;
+            padding: 0 3px;
+            border-radius: 4px;
+            font-weight: 700;
+        }}
+        .hl-note-box {{
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 2.5px solid var(--accent);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+        }}
     </style>
 </head>
 <body>
@@ -749,7 +851,6 @@ html_content = f'''<!DOCTYPE html>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <button class="btn-icon" onclick="openHighlightsModal('all')" title="Saved Quotes">🔖</button>
-                <button class="btn-icon" onclick="toggleTheme()" title="Theme">🌓</button>
             </div>
         </header>
 
@@ -758,6 +859,20 @@ html_content = f'''<!DOCTYPE html>
                 <div class="hero-tag">✨ የዕለቱ ምርጥ ስጦታ</div>
                 <h2 class="hero-title">የዓለማችን ተፅዕኖ ፈጣሪ የስነ-ልቦና መጻሕፍት</h2>
                 <p class="hero-desc">ጥልቅ ግንዛቤ፣ የተግባር መመሪያ እና የህይወት ለውጥ የሚያመጡ መጻሕፍትን በደቂቃዎች ውስጥ ያንብቡ።</p>
+            </div>
+
+            <!-- Daily Reading Goal & Streak Bar -->
+            <div class="streak-goal-card" onclick="cycleDailyGoal()" title="ዕለታዊ የንባብ ግብ ለመቀየር ይጫኑ">
+                <div class="streak-badge" id="streakBadge">🔥 1 ቀን</div>
+                <div class="goal-progress-wrap">
+                    <div class="goal-progress-top">
+                        <span id="goalStatusText">🎯 የዛሬ ንባብ፦ 0 / 15 ደቂቃ</span>
+                        <span id="goalTotalBooksText" style="color: #34d399;">⏱ ግብ ቀይር ▾</span>
+                    </div>
+                    <div class="goal-bar-bg">
+                        <div class="goal-bar-fill" id="goalBarFill" style="width: 0%;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Dedicated My Books Section (Auto-shows when customer owns >= 1 book) -->
@@ -815,6 +930,7 @@ html_content = f'''<!DOCTYPE html>
             <button class="btn-icon" onclick="closeReader()" title="Back">‹</button>
             <div class="reader-top-title" id="readerBookTitle" onclick="openTocModal()" title="ማውጫ ክፈት">የመጽሐፍ ርዕስ ▾</div>
             <div class="reader-controls">
+                <button class="btn-icon" onclick="openSearchModal()" title="በመጽሐፉ ውስጥ ፈልግ">🔍</button>
                 <button class="btn-icon" onclick="openTocModal()" title="ማውጫ (Chapters)">📑</button>
                 <button class="btn-icon" onclick="openHighlightsModal(activeBookKey)" title="የተቀመጡ ጥቅሶች">🔖</button>
                 <button class="btn-icon" onclick="toggleTypoPopover(event)" title="የፊደል እና ገጽታ ማስተካከያ">Aa</button>
@@ -852,7 +968,7 @@ html_content = f'''<!DOCTYPE html>
         <!-- Chapter Switcher Bar -->
         <div class="chapter-tabs" id="chapterTabs"></div>
 
-        <div class="reader-content" id="readerBody" onclick="closeTypoPopover()">
+        <div class="reader-content" id="readerBody" onclick="handleReaderBodyTap()">
             <!-- Dynamic Chapter Content -->
             <div id="readerChapterContent"></div>
 
@@ -890,6 +1006,40 @@ html_content = f'''<!DOCTYPE html>
     <div id="readerToast">✅ ተቀምጧል!</div>
 
     <!-- ══════════════════════════════════════════
+         MODAL: IN-BOOK SEARCH (🔍 ፈልግ)
+    ══════════════════════════════════════════ -->
+    <div id="modal-search" class="modal-overlay" onclick="closeSearchModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800;">🔍 በመጽሐፉ ውስጥ ፈልግ</h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);" id="searchBookSub">ቃል ወይም ሐረግ ይጻፉ</p>
+                </div>
+                <button class="btn-icon" onclick="closeSearchModal()">✕</button>
+            </div>
+            <input type="text" id="bookSearchInput" class="search-input" placeholder="ለምሳሌ፦ ፍቅር፣ ድንበር፣ ትኩረት..." oninput="runBookSearch(this.value)">
+            <div class="drawer-list" id="searchResultsList"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         MODAL: QUOTE IMAGE CARD (🖼️ ምስል አጋራ)
+    ══════════════════════════════════════════ -->
+    <div id="modal-quote-card" class="modal-overlay" onclick="closeQuoteCardModal()">
+        <div class="modal-card" onclick="event.stopPropagation()" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <h3 style="font-size: 15px; font-weight: 800;">🖼️ የጥቅስ ምስል (Quote Card)</h3>
+                <button class="btn-icon" onclick="closeQuoteCardModal()">✕</button>
+            </div>
+            <canvas id="quoteCanvas" width="720" height="720" style="width: 100%; max-width: 320px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 12px;"></canvas>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="downloadQuoteCanvas()">📥 ምስል አውርድ</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="shareCurrentQuoteCard()">📤 በቴሌግራም አጋራ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
          MODAL: TABLE OF CONTENTS (📑 ማውጫ)
     ══════════════════════════════════════════ -->
     <div id="modal-toc" class="modal-overlay" onclick="closeTocModal()">
@@ -913,7 +1063,7 @@ html_content = f'''<!DOCTYPE html>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <div>
                     <h3 style="font-size: 16px; font-weight: 800;">🔖 የተቀመጡ ጥቅሶች እና ማስታወሻዎች</h3>
-                    <p style="font-size: 11.5px; color: var(--text-secondary);">አንቀጾችን ሁለቴ በመጫን (Double-tap) እዚህ ማስቀመጥ ይችላሉ</p>
+                    <p style="font-size: 11.5px; color: var(--text-secondary);">አንቀጾችን ረዘም ብለው በመጫን (Long-press) እዚህ ማስቀመጥ ይችላሉ</p>
                 </div>
                 <button class="btn-icon" onclick="closeHighlightsModal()">✕</button>
             </div>
@@ -925,7 +1075,7 @@ html_content = f'''<!DOCTYPE html>
     <!-- ══════════════════════════════════════════
          MODAL: PAYMENT (399 Buy / 149 10d Rent / 49 +5d Extend)
     ══════════════════════════════════════════ -->
-    <div id="modal-pay" class="modal-overlay" onclick="closePayModal(event)">
+    <div id="modal-pay" class="modal-overlay">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <h3 class="modal-title" id="modalBookTitle">📱 የክፍያ መረጃ</h3>
@@ -1000,6 +1150,7 @@ html_content = f'''<!DOCTYPE html>
         let activeChapterMins = 5;
         let lastScrollY = 0;
         let _toastTimer = null;
+        let _pillFadeTimer = null;
 
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) {{ tg.ready(); tg.expand(); }}
@@ -1277,6 +1428,7 @@ html_content = f'''<!DOCTYPE html>
             const myBookKeys = [...new Set([...ownedBooks, ...expiredBooks])];
             document.getElementById('mybooks-count').innerText = myBookKeys.length;
             updateHighlightsBadge();
+            renderStreakGoalBar();
 
             // Top My Books Highlight Box (shown on 'all' view when user has owned or expired-rental books)
             const mySection = document.getElementById('my-books-section');
@@ -1346,12 +1498,15 @@ html_content = f'''<!DOCTYPE html>
 
             if (pill) {{
                 pill.style.display = 'flex';
+                pill.classList.remove('faded');
                 const pctRound = Math.round(scrolled);
                 const remMins = Math.max(1, Math.ceil(activeChapterMins * (1 - scrolled / 100)));
                 document.getElementById('pillChapterPct').innerText = pctRound + '%';
                 document.getElementById('pillTimeLeft').innerText = scrolled >= 94
                     ? '✓ ክፍሉ ተጠናቋል'
                     : `⏱ ቀሪ ~${{remMins}} ደቂቃ`;
+                if (_pillFadeTimer) clearTimeout(_pillFadeTimer);
+                _pillFadeTimer = setTimeout(() => pill.classList.add('faded'), 3000);
             }}
 
             // Auto-save reading progress & mark chapter completed at >= 85% scroll
@@ -1374,6 +1529,17 @@ html_content = f'''<!DOCTYPE html>
             }}
             lastScrollY = winScroll;
         }}, {{ passive: true }});
+
+        function handleReaderBodyTap() {{
+            closeTypoPopover();
+            const pill = document.getElementById('readingStatusPill');
+            if (pill && document.getElementById('view-reader').style.display === 'block') {{
+                pill.style.display = 'flex';
+                pill.classList.remove('faded');
+                if (_pillFadeTimer) clearTimeout(_pillFadeTimer);
+                _pillFadeTimer = setTimeout(() => pill.classList.add('faded'), 3000);
+            }}
+        }}
 
         function ensureFullBookLoaded(bookKey) {{
             if (FULL_LOADED_FLAG[bookKey]) return Promise.resolve(LOADED_CHAPTERS[bookKey]);
@@ -1406,7 +1572,9 @@ html_content = f'''<!DOCTYPE html>
             if (!meta) return;
 
             activeBookKey = bookKey;
-            const targetIdx = (typeof chIdx === 'number') ? chIdx : 0;
+            const isOwned = ownedBooks.includes(bookKey);
+            let targetIdx = (typeof chIdx === 'number') ? chIdx : (isOwned ? 1 : 0);
+            if (isOwned && targetIdx === 0) targetIdx = 1;
 
             // Immediately clear previous book DOM so another book's content is NEVER shown
             document.getElementById('readerBookTitle').innerText = meta.title + ' ▾';
@@ -1424,7 +1592,7 @@ html_content = f'''<!DOCTYPE html>
             // Kick off background fetch of full chapters immediately
             ensureFullBookLoaded(bookKey).catch(() => {{}});
 
-            // Render requested chapter (Chapter 0 is already embedded so it opens in 0ms!)
+            // Render requested chapter
             await renderChapter(targetIdx, restoreScroll);
         }}
 
@@ -1434,6 +1602,14 @@ html_content = f'''<!DOCTYPE html>
             }}
             const actBar = document.createElement('span');
             actBar.className = 'block-actions';
+
+            const imgBtn = document.createElement('button');
+            imgBtn.className = 'block-act-btn';
+            imgBtn.innerText = '🖼️ ምስል';
+            imgBtn.onclick = (e) => {{
+                e.stopPropagation();
+                openQuoteCardModal(textContent, bookKey);
+            }};
 
             const shareBtn = document.createElement('button');
             shareBtn.className = 'block-act-btn';
@@ -1451,22 +1627,45 @@ html_content = f'''<!DOCTYPE html>
                 removeHighlightFromDom(delBtn, bookKey, chIdx, chLabel, textContent);
             }};
 
+            actBar.appendChild(imgBtn);
             actBar.appendChild(shareBtn);
             actBar.appendChild(delBtn);
             el.appendChild(actBar);
 
-            // Double-tap / double-click to highlight & save quote
-            let lastTap = 0;
-            el.addEventListener('click', (e) => {{
-                const now = Date.now();
-                if (now - lastTap < 340) {{
-                    e.preventDefault();
-                    const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
-                    el.classList.toggle('highlighted', added);
-                    lastTap = 0;
-                }} else {{
-                    lastTap = now;
-                }}
+            // Long-press (500ms) to highlight & save quote — avoids zoom/text-select conflicts on mobile
+            let _lpTimer = null;
+            let _lpFired = false;
+
+            function fireLongPress() {{
+                _lpFired = true;
+                try {{ navigator.vibrate(50); }} catch (e) {{}}
+                const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+                el.classList.toggle('highlighted', added);
+            }}
+
+            function cancelLongPress() {{
+                if (_lpTimer) {{ clearTimeout(_lpTimer); _lpTimer = null; }}
+            }}
+
+            el.addEventListener('touchstart', (e) => {{
+                if (e.target.closest('.block-act-btn')) return;
+                _lpFired = false;
+                _lpTimer = setTimeout(fireLongPress, 500);
+            }}, {{ passive: true }});
+
+            el.addEventListener('touchmove', cancelLongPress, {{ passive: true }});
+            el.addEventListener('touchend', (e) => {{
+                cancelLongPress();
+                if (_lpFired) {{ e.preventDefault(); }}
+            }});
+            el.addEventListener('touchcancel', cancelLongPress);
+
+            // Fallback for desktop: double-click
+            el.addEventListener('dblclick', (e) => {{
+                if (e.target.closest('.block-act-btn')) return;
+                e.preventDefault();
+                const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
+                el.classList.toggle('highlighted', added);
             }});
         }}
 
@@ -1493,10 +1692,11 @@ html_content = f'''<!DOCTYPE html>
             const prog = getReadingProgressMap()[targetBookKey] || {{ completed: [] }};
             const completedArr = prog.completed || [];
 
-            // Render Chapter Tabs immediately
+            // Render Chapter Tabs immediately (skip Chapter 0 overview for owned books)
             const tabsEl = document.getElementById('chapterTabs');
             tabsEl.innerHTML = '';
             chapters.forEach((c, i) => {{
+                if (isOwned && i === 0) return;
                 const unlocked = isOwned || c.free;
                 const isDone = completedArr.includes(i);
                 const btn = document.createElement('button');
@@ -1555,14 +1755,14 @@ html_content = f'''<!DOCTYPE html>
 
             const timePill = document.createElement('div');
             timePill.style.cssText = 'font-size:11.5px; font-weight:700; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid var(--border-light);';
-            timePill.innerText = `⏱ ~${{activeChapterMins}} ደቂቃ ንባብ • 💡 አንቀጽ ሁለቴ ይጫኑ ለማስቀመጥ`;
+            timePill.innerText = `⏱ ~${{activeChapterMins}} ደቂቃ ንባብ • 💡 አንቀጽ ረዘም ብለው ይጫኑ ለማስቀመጥ`;
             badgeRow.appendChild(timePill);
 
             headerCard.appendChild(badgeRow);
 
             let firstParaRendered = false;
 
-            ch.blocks.forEach(b => {{
+            ch.blocks.forEach((b, bIdx) => {{
                 if (b.type === 'subtitle') {{
                     const sub = document.createElement('h2');
                     sub.className = 'ch-main-subtitle';
@@ -1572,6 +1772,7 @@ html_content = f'''<!DOCTYPE html>
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
                     const qBox = document.createElement('div');
                     qBox.className = 'reader-quote';
+                    qBox.id = 'rblock-' + bIdx;
                     const qTxt = document.createElement('div');
                     qTxt.className = 'reader-quote-text';
                     qTxt.innerText = b.text;
@@ -1593,6 +1794,14 @@ html_content = f'''<!DOCTYPE html>
                         toggleHighlightItem(targetBookKey, idx, ch.label, b.text);
                     }};
 
+                    const imgQBtn = document.createElement('button');
+                    imgQBtn.className = 'block-act-btn';
+                    imgQBtn.innerText = '🖼️ ምስል';
+                    imgQBtn.onclick = (e) => {{
+                        e.stopPropagation();
+                        openQuoteCardModal(b.text, targetBookKey);
+                    }};
+
                     const shareQBtn = document.createElement('button');
                     shareQBtn.className = 'block-act-btn';
                     shareQBtn.innerText = '📤 አጋራ';
@@ -1602,6 +1811,7 @@ html_content = f'''<!DOCTYPE html>
                     }};
 
                     qTools.appendChild(saveQBtn);
+                    qTools.appendChild(imgQBtn);
                     qTools.appendChild(shareQBtn);
                     qBox.appendChild(qTools);
                     contentEl.appendChild(qBox);
@@ -1609,12 +1819,14 @@ html_content = f'''<!DOCTYPE html>
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
                     const h4 = document.createElement('h4');
                     h4.className = 'reader-h4';
+                    h4.id = 'rblock-' + bIdx;
                     h4.innerText = b.text;
                     contentEl.appendChild(h4);
                 }} else if (b.type === 'li') {{
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
                     const li = document.createElement('div');
                     li.className = 'reader-li';
+                    li.id = 'rblock-' + bIdx;
                     li.innerHTML = `<span class="reader-li-dot">✦</span><div>${{b.text}}</div>`;
                     attachHighlightBehavior(li, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(li);
@@ -1628,6 +1840,7 @@ html_content = f'''<!DOCTYPE html>
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);
                     const p = document.createElement('p');
                     p.className = 'reader-p' + (!firstParaRendered ? ' lead-p' : '');
+                    p.id = 'rblock-' + bIdx;
                     firstParaRendered = true;
                     p.innerText = b.text;
                     attachHighlightBehavior(p, targetBookKey, idx, ch.label, b.text);
@@ -1635,11 +1848,12 @@ html_content = f'''<!DOCTYPE html>
                 }}
             }});
 
-            // Render Bottom Navigation
+            // Render Bottom Navigation (hide Chapter 0 back link for owned books)
             const navFooter = document.getElementById('chapterNavFooter');
             navFooter.innerHTML = '';
 
-            if (idx > 0) {{
+            const minBackIdx = isOwned ? 1 : 0;
+            if (idx > minBackIdx) {{
                 const prevBtn = document.createElement('button');
                 prevBtn.className = 'btn btn-outline';
                 prevBtn.style.padding = '13px';
@@ -1709,6 +1923,7 @@ html_content = f'''<!DOCTYPE html>
 
             const listEl = document.getElementById('tocList');
             listEl.innerHTML = chapters.map((c, i) => {{
+                if (isOwned && i === 0) return '';
                 const unlocked = isOwned || c.free;
                 const isDone = completedArr.includes(i);
                 const isCurrent = i === activeChapterIdx;
@@ -1739,7 +1954,7 @@ html_content = f'''<!DOCTYPE html>
         }}
 
         // ══════════════════════════════════════════
-        // 4. HIGHLIGHTS & QUOTES MODAL (🔖 ጥቅሶች)
+        // 4. HIGHLIGHTS, NOTES & QUOTE IMAGE CARD (🔖 ጥቅሶች)
         // ══════════════════════════════════════════
         function openHighlightsModal(filterBookKey) {{
             const all = getSavedHighlights();
@@ -1753,18 +1968,21 @@ html_content = f'''<!DOCTYPE html>
                     <div style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">
                         <div style="font-size: 34px; margin-bottom: 8px;">🔖</div>
                         <div style="font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">ገና የተቀመጠ ጥቅስ የለም</div>
-                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ሁለቴ በመጫን (Double-tap)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
+                        <div style="font-size: 12.5px; line-height: 1.6;">መጽሐፍ በሚያነቡበት ጊዜ የወደዱትን አንቀጽ ወይም ነጥብ <b>ረዘም ብለው በመጫን (Long-press)</b> በወርቃማ ቀለም ማስመር እና እዚህ ማስቀመጥ ይችላሉ!</div>
                     </div>
                 `;
             }} else {{
                 container.innerHTML = list.map(h => `
                     <div class="hl-card">
                         <div class="hl-text">“${{h.text}}”</div>
-                        <div class="hl-meta">
+                        ${{h.note ? `<div class="hl-note-box">📝 <b>የግል ማስታወሻ፦</b> ${{h.note}}</div>` : ''}}
+                        <div class="hl-meta" style="margin-top: 8px;">
                             <span style="cursor:pointer; color:#a5b4fc; font-weight:700;" onclick="closeHighlightsModal(); openReader('${{h.bookKey}}', ${{h.chIdx || 1}}, false)">
                                 📖 ${{h.bookTitle}} (${{h.chLabel}})
                             </span>
-                            <div style="display:flex; gap:6px;">
+                            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                                <button class="block-act-btn" onclick="editHighlightNote('${{h.id}}', '${{filterBookKey || 'all'}}')">📝 ማስታወሻ</button>
+                                <button class="block-act-btn" onclick="openQuoteCardById('${{h.id}}')">🖼️ ምስል</button>
                                 <button class="block-act-btn" onclick="shareHighlightById('${{h.id}}')">📤 አጋራ</button>
                                 <button class="block-act-btn" onclick="deleteHighlightById('${{h.id}}', '${{filterBookKey || 'all'}}')">🗑️</button>
                             </div>
@@ -1773,6 +1991,23 @@ html_content = f'''<!DOCTYPE html>
                 `).join('');
             }}
             document.getElementById('modal-highlights').style.display = 'flex';
+        }}
+
+        function editHighlightNote(id, currentFilter) {{
+            const list = getSavedHighlights();
+            const item = list.find(h => h.id === id);
+            if (!item) return;
+            const note = window.prompt('📝 ለዚህ ጥቅስ የግል ማስታወሻዎን ይጻፉ፦', item.note || '');
+            if (note === null) return;
+            item.note = note.trim();
+            setSavedHighlights(list);
+            openHighlightsModal(currentFilter);
+            showToast('✅ ማስታወሻዎ ተቀምጧል!');
+        }}
+
+        function openQuoteCardById(id) {{
+            const item = getSavedHighlights().find(h => h.id === id);
+            if (item) openQuoteCardModal(item.text, item.bookKey);
         }}
 
         function shareHighlightById(id) {{
@@ -1789,6 +2024,250 @@ html_content = f'''<!DOCTYPE html>
         function closeHighlightsModal() {{
             document.getElementById('modal-highlights').style.display = 'none';
         }}
+
+        // ══════════════════════════════════════════
+        // 4B. CANVAS QUOTE CARD GENERATOR (🖼️)
+        // ══════════════════════════════════════════
+        let _activeCardQuote = '';
+        let _activeCardBookKey = '';
+
+        function openQuoteCardModal(text, bookKey) {{
+            _activeCardQuote = (text || '').trim();
+            _activeCardBookKey = bookKey || activeBookKey;
+            const meta = BOOKS_META[_activeCardBookKey] || {{}};
+            const canvas = document.getElementById('quoteCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+
+            // Rich dark gradient background
+            const grad = ctx.createLinearGradient(0, 0, W, H);
+            grad.addColorStop(0, '#0f172a');
+            grad.addColorStop(0.5, '#1e1b4b');
+            grad.addColorStop(1, '#090d16');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Gold decorative border
+            ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(32, 32, W - 64, H - 64);
+
+            // Top quote mark
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
+            ctx.font = 'bold 90px serif';
+            ctx.fillText('“', 64, 130);
+
+            // Wrap & draw quote text
+            ctx.fillStyle = '#f8fafc';
+            const snippet = _activeCardQuote.length > 280 ? (_activeCardQuote.slice(0, 277) + '...') : _activeCardQuote;
+            const fontSize = snippet.length > 170 ? 25 : 30;
+            ctx.font = `600 ${{fontSize}}px "Noto Serif Ethiopic", "Plus Jakarta Sans", sans-serif`;
+
+            const words = snippet.split(/\\s+/);
+            const lines = [];
+            let cur = '';
+            const maxW = W - 140;
+            words.forEach(w => {{
+                const test = cur ? (cur + ' ' + w) : w;
+                if (ctx.measureText(test).width > maxW && cur) {{
+                    lines.push(cur);
+                    cur = w;
+                }} else {{
+                    cur = test;
+                }}
+            }});
+            if (cur) lines.push(cur);
+
+            const lineH = fontSize * 1.65;
+            const totalTextH = lines.length * lineH;
+            let startY = Math.max(175, (H - totalTextH) / 2 - 10);
+            lines.slice(0, 9).forEach(line => {{
+                ctx.fillText(line, 70, startY);
+                startY += lineH;
+            }});
+
+            // Footer book title & watermark
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('📖 ' + (meta.title || 'Baya Books'), 70, H - 105);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '600 18px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('✨ የአዕምሮ ምግቦች • @bayabooks_bot', 70, H - 68);
+
+            document.getElementById('modal-quote-card').style.display = 'flex';
+        }}
+
+        function closeQuoteCardModal() {{
+            document.getElementById('modal-quote-card').style.display = 'none';
+        }}
+
+        function downloadQuoteCanvas() {{
+            const canvas = document.getElementById('quoteCanvas');
+            if (!canvas) return;
+            try {{
+                const link = document.createElement('a');
+                link.download = 'baya-quote.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('📥 የጥቅስ ምስሉ ወርዷል!');
+            }} catch (e) {{
+                shareQuoteText(_activeCardQuote, _activeCardBookKey);
+            }}
+        }}
+
+        function shareCurrentQuoteCard() {{
+            shareQuoteText(_activeCardQuote, _activeCardBookKey);
+        }}
+
+        // ══════════════════════════════════════════
+        // 4C. IN-BOOK SEARCH (🔍 በመጽሐፉ ውስጥ ፈልግ)
+        // ══════════════════════════════════════════
+        async function openSearchModal() {{
+            const meta = BOOKS_META[activeBookKey];
+            if (!meta) return;
+            const isOwned = ownedBooks.includes(activeBookKey);
+            document.getElementById('searchBookSub').innerText = `በ«${{meta.title}}» ውስጥ ይፈልጉ`;
+            document.getElementById('bookSearchInput').value = '';
+            document.getElementById('searchResultsList').innerHTML = `
+                <div style="text-align: center; padding: 28px 14px; color: var(--text-secondary); font-size: 12.5px;">
+                    🔍 በመጽሐፉ ውስጥ የሚፈልጉትን ቃል ከላይ ይጻፉ...
+                </div>
+            `;
+            document.getElementById('modal-search').style.display = 'flex';
+            setTimeout(() => document.getElementById('bookSearchInput').focus(), 100);
+            if (isOwned) {{
+                ensureFullBookLoaded(activeBookKey).catch(() => {{}});
+            }}
+        }}
+
+        function closeSearchModal() {{
+            document.getElementById('modal-search').style.display = 'none';
+        }}
+
+        function runBookSearch(query) {{
+            const q = (query || '').trim();
+            const listEl = document.getElementById('searchResultsList');
+            if (q.length < 2) {{
+                listEl.innerHTML = `<div style="text-align: center; padding: 28px 14px; color: var(--text-secondary); font-size: 12.5px;">ቢያንስ 2 ፊደላትን ይጻፉ...</div>`;
+                return;
+            }}
+            const isOwned = ownedBooks.includes(activeBookKey);
+            const chapters = LOADED_CHAPTERS[activeBookKey] || [];
+            const hits = [];
+            const qLower = q.toLowerCase();
+
+            chapters.forEach((ch, chIdx) => {{
+                if (isOwned && chIdx === 0) return;
+                if (!isOwned && !ch.free) return;
+                (ch.blocks || []).forEach((b, bIdx) => {{
+                    const txt = b.text || '';
+                    const pos = txt.toLowerCase().indexOf(qLower);
+                    if (pos !== -1) {{
+                        const start = Math.max(0, pos - 40);
+                        const end = Math.min(txt.length, pos + q.length + 65);
+                        let excerpt = (start > 0 ? '...' : '') + txt.slice(start, end) + (end < txt.length ? '...' : '');
+                        excerpt = excerpt.replace(new RegExp(q.replace(/[.*+?^${{}}()|[\\]\\\\]/g, '\\\\$&'), 'gi'), m => `<span class="search-hit-mark">${{m}}</span>`);
+                        hits.push({{ chIdx, bIdx, chName: ch.name, excerpt }});
+                    }}
+                }});
+            }});
+
+            if (hits.length === 0) {{
+                listEl.innerHTML = `<div style="text-align: center; padding: 28px 14px; color: var(--text-secondary); font-size: 12.5px;">ምንም ውጤት አልተገኘም።${{!isOwned ? '<br><span style="color:#fbbf24;">(ሙሉውን መጽሐፍ ለመፈለግ መጽሐፉን ይግዙ ወይም ይከራዩ)</span>' : ''}}</div>`;
+                return;
+            }}
+
+            listEl.innerHTML = hits.slice(0, 35).map(h => `
+                <div class="toc-item" style="flex-direction: column; align-items: flex-start; gap: 4px;" onclick="jumpToSearchHit(${{h.chIdx}}, ${{h.bIdx}})">
+                    <div style="font-size: 11.5px; font-weight: 800; color: #a5b4fc;">📖 ${{h.chName}}</div>
+                    <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.55;">${{h.excerpt}}</div>
+                </div>
+            `).join('');
+        }}
+
+        async function jumpToSearchHit(chIdx, bIdx) {{
+            closeSearchModal();
+            await renderChapter(chIdx, false);
+            setTimeout(() => {{
+                const targetEl = document.getElementById('rblock-' + bIdx);
+                if (targetEl) {{
+                    targetEl.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                    targetEl.style.transition = 'box-shadow 0.4s ease';
+                    targetEl.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.6)';
+                    setTimeout(() => {{ targetEl.style.boxShadow = ''; }}, 2200);
+                }}
+            }}, 180);
+        }}
+
+        // ══════════════════════════════════════════
+        // 4D. DAILY READING GOAL & STREAK TRACKER (🔥)
+        // ══════════════════════════════════════════
+        const STORAGE_STATS_KEY = 'baya_stats_v1';
+
+        function getReadingStats() {{
+            const today = new Date().toISOString().slice(0, 10);
+            try {{
+                const s = JSON.parse(localStorage.getItem(STORAGE_STATS_KEY) || '{{}}');
+                const goalMins = s.goalMins || 15;
+                let streak = s.streak || 1;
+                let todayMins = s.lastDate === today ? (s.todayMins || 0) : 0;
+                if (s.lastDate && s.lastDate !== today) {{
+                    const diffDays = Math.round((new Date(today) - new Date(s.lastDate)) / 86400000);
+                    if (diffDays === 1 && (s.todayMins || 0) > 0) streak += 1;
+                    else if (diffDays > 1) streak = 1;
+                }}
+                return {{ lastDate: today, todayMins, streak, goalMins }};
+            }} catch (e) {{
+                return {{ lastDate: today, todayMins: 0, streak: 1, goalMins: 15 }};
+            }}
+        }}
+
+        function saveReadingStats(stats) {{
+            try {{ localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats)); }} catch (e) {{}}
+        }}
+
+        function renderStreakGoalBar() {{
+            const s = getReadingStats();
+            saveReadingStats(s);
+            const badge = document.getElementById('streakBadge');
+            const statusTxt = document.getElementById('goalStatusText');
+            const fill = document.getElementById('goalBarFill');
+            if (badge) badge.innerText = `🔥 ${{s.streak}} ቀን ተከታታይ`;
+            const minsRound = Math.round(s.todayMins);
+            const pct = Math.min(100, Math.round((minsRound / s.goalMins) * 100));
+            if (statusTxt) {{
+                statusTxt.innerText = minsRound >= s.goalMins
+                    ? `🎉 የዛሬ ግብ ተሳክቷል! (${{minsRound}} / ${{s.goalMins}} ደቂቃ)`
+                    : `🎯 የዛሬ ንባብ፦ ${{minsRound}} / ${{s.goalMins}} ደቂቃ`;
+            }}
+            if (fill) fill.style.width = pct + '%';
+        }}
+
+        function cycleDailyGoal() {{
+            const goals = [10, 15, 30];
+            const s = getReadingStats();
+            const nextGoal = goals[(goals.indexOf(s.goalMins) + 1) % goals.length] || 15;
+            s.goalMins = nextGoal;
+            saveReadingStats(s);
+            renderStreakGoalBar();
+            showToast(`🎯 ዕለታዊ የንባብ ግብ ወደ ${{nextGoal}} ደቂቃ ተቀይሯል`);
+        }}
+
+        // Increment active reading time by 0.5 min every 30s while reader is open
+        setInterval(() => {{
+            const readerOpen = document.getElementById('view-reader').style.display === 'block';
+            if (readerOpen && !document.hidden) {{
+                const s = getReadingStats();
+                const prevReached = s.todayMins >= s.goalMins;
+                s.todayMins = Number((s.todayMins + 0.5).toFixed(1));
+                saveReadingStats(s);
+                if (!prevReached && s.todayMins >= s.goalMins) {{
+                    showToast('🎉 እንኳን ደስ አለዎት! የዛሬውን የንባብ ግብ አሳክተዋል!');
+                }}
+            }}
+        }}, 30000);
 
         // ══════════════════════════════════════════
         // 5. TYPOGRAPHY & EYE-COMFORT SETTINGS

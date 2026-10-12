@@ -1600,39 +1600,8 @@ html_content = f'''<!DOCTYPE html>
             if (isTextHighlighted(bookKey, chIdx, textContent)) {{
                 el.classList.add('highlighted');
             }}
-            const actBar = document.createElement('span');
-            actBar.className = 'block-actions';
 
-            const imgBtn = document.createElement('button');
-            imgBtn.className = 'block-act-btn';
-            imgBtn.innerText = '🖼️ ምስል';
-            imgBtn.onclick = (e) => {{
-                e.stopPropagation();
-                openQuoteCardModal(textContent, bookKey);
-            }};
-
-            const shareBtn = document.createElement('button');
-            shareBtn.className = 'block-act-btn';
-            shareBtn.innerText = '📤 አጋራ';
-            shareBtn.onclick = (e) => {{
-                e.stopPropagation();
-                shareQuoteText(textContent, bookKey);
-            }};
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'block-act-btn';
-            delBtn.innerText = '🗑️ አጥፋ';
-            delBtn.onclick = (e) => {{
-                e.stopPropagation();
-                removeHighlightFromDom(delBtn, bookKey, chIdx, chLabel, textContent);
-            }};
-
-            actBar.appendChild(imgBtn);
-            actBar.appendChild(shareBtn);
-            actBar.appendChild(delBtn);
-            el.appendChild(actBar);
-
-            // Long-press (500ms) to highlight & save quote — avoids zoom/text-select conflicts on mobile
+            // Long-press (500ms) to highlight & save quote (or long-press again to un-highlight)
             let _lpTimer = null;
             let _lpFired = false;
 
@@ -1647,8 +1616,7 @@ html_content = f'''<!DOCTYPE html>
                 if (_lpTimer) {{ clearTimeout(_lpTimer); _lpTimer = null; }}
             }}
 
-            el.addEventListener('touchstart', (e) => {{
-                if (e.target.closest('.block-act-btn')) return;
+            el.addEventListener('touchstart', () => {{
                 _lpFired = false;
                 _lpTimer = setTimeout(fireLongPress, 500);
             }}, {{ passive: true }});
@@ -1662,17 +1630,10 @@ html_content = f'''<!DOCTYPE html>
 
             // Fallback for desktop: double-click
             el.addEventListener('dblclick', (e) => {{
-                if (e.target.closest('.block-act-btn')) return;
                 e.preventDefault();
                 const added = toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
                 el.classList.toggle('highlighted', added);
             }});
-        }}
-
-        function removeHighlightFromDom(btnEl, bookKey, chIdx, chLabel, textContent) {{
-            const parent = btnEl.closest('.highlighted');
-            toggleHighlightItem(bookKey, chIdx, chLabel, textContent);
-            if (parent) parent.classList.remove('highlighted');
         }}
 
         async function renderChapter(idx, restoreScroll) {{
@@ -1783,37 +1744,7 @@ html_content = f'''<!DOCTYPE html>
                         qAuth.innerText = '— ' + b.author;
                         qBox.appendChild(qAuth);
                     }}
-                    const qTools = document.createElement('div');
-                    qTools.style.cssText = 'display:flex; justify-content:flex-end; gap:8px; margin-top:10px;';
-
-                    const saveQBtn = document.createElement('button');
-                    saveQBtn.className = 'block-act-btn';
-                    saveQBtn.innerText = '🔖 አስቀምጥ';
-                    saveQBtn.onclick = (e) => {{
-                        e.stopPropagation();
-                        toggleHighlightItem(targetBookKey, idx, ch.label, b.text);
-                    }};
-
-                    const imgQBtn = document.createElement('button');
-                    imgQBtn.className = 'block-act-btn';
-                    imgQBtn.innerText = '🖼️ ምስል';
-                    imgQBtn.onclick = (e) => {{
-                        e.stopPropagation();
-                        openQuoteCardModal(b.text, targetBookKey);
-                    }};
-
-                    const shareQBtn = document.createElement('button');
-                    shareQBtn.className = 'block-act-btn';
-                    shareQBtn.innerText = '📤 አጋራ';
-                    shareQBtn.onclick = (e) => {{
-                        e.stopPropagation();
-                        shareQuoteText(b.text, targetBookKey);
-                    }};
-
-                    qTools.appendChild(saveQBtn);
-                    qTools.appendChild(imgQBtn);
-                    qTools.appendChild(shareQBtn);
-                    qBox.appendChild(qTools);
+                    attachHighlightBehavior(qBox, targetBookKey, idx, ch.label, b.text);
                     contentEl.appendChild(qBox);
                 }} else if (b.type === 'h4') {{
                     if (headerCard.parentNode !== contentEl) contentEl.appendChild(headerCard);

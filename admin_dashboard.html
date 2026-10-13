@@ -138,6 +138,91 @@
             </div>
         </div>
 
+        <!-- Stats Row 3: Audience Categories (Research & Advertising) -->
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-blue-400"></i> Audience Categories (Research & Advertising)
+                </h2>
+                <span class="text-xs text-slate-500">Click a card to filter users table</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                
+                <!-- ገዢ -->
+                <div class="card p-4 border-emerald-500/30 hover:border-emerald-500/70 transition-all cursor-pointer" onclick="filterCategory('ገዢ')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-emerald-400 uppercase">ገዢ</span>
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-book text-emerald-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_gezhi">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Book Buyers</p>
+                </div>
+
+                <!-- ተከራይ -->
+                <div class="card p-4 border-amber-500/30 hover:border-amber-500/70 transition-all cursor-pointer" onclick="filterCategory('ተከራይ')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-amber-400 uppercase">ተከራይ</span>
+                        <div class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-clock-rotate-left text-amber-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_tekeray">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Book Renters</p>
+                </div>
+
+                <!-- paid psycology -->
+                <div class="card p-4 border-purple-500/30 hover:border-purple-500/70 transition-all cursor-pointer" onclick="filterCategory('paid psycology')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-purple-400 uppercase">Paid Psych</span>
+                        <div class="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-gem text-purple-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_paid_psych">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">paid psycology</p>
+                </div>
+
+                <!-- free psycology -->
+                <div class="card p-4 border-cyan-500/30 hover:border-cyan-500/70 transition-all cursor-pointer" onclick="filterCategory('free psycology')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-cyan-400 uppercase">Free Psych</span>
+                        <div class="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-comments text-cyan-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_free_psych">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">free psycology</p>
+                </div>
+
+                <!-- not used coin -->
+                <div class="card p-4 border-slate-600/30 hover:border-slate-500/70 transition-all cursor-pointer" onclick="filterCategory('not used coin')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase">Unused</span>
+                        <div class="w-7 h-7 rounded-lg bg-slate-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-coins text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_not_used_coin">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">not used coin</p>
+                </div>
+
+                <!-- with phone -->
+                <div class="card p-4 border-blue-500/30 hover:border-blue-500/70 transition-all cursor-pointer" onclick="filterCategory('with_phone')">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold text-blue-400 uppercase">Phones</span>
+                        <div class="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-phone text-blue-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white stat-value" id="cat_with_phone">0</p>
+                    <p class="text-[11px] text-slate-400 mt-1">With Phone</p>
+                </div>
+
+            </div>
+        </div>
+
         <!-- Charts + Tables Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
@@ -199,6 +284,63 @@
             </div>
         </div>
 
+        <!-- Categorized Users Table -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-address-book text-emerald-400"></i> Categorized Users Directory (Research & Advertising)
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Filter by category or search to view and export target user lists with phone numbers</p>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Filter Select -->
+                    <select id="category_filter" onchange="applyFilters()" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">All Categories (ሁሉም)</option>
+                        <option value="ገዢ">📚 ገዢ (Book Buyers)</option>
+                        <option value="ተከራይ">⏳ ተከራይ (Book Renters)</option>
+                        <option value="paid psycology">💎 paid psycology</option>
+                        <option value="free psycology">💬 free psycology</option>
+                        <option value="not used coin">🪙 not used coin</option>
+                        <option value="with_phone">📱 Has Phone Number</option>
+                    </select>
+
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <input type="text" id="user_search" oninput="applyFilters()" placeholder="Search name, phone, @..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg pl-8 pr-3 py-2 w-48 sm:w-56 focus:outline-none focus:border-blue-500" />
+                        <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs absolute left-2.5 top-2.5"></i>
+                    </div>
+
+                    <!-- Export CSV Button -->
+                    <button onclick="exportCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-file-excel text-xs"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-800/40">
+                            <th class="px-6 py-3 text-left font-medium">User</th>
+                            <th class="px-6 py-3 text-left font-medium">Username</th>
+                            <th class="px-6 py-3 text-left font-medium">Phone Number</th>
+                            <th class="px-6 py-3 text-left font-medium">Category</th>
+                            <th class="px-6 py-3 text-right font-medium">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categorized_users_table" class="divide-y divide-slate-800 text-sm">
+                        <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">Loading categorized users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-3 border-t border-slate-800 bg-slate-800/20 text-xs text-slate-500 flex justify-between items-center">
+                <span id="cat_table_count">Showing 0 users</span>
+                <span>UTF-8 with BOM compatible (Excel & Sheets ready)</span>
+            </div>
+        </div>
+
         <!-- Footer -->
         <div class="text-center text-xs text-slate-600 pb-4">
             Baya Psychology AI — Admin Dashboard v3.0
@@ -217,6 +359,16 @@
             'Tip':    '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400">☕ Tip</span>',
             'Other':  '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400">📦 Other</span>',
         };
+
+        const CAT_BADGES = {
+            'ገዢ': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">📚 ገዢ</span>',
+            'ተከራይ': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">⏳ ተከራይ</span>',
+            'paid psycology': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/15 text-purple-300 border border-purple-500/30">💎 paid psycology</span>',
+            'free psycology': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">💬 free psycology</span>',
+            'not used coin': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-600/30 text-slate-400 border border-slate-600/40">🪙 not used coin</span>',
+        };
+
+        let allCategorizedUsers = [];
 
         async function fetchData() {
             try {
@@ -241,6 +393,15 @@
                 setTxt('total_transactions', fmt(d.total_transactions));
                 setTxt('total_transactions_2', fmt(d.total_transactions));
 
+                // Audience Categories
+                const cs = d.category_summary || {};
+                setTxt('cat_gezhi', fmt(cs.gezhi));
+                setTxt('cat_tekeray', fmt(cs.tekeray));
+                setTxt('cat_paid_psych', fmt(cs.paid_psycology));
+                setTxt('cat_free_psych', fmt(cs.free_psycology));
+                setTxt('cat_not_used_coin', fmt(cs.not_used_coin));
+                setTxt('cat_with_phone', fmt(cs.with_phone));
+
                 // Gender
                 const total = (d.male_count || 0) + (d.female_count || 0);
                 setTxt('male_pct', total > 0 ? `(${Math.round(d.male_count/total*100)}%)` : '');
@@ -262,7 +423,7 @@
                     `).join('');
                 }
 
-                // Users table
+                // Recent Users table
                 const utb = document.getElementById('users_table');
                 if (!d.recent_users || d.recent_users.length === 0) {
                     utb.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">No users yet</td></tr>';
@@ -276,12 +437,92 @@
                     `).join('');
                 }
 
+                // Categorized Users
+                allCategorizedUsers = d.categorized_users || [];
+                applyFilters();
+
                 // Timestamp
                 setTxt('last_updated', 'Updated: ' + new Date().toLocaleTimeString());
 
             } catch (error) {
                 console.error("Dashboard fetch error:", error);
             }
+        }
+
+        function filterCategory(cat) {
+            const sel = document.getElementById('category_filter');
+            if (sel) {
+                sel.value = cat;
+                applyFilters();
+                // Smooth scroll to table
+                const tbl = document.getElementById('categorized_users_table');
+                if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function applyFilters() {
+            const cat = document.getElementById('category_filter').value;
+            const search = (document.getElementById('user_search').value || '').toLowerCase().trim();
+            
+            let filtered = allCategorizedUsers.filter(u => {
+                if (cat === 'with_phone') {
+                    if (!u.phone_number) return false;
+                } else if (cat && !(u.categories || []).includes(cat)) {
+                    return false;
+                }
+                
+                if (search) {
+                    const name = (u.name || '').toLowerCase();
+                    const uname = (u.username || '').toLowerCase();
+                    const phone = (u.phone_number || '').toLowerCase();
+                    const uid = String(u.user_id || '');
+                    if (!name.includes(search) && !uname.includes(search) && !phone.includes(search) && !uid.includes(search)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            renderCategorizedUsers(filtered);
+        }
+
+        function renderCategorizedUsers(users) {
+            const tbody = document.getElementById('categorized_users_table');
+            const countEl = document.getElementById('cat_table_count');
+            if (countEl) countEl.innerText = `Showing ${users.length} users`;
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No users found matching current filter.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(u => {
+                const phoneBadge = u.phone_number 
+                    ? `<span class="font-mono text-emerald-400 font-medium flex items-center gap-1.5"><i class="fa-solid fa-phone text-[10px]"></i> ${u.phone_number}</span>`
+                    : `<span class="text-slate-500 text-xs italic">— None</span>`;
+                    
+                const catBadges = (u.categories || []).map(c => CAT_BADGES[c] || `<span class="px-2 py-0.5 rounded text-xs bg-slate-700">${c}</span>`).join(' ');
+                
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-6 py-3">
+                            <div class="font-medium text-slate-200">${u.name || 'User'}</div>
+                            <div class="text-[11px] text-slate-500 font-mono">ID: ${u.user_id}</div>
+                        </td>
+                        <td class="px-6 py-3 text-slate-400">${u.username ? '@' + u.username : '—'}</td>
+                        <td class="px-6 py-3">${phoneBadge}</td>
+                        <td class="px-6 py-3"><div class="flex flex-wrap gap-1">${catBadges}</div></td>
+                        <td class="px-6 py-3 text-right text-slate-500">${(u.joined_date || '').substring(0, 10)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportCSV() {
+            const cat = document.getElementById('category_filter').value;
+            const qs = new URLSearchParams(window.location.search);
+            if (cat) qs.set('category', cat);
+            window.location.href = '/admin/export_users.csv?' + qs.toString();
         }
 
         function renderGenderChart(male, female) {

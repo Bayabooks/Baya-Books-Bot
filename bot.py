@@ -317,6 +317,88 @@ def cmd_getlogs(message):
     except Exception as e:
         bot.reply_to(message, str(e))
 
+def send_users_csv_export(chat_id, filter_cat=None):
+    users = database.get_categorized_users(filter_category=filter_cat)
+    summary = database.get_category_summary()
+    
+    import csv, io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "User ID",
+        "Name",
+        "Username",
+        "Phone Number",
+        "Primary Category",
+        "All Categories",
+        "Joined Date",
+        "Language",
+        "Status"
+    ])
+    
+    for u in users:
+        writer.writerow([
+            u["user_id"],
+            u["name"],
+            f"@{u['username']}" if u["username"] else "",
+            u["phone_number"],
+            u["primary_category"],
+            ", ".join(u["categories"]),
+            u["joined_date"][:10] if u["joined_date"] else "",
+            u["language"].upper(),
+            "Blocked" if u["blocked"] else "Active"
+        ])
+    
+    csv_bytes = ('\ufeff' + output.getvalue()).encode('utf-8')
+    bio = io.BytesIO(csv_bytes)
+    cat_slug = filter_cat.replace(" ", "_") if filter_cat else "all"
+    bio.name = f"baya_users_{cat_slug}.csv"
+    
+    caption = (
+        f"📊 <b>Baya Users Categorized Export ({len(users)} users)</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📚 ገዢ (Buyers): <b>{summary['gezhi']}</b>\n"
+        f"⏳ ተከራይ (Renters): <b>{summary['tekeray']}</b>\n"
+        f"💎 paid psycology: <b>{summary['paid_psycology']}</b>\n"
+        f"💬 free psycology: <b>{summary['free_psycology']}</b>\n"
+        f"🪙 not used coin: <b>{summary['not_used_coin']}</b>\n"
+        f"📱 With Phone: <b>{summary['with_phone']}</b> / {summary['total_users']}\n\n"
+        f"<i>Encoding: UTF-8 with BOM (Excel & Google Sheets ready)</i>"
+    )
+    
+    bot.send_document(
+        chat_id,
+        bio,
+        caption=caption,
+        parse_mode="HTML"
+    )
+
+@bot.message_handler(commands=["export_users", "export"])
+def cmd_export_users(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    parts = (message.text or "").split(maxsplit=1)
+    filter_cat = None
+    if len(parts) > 1:
+        raw_filter = parts[1].strip()
+        rf_lower = raw_filter.lower()
+        if "ገዢ" in raw_filter or "buy" in rf_lower:
+            filter_cat = "ገዢ"
+        elif "ተከራይ" in raw_filter or "rent" in rf_lower:
+            filter_cat = "ተከራይ"
+        elif "paid" in rf_lower:
+            filter_cat = "paid psycology"
+        elif "free" in rf_lower:
+            filter_cat = "free psycology"
+        elif "not" in rf_lower or "coin" in rf_lower or "unused" in rf_lower:
+            filter_cat = "not used coin"
+        elif "phone" in rf_lower or "ስልክ" in raw_filter:
+            filter_cat = "with_phone"
+        else:
+            filter_cat = raw_filter
+    send_users_csv_export(message.chat.id, filter_cat=filter_cat)
+
 # ══════════════════════════════════════════
 #  /topup COMMAND (Manual Advice Paywall)
 # ══════════════════════════════════════════
@@ -1162,6 +1244,8 @@ def send_admin_user_profile(chat_id, target_id, caller_user):
     markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
 
     uname_disp = f"@{u['username']}" if u.get('username') and u.get('username') != 'Unknown' else "N/A"
+    phone_disp = u.get('phone_number') or "None"
+    cats_disp = ", ".join(details.get('categories', ["not used coin"]))
     bot.send_message(
         chat_id,
         f"👤 <b>User Profile</b>{banned_tag}{admin_tag}{vip_tag}\n"
@@ -1169,6 +1253,8 @@ def send_admin_user_profile(chat_id, target_id, caller_user):
         f"🆔 ID: <code>{target_id}</code>\n"
         f"👤 Name: <b>{html.escape(str(u.get('first_name') or 'User'))}</b>\n"
         f"📛 Username: {html.escape(uname_disp)}\n"
+        f"📱 Phone: <b>{html.escape(phone_disp)}</b>\n"
+        f"🏷️ Category: <b>{html.escape(cats_disp)}</b>\n"
         f"{gender_str} | 🌐 {u.get('bot_language', 'am').upper()}\n"
         f"📅 Joined: {u['joined_date'][:10] if u.get('joined_date') else 'N/A'}\n\n"
         f"━━ 📚 Books ━━━━━━━━━━━━━━━\n{books_text}\n"
@@ -1335,7 +1421,8 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
     )
     markup.add(
-        InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
+        InlineKeyboardButton("📥 Export Users (CSV)", callback_data="adm_export_users"),
+        InlineKeyboardButton("🔄 Refresh Keyboards", callback_data="adm_refresh_menus"),
     )
     
     total_users = database.get_total_user_count()
@@ -1599,8 +1686,12 @@ def handle_callback(call):
         if not recent_pay_text:
             recent_pay_text = "  — No payments yet\n"
 
+        cat_summary = stats.get('category_summary', {})
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔄 Refresh", callback_data="adm_dashboard"))
+        markup.add(
+            InlineKeyboardButton("🔄 Refresh", callback_data="adm_dashboard"),
+            InlineKeyboardButton("📥 Export Users (CSV)", callback_data="adm_export_users"),
+        )
         markup.add(InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back"))
         
         bot.send_message(chat_id,
@@ -1610,6 +1701,13 @@ def handle_callback(call):
             f"🟢 New Today: <b>{stats['new_today']}</b> | This Week: <b>{stats.get('new_this_week', 0)}</b>\n"
             f"💬 Chatting Users: <b>{stats.get('active_advice_users', 0)}</b>\n"
             f"📚 Books Unlocked: <b>{stats.get('total_books_unlocked', 0)}</b> (⏳ Active Rentals: <b>{stats.get('active_book_rentals', 0)}</b>)\n\n"
+            f"━━ 🎯 User Categories ━━━━━━━━━━\n"
+            f"  📚 ገዢ (Buyers): <b>{cat_summary.get('gezhi', 0)}</b>\n"
+            f"  ⏳ ተከራይ (Renters): <b>{cat_summary.get('tekeray', 0)}</b>\n"
+            f"  💎 paid psycology: <b>{cat_summary.get('paid_psycology', 0)}</b>\n"
+            f"  💬 free psycology: <b>{cat_summary.get('free_psycology', 0)}</b>\n"
+            f"  🪙 not used coin: <b>{cat_summary.get('not_used_coin', 0)}</b>\n"
+            f"  📱 With Phone: <b>{cat_summary.get('with_phone', 0)}</b> / {stats['total_users']}\n\n"
             f"━━ 🔽 User Funnel ━━━━━━━━━━━\n"
             f"  🚧 Stuck in onboarding: <b>{stages['stuck_onboarding']}</b>\n"
             f"  😶 Onboarded, never chatted: <b>{stages['onboarded_no_chat']}</b>\n"
@@ -1746,6 +1844,27 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "🔄 Starting refresh...", show_alert=False)
         run_refresh_all_menus(chat_id)
+        return
+
+    if data == "adm_export_users":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "📥 Preparing CSV export...")
+        send_users_csv_export(chat_id)
+        return
+
+    if data == "prompt_share_contact":
+        bot.answer_callback_query(call.id)
+        set_state(uid, "WAITING_PHONE_NUMBER")
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup.add(KeyboardButton("📱 ስልክ አጋራ (Share Contact)", request_contact=True))
+        markup.add(KeyboardButton("❌ ተመለስ"))
+        bot.send_message(
+            chat_id,
+            "📱 <b>ስልክ ቁጥርዎን ያስመዝግቡ</b>\n\n"
+            "ከታች ያለውን <b>'📱 ስልክ አጋራ (Share Contact)'</b> ቁልፍ በመጫን ወይም ስልክ ቁጥርዎን (ምሳሌ፡ <code>0912345678</code>) በመፃፍ መላክ ይችላሉ፦",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
         return
     
     # ── Admin: User Search ────────────────────
@@ -2132,6 +2251,32 @@ def handle_web_app_data(message):
     except Exception as e:
         logging.error(f"Error handling web_app_data for {uid}: {e}")
 
+@bot.message_handler(content_types=["contact"])
+def handle_contact_message(message):
+    if not message.contact:
+        return
+    uid = message.from_user.id
+    phone = message.contact.phone_number
+    first_name = message.contact.first_name
+    last_name = message.contact.last_name
+    database.save_user_phone(uid, phone, first_name=first_name, last_name=last_name)
+    clear_state(uid)
+    lang = get_lang(uid)
+    clean_p = database.get_user_phone(uid) or phone
+    reply_text = {
+        'am': f"✅ <b>ስልክ ቁጥርዎ ({clean_p}) በተሳካ ሁኔታ ተመዝግቧል!</b>\nእናመሰግናለን።",
+        'en': f"✅ <b>Your phone number ({clean_p}) has been registered!</b>\nThank you.",
+        'ti': f"✅ <b>ቑጽሪ ስልክኹም ({clean_p}) ተመዝጊቡ ኣሎ!</b>\nየቐንየልና።",
+        'om': f"✅ <b>Lakkoofsi bilbila keessanii ({clean_p}) galmaa'eera!</b>\nGalatoomaa."
+    }.get(lang, f"✅ <b>ስልክ ቁጥርዎ ({clean_p}) በተሳካ ሁኔታ ተመዝግቧል!</b>\nእናመሰግናለን።")
+    
+    bot.send_message(
+        message.chat.id, 
+        reply_text, 
+        parse_mode="HTML",
+        reply_markup=get_bottom_markup(lang, uid)
+    )
+
 @bot.message_handler(content_types=["text", "photo", "document"])
 def handle_messages(message):
     uid = message.from_user.id
@@ -2144,6 +2289,33 @@ def handle_messages(message):
     if database.is_banned(uid):
         bot.reply_to(message, S(get_lang(uid), 'banned'))
         return
+
+    # Check if user is typing phone number (state-based or direct phone entry)
+    if message.text:
+        t_clean = message.text.strip()
+        if state == "WAITING_PHONE_NUMBER" and ("ተመለስ" in t_clean or t_clean.lower() in ("/cancel", "cancel", "back")):
+            clear_state(uid)
+            bot.send_message(chat_id, "ተመልሰዋል።", reply_markup=get_bottom_markup(get_lang(uid), uid))
+            return
+            
+        is_phone_pattern = bool(re.match(r'^(\+251|0)[97]\d{8}$', t_clean.replace(" ", "").replace("-", "")))
+        if state == "WAITING_PHONE_NUMBER" or (is_phone_pattern and not message.text.startswith("/")):
+            saved = database.save_user_phone(uid, t_clean)
+            if saved:
+                clear_state(uid)
+                lang = get_lang(uid)
+                clean_p = database.get_user_phone(uid) or t_clean
+                reply_text = {
+                    'am': f"✅ <b>ስልክ ቁጥርዎ ({clean_p}) በተሳካ ሁኔታ ተመዝግቧል!</b>\nእናመሰግናለን።",
+                    'en': f"✅ <b>Your phone number ({clean_p}) has been registered!</b>\nThank you.",
+                    'ti': f"✅ <b>ቑጽሪ ስልክኹም ({clean_p}) ተመዝጊቡ ኣሎ!</b>\nየቐንየልና።",
+                    'om': f"✅ <b>Lakkoofsi bilbila keessanii ({clean_p}) galmaa'eera!</b>\nGalatoomaa."
+                }.get(lang, f"✅ <b>ስልክ ቁጥርዎ ({clean_p}) በተሳካ ሁኔታ ተመዝግቧል!</b>\nእናመሰግናለን።")
+                bot.send_message(chat_id, reply_text, parse_mode="HTML", reply_markup=get_bottom_markup(lang, uid))
+                return
+            elif state == "WAITING_PHONE_NUMBER":
+                bot.send_message(chat_id, "⚠️ እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ (ምሳሌ፡ <code>0912345678</code> ወይም <code>+251912345678</code>) ወይም '❌ ተመለስ' የሚለውን ይጫኑ።", parse_mode="HTML")
+                return
 
     if message.text == "/debug_carts" and is_admin(message.from_user):
         conn = database.get_connection()
@@ -2514,6 +2686,14 @@ def handle_messages(message):
             )
         if count >= 10:
             markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
+        user_phone = database.get_user_phone(uid)
+        phone_section = ""
+        if user_phone:
+            phone_section = f"📱 <b>ስልክ ቁጥር:</b> <code>{user_phone}</code>\n\n"
+        else:
+            phone_section = "📱 <b>ስልክ ቁጥር:</b> <i>አልተመዘገበም</i>\n\n"
+            markup.add(InlineKeyboardButton("📱 ስልክ አስመዝግብ (Register Phone)", callback_data="prompt_share_contact"))
+
         markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
         markup.add(InlineKeyboardButton(S(lang, 'btn_reset'), callback_data="confirm_reset"))
             
@@ -2521,6 +2701,7 @@ def handle_messages(message):
             chat_id,
             S(lang, 'mypage_title') + "\n━━━━━━━━━━━━━━━━━━━━\n" +
             S(lang, 'mypage_msgs_left', msgs=msgs_display) + "\n\n" +
+            phone_section +
             books_section +
             S(lang, 'mypage_referrals', count=count) + "\n" +
             S(lang, 'mypage_referral_hint') + "\n\n" +
@@ -2839,7 +3020,22 @@ def handle_messages(message):
 import io
 _QUOTE_CARD_CACHE = {}
 
-def process_payment_success(tx_ref):
+def extract_phone_from_payment_data(data):
+    if not isinstance(data, dict):
+        return None
+    for k in ['phone', 'phone_number', 'customer_phone', 'payer_phone', 'mobile', 'tel']:
+        val = data.get(k)
+        if val:
+            return str(val).strip()
+    cust = data.get('customer') or data.get('payer') or {}
+    if isinstance(cust, dict):
+        for k in ['phone', 'phone_number', 'mobile', 'tel']:
+            val = cust.get(k)
+            if val:
+                return str(val).strip()
+    return None
+
+def process_payment_success(tx_ref, pay_data=None):
     if database.is_tx_ref_used(tx_ref):
         return
     parts = tx_ref.split("-")
@@ -2852,6 +3048,11 @@ def process_payment_success(tx_ref):
     else:
         return
         
+    if pay_data:
+        p_phone = extract_phone_from_payment_data(pay_data)
+        if p_phone:
+            database.save_user_phone(uid, p_phone)
+
     chat_id = uid
     order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
     
@@ -2921,6 +3122,75 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             stats = database.get_analytics()
             self.wfile.write(json.dumps(stats).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/export_users.csv'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b'Forbidden')
+                return
+            category = qs.get('category', [None])[0]
+            if category in ('all', '', 'None'):
+                category = None
+            users = database.get_categorized_users(filter_category=category)
+            import csv, io
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow([
+                "User ID",
+                "Name",
+                "Username",
+                "Phone Number",
+                "Primary Category",
+                "All Categories",
+                "Joined Date",
+                "Language",
+                "Status"
+            ])
+            for u in users:
+                writer.writerow([
+                    u["user_id"],
+                    u["name"],
+                    f"@{u['username']}" if u["username"] else "",
+                    u["phone_number"],
+                    u["primary_category"],
+                    ", ".join(u["categories"]),
+                    u["joined_date"][:10] if u["joined_date"] else "",
+                    u["language"].upper(),
+                    "Blocked" if u["blocked"] else "Active"
+                ])
+            csv_bytes = ('\ufeff' + output.getvalue()).encode('utf-8')
+            cat_slug = category.replace(" ", "_") if category else "all"
+            self.send_response(200)
+            self.send_header("Content-type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="baya_users_{cat_slug}.csv"')
+            self.send_header("Content-Length", str(len(csv_bytes)))
+            self.end_headers()
+            self.wfile.write(csv_bytes)
+            return
+
+        if self.path.startswith('/admin/users_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b'Forbidden')
+                return
+            category = qs.get('category', [None])[0]
+            if category in ('all', '', 'None'):
+                category = None
+            search = qs.get('search', [None])[0]
+            users = database.get_categorized_users(filter_category=category, search=search)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(users).encode('utf-8'))
             return
 
         if self.path.startswith('/admin/advice_history'):
@@ -3078,9 +3348,9 @@ class DummyHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/auto-verify-shegerpay/'):
             tx_ref = self.path.split('/')[-1]
             import shegerpay
-            success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
+            success, pay_data = shegerpay.verify_shegerpay_payment(tx_ref)
             if success:
-                process_payment_success(tx_ref) # We reuse the same success processor since it just reads tx_ref
+                process_payment_success(tx_ref, pay_data=pay_data)
                 
             bot_username = bot.get_me().username
             self.send_response(302)
@@ -3147,9 +3417,9 @@ class DummyHandler(BaseHTTPRequestHandler):
                     tx_ref = data['metadata'].get('tx_ref')
                 if tx_ref:
                     import shegerpay
-                    success, _ = shegerpay.verify_shegerpay_payment(tx_ref)
+                    success, pay_data = shegerpay.verify_shegerpay_payment(tx_ref)
                     if success:
-                        process_payment_success(tx_ref)
+                        process_payment_success(tx_ref, pay_data=pay_data or data)
             except Exception as e:
                 logging.error(f"ShegerPay Webhook error: {e}")
         else:

@@ -43,6 +43,8 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN bot_blocked INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN last_paywall_nudge TEXT",
+        "ALTER TABLE users ADD COLUMN phone_number TEXT",
+        "ALTER TABLE users ADD COLUMN phone_updated_at TEXT",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -306,6 +308,232 @@ def use_credit(user_id):
     conn.commit()
     conn.close()
     return success
+
+# ─── Phone & Category Functions ────────────
+
+def clean_phone_number(raw_phone):
+    if not raw_phone:
+        return None
+    phone = str(raw_phone).strip()
+    for ch in [' ', '-', '(', ')', '.', '/', '\\']:
+        phone = phone.replace(ch, '')
+    if phone.startswith('251'):
+        phone = '+' + phone
+    elif phone.startswith('09') and len(phone) == 10:
+        phone = '+251' + phone[1:]
+    elif phone.startswith('07') and len(phone) == 10:
+        phone = '+251' + phone[1:]
+    return phone
+
+def save_user_phone(user_id, phone, first_name=None, last_name=None):
+    if not user_id or not phone:
+        return False
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return False
+    cleaned_phone = clean_phone_number(phone)
+    if not cleaned_phone:
+        return False
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        UPDATE users 
+        SET phone_number = ?, phone_updated_at = ?
+        WHERE user_id = ?
+    """, (cleaned_phone, now_str, user_id))
+    
+    full_name = " ".join(filter(None, [first_name, last_name])).strip()
+    if full_name:
+        c.execute("""
+            UPDATE users 
+            SET first_name = ?
+            WHERE user_id = ? AND (first_name IS NULL OR first_name = '' OR first_name = 'User')
+        """, (full_name, user_id))
+        
+    conn.commit()
+    conn.close()
+    return True
+
+def get_user_phone(user_id):
+    if not user_id:
+        return None
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT phone_number FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row['phone_number'] if row and row['phone_number'] else None
+
+CATEGORY_PRIORITY = ["ገዢ", "paid psycology", "ተከራይ", "free psycology", "not used coin"]
+
+def get_user_primary_category(categories):
+    if not categories:
+        return "not used coin"
+    for cat in CATEGORY_PRIORITY:
+        if cat in categories:
+            return cat
+    return categories[0]
+
+def get_user_categories_map():
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # 1. Gezhi (Book Buyers)
+    c.execute("SELECT DISTINCT user_id FROM user_books WHERE expires_at IS NULL")
+    buyer_ids = {r[0] for r in c.fetchall() if r[0]}
+    c.execute("""
+        SELECT DISTINCT user_id FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')
+        AND tx_ref LIKE '%BOOK_%' AND tx_ref NOT LIKE '%BOOKRENT_%' AND tx_ref NOT LIKE '%BOOKEXT_%'
+    """)
+    buyer_ids.update(r[0] for r in c.fetchall() if r[0])
+
+    # 2. Tekeray (Book Renters)
+    c.execute("SELECT DISTINCT user_id FROM user_books WHERE expires_at IS NOT NULL")
+    renter_ids = {r[0] for r in c.fetchall() if r[0]}
+    c.execute("""
+        SELECT DISTINCT user_id FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')
+        AND (tx_ref LIKE '%BOOKRENT_%' OR tx_ref LIKE '%BOOKEXT_%')
+    """)
+    renter_ids.update(r[0] for r in c.fetchall() if r[0])
+
+    # 3. Paid Psychology
+    c.execute("""
+        SELECT DISTINCT user_id FROM payments 
+        WHERE (status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%')
+        AND (tx_ref LIKE '%ADVICE_%' OR tx_ref LIKE '%PACKAGE_%')
+    """)
+    paid_psych_ids = {r[0] for r in c.fetchall() if r[0]}
+    c.execute("SELECT DISTINCT user_id FROM users WHERE vip_expiry IS NOT NULL AND vip_expiry != ''")
+    paid_psych_ids.update(r[0] for r in c.fetchall() if r[0])
+
+    # 4. Fetch all users
+    c.execute("""
+        SELECT user_id, IFNULL(advice_messages_left, 5) as msgs_left, 
+               IFNULL(advice_history, '[]') as history
+        FROM users
+    """)
+    user_rows = c.fetchall()
+    conn.close()
+
+    cat_map = {}
+    for r in user_rows:
+        uid = r['user_id']
+        cats = []
+        if uid in buyer_ids:
+            cats.append("ገዢ")
+        if uid in renter_ids:
+            cats.append("ተከራይ")
+        if uid in paid_psych_ids:
+            cats.append("paid psycology")
+        else:
+            msgs_left = r['msgs_left']
+            hist = r['history'] or ''
+            if ('"role": "user"' in hist) or (msgs_left is not None and msgs_left < 5):
+                cats.append("free psycology")
+        
+        if not cats:
+            cats.append("not used coin")
+            
+        cat_map[uid] = cats
+
+    return cat_map
+
+def get_categorized_users(filter_category=None, search=None, limit=None, offset=0):
+    cat_map = get_user_categories_map()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT user_id, username, first_name, phone_number, joined_date, 
+               bot_language, bot_blocked, advice_messages_left
+        FROM users
+        ORDER BY user_id DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    results = []
+    search_lower = (search or "").strip().lower()
+    for r in rows:
+        uid = r['user_id']
+        cats = cat_map.get(uid, ["not used coin"])
+        primary = get_user_primary_category(cats)
+        
+        if filter_category:
+            if filter_category == "with_phone":
+                if not r['phone_number']:
+                    continue
+            elif filter_category not in cats:
+                continue
+
+        if search_lower:
+            uname = (r['username'] or '').lower()
+            fname = (r['first_name'] or '').lower()
+            phone = (r['phone_number'] or '').lower()
+            suid = str(uid)
+            if not (search_lower in uname or search_lower in fname or search_lower in phone or search_lower in suid):
+                continue
+
+        results.append({
+            "user_id": uid,
+            "username": r['username'] or '',
+            "name": r['first_name'] or 'User',
+            "phone_number": r['phone_number'] or '',
+            "categories": cats,
+            "primary_category": primary,
+            "joined_date": r['joined_date'] or '',
+            "language": r['bot_language'] or 'am',
+            "blocked": bool(r['bot_blocked']),
+            "advice_messages_left": r['advice_messages_left']
+        })
+
+    if limit is not None:
+        return results[offset:offset+limit]
+    return results
+
+def get_category_summary():
+    cat_map = get_user_categories_map()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT user_id, phone_number FROM users")
+    rows = c.fetchall()
+    conn.close()
+
+    total_users = len(rows)
+    with_phone = sum(1 for r in rows if r['phone_number'])
+    
+    gezhi_count = 0
+    tekeray_count = 0
+    paid_psych_count = 0
+    free_psych_count = 0
+    not_used_coin_count = 0
+
+    for r in rows:
+        uid = r['user_id']
+        cats = cat_map.get(uid, ["not used coin"])
+        if "ገዢ" in cats:
+            gezhi_count += 1
+        if "ተከራይ" in cats:
+            tekeray_count += 1
+        if "paid psycology" in cats:
+            paid_psych_count += 1
+        if "free psycology" in cats:
+            free_psych_count += 1
+        if "not used coin" in cats:
+            not_used_coin_count += 1
+
+    return {
+        "total_users": total_users,
+        "with_phone": with_phone,
+        "gezhi": gezhi_count,
+        "tekeray": tekeray_count,
+        "paid_psycology": paid_psych_count,
+        "free_psycology": free_psych_count,
+        "not_used_coin": not_used_coin_count
+    }
 
 # ─── Referral Functions ────────────────────
 
@@ -645,6 +873,9 @@ def get_analytics():
     recent_users = [{"name": r['first_name'], "username": r['username'] or '', "date": r['joined_date']} for r in c.fetchall()]
 
     conn.close()
+    cat_summary = get_category_summary()
+    cat_users = get_categorized_users(limit=250)
+
     return {
         "total_users": total_users,
         "blocked_users": blocked_users,
@@ -662,7 +893,9 @@ def get_analytics():
         "male_count": male_count,
         "female_count": female_count,
         "recent_payments": recent_payments,
-        "recent_users": recent_users
+        "recent_users": recent_users,
+        "category_summary": cat_summary,
+        "categorized_users": cat_users
     }
 
 # Run setup
@@ -937,9 +1170,14 @@ def search_users(query):
         fname = fname_raw.casefold()
         uname = uname_raw.casefold()
         combined = f"{fname} {uname}".strip()
+        phone_raw = (r["phone_number"] or "").strip()
+        phone_digits = phone_raw.replace("+", "").replace("-", "").replace(" ", "")
+        q_digits = cleaned_no_at.replace("+", "").replace("-", "").replace(" ", "")
 
         score = 0
-        if uname and uname == q_fold:
+        if phone_digits and len(q_digits) >= 4 and (q_digits in phone_digits or phone_digits in q_digits):
+            score = 99
+        elif uname and uname == q_fold:
             score = 100
         elif fname and fname == q_fold:
             score = 98
@@ -1003,12 +1241,17 @@ def get_user_details(user_id):
     recent_payments = c.fetchall()
     
     conn.close()
+    cat_map = get_user_categories_map()
+    cats = cat_map.get(user_id, ["not used coin"])
+    primary = get_user_primary_category(cats)
     return {
         "user": dict(user),
         "total_paid": total_paid,
         "payment_count": payment_count,
         "referral_count": referral_count,
         "recent_payments": [dict(p) for p in recent_payments],
+        "categories": cats,
+        "primary_category": primary,
     }
 
 def get_recent_orders(limit=10):

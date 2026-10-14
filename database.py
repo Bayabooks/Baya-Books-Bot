@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import logging
 from datetime import datetime, timedelta
 import config
 
@@ -43,6 +44,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN age_verified INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN bot_blocked INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN last_paywall_nudge TEXT",
+        "ALTER TABLE users ADD COLUMN last_nudge_at TEXT",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -259,7 +261,7 @@ def get_user_books_state(user_id):
         exp = r['expires_at']
         if exp:
             try:
-                exp_dt = datetime.strptime(exp[:19], "%Y-%m-%d %H:%M:%S")
+                exp_dt = datetime.strptime(exp[:19].replace('T', ' '), "%Y-%m-%d %H:%M:%S")
                 if exp_dt <= now_dt:
                     expired.append(bkey)
                     continue
@@ -1698,7 +1700,7 @@ def get_stuck_users():
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
-        SELECT user_id, first_name, bot_language, joined_date, IFNULL(nudge_onboard_sent, 0) as nudge_count
+        SELECT user_id, first_name, bot_language, joined_date, last_nudge_at, IFNULL(nudge_onboard_sent, 0) as nudge_count
         FROM users
         WHERE (IFNULL(age_verified, 0) = 0 OR gender IS NULL OR gender = '')
         AND bot_blocked = 0
@@ -1708,26 +1710,42 @@ def get_stuck_users():
     conn.close()
     
     valid_users = []
-    from datetime import datetime
+    now = datetime.now()
     for r in rows:
         try:
-            joined_dt = datetime.strptime(r['joined_date'], "%Y-%m-%d %H:%M:%S") if r['joined_date'] else datetime.now()
-        except:
-            joined_dt = datetime.now()
+            raw_joined = (r['joined_date'] or "")[:19].replace('T', ' ')
+            joined_dt = datetime.strptime(raw_joined, "%Y-%m-%d %H:%M:%S") if raw_joined else now
+        except Exception:
+            joined_dt = now
+
+        last_nudge = None
+        if r['last_nudge_at']:
+            try:
+                raw_nudge = r['last_nudge_at'][:19].replace('T', ' ')
+                last_nudge = datetime.strptime(raw_nudge, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                pass
         
-        days_since_joined = (datetime.now() - joined_dt).days
-        # For nudge 0, days >= 0 (immediate)
-        # For nudge 1, days >= 1 (after 24h)
-        # For nudge 2, days >= 2 (after 48h)
-        if days_since_joined >= r['nudge_count']:
-            valid_users.append(dict(r))
+        n_count = r['nudge_count']
+        if n_count == 0:
+            # Only nudge if stuck for at least 30 minutes after joining
+            if (now - joined_dt).total_seconds() >= 1800:
+                valid_users.append(dict(r))
+        else:
+            # Subsequent nudges require at least 20 hours since previous nudge
+            if last_nudge:
+                if (now - last_nudge).total_seconds() >= 72000:
+                    valid_users.append(dict(r))
+            elif (now - joined_dt).days >= n_count:
+                valid_users.append(dict(r))
             
     return valid_users
 
 def get_silent_users():
-    """Get users who completed onboarding but never sent a message."""
+    """Get users who completed onboarding but never sent a message. Waits at least 2 hours after joining."""
     conn = get_connection()
     c = conn.cursor()
+    two_hours_ago = (datetime.now() - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute("""
         SELECT user_id, first_name, bot_language
         FROM users
@@ -1737,16 +1755,18 @@ def get_silent_users():
         AND IFNULL(advice_messages_left, 5) >= 5
         AND bot_blocked = 0
         AND IFNULL(nudge_silent_sent, 0) = 0
-    """)
+        AND (joined_date IS NULL OR joined_date <= ?)
+    """, (two_hours_ago,))
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 def get_trial_ended_users():
-    """Get users who exhausted their trial but haven't paid."""
+    """Get users who exhausted their trial but haven't paid. Waits at least 12 hours since last nudge."""
     conn = get_connection()
     c = conn.cursor()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    twelve_hours_ago = (datetime.now() - timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute("""
         SELECT user_id, first_name, bot_language
         FROM users
@@ -1755,11 +1775,12 @@ def get_trial_ended_users():
         AND (vip_expiry IS NULL OR vip_expiry < ?)
         AND bot_blocked = 0
         AND IFNULL(nudge_revive_sent, 0) = 0
+        AND (last_nudge_at IS NULL OR last_nudge_at <= ?)
         AND user_id NOT IN (
             SELECT DISTINCT user_id FROM payments
             WHERE status = 'approved' OR receipt_file_id LIKE '%WEBHOOK%' OR tx_ref LIKE '%WEBHOOK%'
         )
-    """, (now_str,))
+    """, (now_str, twelve_hours_ago))
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1813,7 +1834,8 @@ def mark_nudge_sent(user_id, nudge_type):
         return
     conn = get_connection()
     c = conn.cursor()
-    c.execute(f"UPDATE users SET {nudge_type} = IFNULL({nudge_type}, 0) + 1 WHERE user_id = ?", (user_id,))
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(f"UPDATE users SET {nudge_type} = IFNULL({nudge_type}, 0) + 1, last_nudge_at = ? WHERE user_id = ?", (now_str, user_id))
     conn.commit()
     conn.close()
 
@@ -1827,6 +1849,8 @@ def auto_migrate_nudge_columns():
     for col in ["nudge_onboard_sent", "nudge_silent_sent", "nudge_revive_sent"]:
         try: c.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT 0")
         except: pass
+    try: c.execute("ALTER TABLE users ADD COLUMN last_nudge_at TEXT")
+    except: pass
     conn.commit()
     conn.close()
 

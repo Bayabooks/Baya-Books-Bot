@@ -196,6 +196,7 @@ Rules:
 LANG_MAP = {
     "am": "Amharic",
     "en": "English",
+    "om": "Afaan Oromoo",
     "or": "Afaan Oromoo",
     "ti": "Tigrinya",
 }
@@ -341,10 +342,15 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
             contents=clean_history,
             request_options={"timeout": 120}
         )
-        logging.info(f"chat_with_mentor got response, length={len(response.text)}")
+        
+        if not response.candidates or not response.candidates[0].content or not response.candidates[0].content.parts:
+            logging.warning(f"Gemini response has no content or was filtered: {getattr(response, 'prompt_feedback', None)}")
+            return None
+
+        text = response.text
+        logging.info(f"chat_with_mentor got response, length={len(text)}")
         # Convert any markdown to HTML manually if needed
         import re
-        text = response.text
         # Escape < and > to prevent Telegram HTML errors like <2>
         text = text.replace("<", "&lt;").replace(">", "&gt;")
         
@@ -365,7 +371,7 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
     except Exception as e:
         import traceback
         logging.error(f"Chat mentor error: {e}\n{traceback.format_exc()}")
-        return f"⚠️ AI ERROR: {e}"
+        return None
 
 
 def generate_psych_broadcast(lang='am'):

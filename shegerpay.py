@@ -82,8 +82,13 @@ def verify_receipt_image(file_bytes, expected_amount):
         "X-API-Key": getattr(config, "SHEGERPAY_API_KEY", "")
     }
     
+    try:
+        norm_amount = int(round(float(expected_amount)))
+    except (ValueError, TypeError):
+        norm_amount = expected_amount
+        
     data = {
-        "amount": expected_amount
+        "amount": norm_amount
     }
     
     last_err = None
@@ -93,7 +98,28 @@ def verify_receipt_image(file_bytes, expected_amount):
         }
         try:
             response = requests.post(url, headers=headers, data=data, files=files, timeout=35)
-            resp_data = response.json()
+            
+            if response.status_code not in (200, 201):
+                try:
+                    err_json = response.json()
+                    err_msg = err_json.get("message") or f"ShegerPay HTTP {response.status_code}"
+                except Exception:
+                    err_msg = f"ShegerPay HTTP {response.status_code}"
+                logging.warning(f"ShegerPay non-200 on attempt {attempt + 1}: {err_msg}")
+                last_err = err_msg
+                if attempt == 0:
+                    time.sleep(1)
+                    continue
+                return False, None, last_err
+
+            try:
+                resp_data = response.json()
+            except Exception as jde:
+                last_err = f"ShegerPay response parsing error: {jde}"
+                if attempt == 0:
+                    time.sleep(1)
+                    continue
+                return False, None, last_err
             
             is_verified = resp_data.get("verified", resp_data.get("valid", False))
             if is_verified:
@@ -110,15 +136,6 @@ def verify_receipt_image(file_bytes, expected_amount):
                 continue
             return False, None, last_err
             
-        except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else 500
-            if status_code == 400:
-                return False, None, "Invalid receipt image or missing transaction details."
-            elif status_code == 401:
-                return False, None, "ShegerPay API key authorization error."
-            else:
-                return False, None, f"ShegerPay server error: {status_code}"
-                
         except Exception as e:
             logging.error(f"ShegerPay OCR Error (attempt {attempt + 1}): {e}")
             last_err = f"Network Error: {str(e)}"

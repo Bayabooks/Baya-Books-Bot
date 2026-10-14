@@ -7,6 +7,8 @@ if os.environ.get("DEV_MODE"):
 import logging
 import uuid
 import json
+import time
+import re
 from urllib.parse import urlparse, parse_qs
 import threading
 import tempfile
@@ -3430,7 +3432,7 @@ def handle_messages(message):
                 import traceback
                 logging.error(traceback.format_exc())
                 try:
-                    bot.send_message(chat_id, f"⚠️ THREAD ERROR: {e}")
+                    bot.send_message(chat_id, S(user_lang, 'ai_error'))
                 except:
                     pass
                 
@@ -3441,14 +3443,61 @@ def handle_messages(message):
             bot.send_message(chat_id, S(get_lang(uid), 'tech_error', err=str(e)))
         return
 
-    # ── Book Input (title or photo) ──────────
+    # ── Receipt Photo or Document Handling ──────────
+    photo_file_id = None
     if message.photo:
+        photo_file_id = message.photo[-1].file_id
+    elif message.document:
+        doc = message.document
+        mime = (doc.mime_type or "").lower()
+        fname = (doc.file_name or "").lower()
+        if mime.startswith("image/") or any(fname.endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+            photo_file_id = doc.file_id
+        else:
+            bot.reply_to(message, S(get_lang(uid), 'text_only'))
+            return
+
+    if photo_file_id:
         lang = get_lang(uid)
         
         # Check if they have a pending checkout
         pending = database.get_latest_pending_payment(uid)
         if not pending:
-            bot.reply_to(message, "⚠️ የክፍያ ፓኬጅ አልመረጡም። እባክዎ በመጻሕፍት ቤቱ ውስጥ መጽሐፍ ይምረጡ ወይም /topup ን ተጭነው ፓኬጅ ይምረጡ። (Please select a book or package first.)")
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_heavy'), callback_data="buy_advice_225"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited'), callback_data="buy_advice_unlimited"))
+            markup.add(InlineKeyboardButton(S(lang, 'topup_btn_unlimited_month'), callback_data="buy_advice_unlimited_month"))
+            
+            prompt_text = (
+                "⚠️ <b>የክፍያ ፓኬጅ አልመረጡም!</b>\n\n"
+                "ደረሰኝዎን ከመላክዎ በፊት የትኛውን ፓኬጅ እንደከፈሉ እባክዎ ከታች ይምረጡ፦\n"
+                "<i>(ፓኬጁን እንደመረጡ ደረሰኙን እንደገና ይላኩት።)</i>"
+            ) if lang == 'am' else (
+                "⚠️ <b>No Package Selected!</b>\n\n"
+                "Please select the package you transferred for below, then re-send your receipt screenshot:"
+            )
+            bot.reply_to(message, prompt_text, parse_mode="HTML", reply_markup=markup)
+            
+            uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+            full_name = html.escape(get_full_name(message.from_user))
+            for adm_id in get_all_admin_ids():
+                try:
+                    bot.send_photo(
+                        adm_id,
+                        photo_file_id,
+                        caption=(
+                            f"⚠️ <b>Unsolicited Receipt Upload</b>\n"
+                            f"━━━━━━━━━━━━━━━━━━━━\n"
+                            f"👤 User: <b>{full_name}</b> ({uname})\n"
+                            f"🆔 User ID: <code>{uid}</code>\n"
+                            f"ℹ️ User uploaded a receipt before selecting a package."
+                        ),
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
             return
             
         pending_id, amount, tx_ref, order_id = pending
@@ -3457,7 +3506,7 @@ def handle_messages(message):
         msg = bot.reply_to(message, S(lang, 'receipt_verifying'))
         
         try:
-            file_id = message.photo[-1].file_id
+            file_id = photo_file_id
             file_info = bot.get_file(file_id)
             downloaded_file = bot.download_file(file_info.file_path)
             
@@ -3533,10 +3582,6 @@ def handle_messages(message):
                     bot.send_message(adm_id, f"⚠️ Error processing receipt photo for user {uid}: {e}")
                 except Exception:
                     pass
-        return
-
-    if message.document:
-        bot.reply_to(message, S(get_lang(uid), 'text_only'))
         return
 
     # ── Catch-all: Forward to admin ──────────

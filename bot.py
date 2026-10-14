@@ -194,10 +194,7 @@ def is_admin(user):
     return database.is_sub_admin(user.id)
 
 def is_owner(user):
-    if not user:
-        return False
-    username = (user.username or "").lower().lstrip('@')
-    return bool(username == config.ADMIN_USERNAME)
+    return is_admin(user)
 
 def is_admin_uid(uid):
     if not uid:
@@ -225,6 +222,53 @@ def get_admin_id():
         return row["user_id"] if row else None
     except Exception:
         return None
+
+def get_all_admin_ids():
+    admin_ids = set()
+    owner_id = get_admin_id()
+    if owner_id:
+        admin_ids.add(owner_id)
+    try:
+        sub_admins = database.get_all_sub_admins()
+        for sa in sub_admins:
+            if sa and sa.get('user_id'):
+                admin_ids.add(sa['user_id'])
+    except Exception as e:
+        logging.error(f"Error fetching sub_admins from db: {e}")
+    if hasattr(config, "SUB_ADMINS") and config.SUB_ADMINS:
+        try:
+            conn = database.get_connection()
+            c = conn.cursor()
+            for sa_name in config.SUB_ADMINS:
+                c.execute("SELECT user_id FROM users WHERE LOWER(username) = ?", (sa_name,))
+                row = c.fetchone()
+                if row and row["user_id"]:
+                    admin_ids.add(row["user_id"])
+            conn.close()
+        except Exception as e:
+            logging.error(f"Error resolving config.SUB_ADMINS: {e}")
+    return list(admin_ids)
+
+def is_valid_admin_token(token):
+    if not token:
+        return False
+    token_str = str(token).strip().lower().lstrip('@')
+    if token_str == config.ADMIN_USERNAME:
+        return True
+    if hasattr(config, "SUB_ADMINS") and token_str in config.SUB_ADMINS:
+        return True
+    try:
+        sub_admins = database.get_all_sub_admins()
+        for sa in sub_admins:
+            sa_uname = (sa.get('username') or "").lower().lstrip('@')
+            sa_uid = str(sa.get('user_id') or "")
+            if token_str == sa_uname or token_str == sa_uid:
+                return True
+    except Exception as e:
+        logging.error(f"Error checking admin token: {e}")
+    if is_admin_uid(token_str):
+        return True
+    return False
 
 ADMIN_MENU_COMMANDS = [
     BotCommand("dashboard", "🌐 Unified Web Admin Dashboard"),
@@ -293,10 +337,9 @@ def send_join_channel_msg(chat_id, uid=None):
     )
 
 def notify_admin(text):
-    admin_id = get_admin_id()
-    if admin_id:
+    for adm_id in get_all_admin_ids():
         try:
-            bot.send_message(admin_id, text, parse_mode="HTML")
+            bot.send_message(adm_id, text, parse_mode="HTML")
         except Exception:
             pass
 
@@ -329,6 +372,13 @@ def cmd_topup(message):
     chat_id = message.chat.id
     uid = message.from_user.id
     lang = get_lang(uid)
+    if is_admin(message.from_user) or is_admin_uid(uid):
+        bot.send_message(
+            chat_id,
+            "👑 <b>Admin Access Active</b>\n━━━━━━━━━━━━━━━━━━━━\n\nYou have unlimited, free access to all books, psychology advice, and bot features without payment!",
+            parse_mode="HTML"
+        )
+        return
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(S(lang, 'topup_btn_starter'), callback_data="buy_advice_25"))
     markup.add(InlineKeyboardButton(S(lang, 'topup_btn_pro'), callback_data="buy_advice_75"))
@@ -520,7 +570,12 @@ def cmd_library(message):
     if not check_channel_member(uid):
         send_join_channel_msg(message.chat.id, uid); return
 
-    ubooks, urentals, uexpired = database.get_user_books_state(uid)
+    if is_admin_uid(uid):
+        ubooks = get_all_book_keys()
+        urentals = {}
+        uexpired = []
+    else:
+        ubooks, urentals, uexpired = database.get_user_books_state(uid)
     orders = database.get_user_orders(uid)
 
     lines = []
@@ -909,6 +964,20 @@ BOOK_TITLES = DynamicBookTitles({
     "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
     "meaning": "የህይወት ትርጉም"
 })
+
+def get_all_book_keys():
+    keys = list(BOOK_TITLES.keys())
+    try:
+        conn = database.get_connection()
+        c = conn.cursor()
+        c.execute("SELECT book_key FROM author_books")
+        for row in c.fetchall():
+            if row and row['book_key'] and row['book_key'] not in keys:
+                keys.append(row['book_key'])
+        conn.close()
+    except Exception:
+        pass
+    return keys
 
 def notify_user_book_unlocked(uid, book_key, days=None):
     b_title = BOOK_TITLES.get(book_key, book_key)
@@ -1632,7 +1701,7 @@ def show_admin_menu(chat_id, user):
     )
 
 def enforce_preview_quota(uid, chat_id, call_id=None):
-    if uid == get_admin_id():
+    if is_admin_uid(uid):
         return True
     previews_left, timer_start = database.get_preview_quota(uid)
     if previews_left > 0:
@@ -2722,57 +2791,58 @@ def handle_messages(message):
             clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
         lang = get_lang(uid)
         user_info = message.from_user
-        admin_id = get_admin_id()
+        all_admins = get_all_admin_ids()
         feedback_text = message.text or ""
-        # Forward to admin anonymously
-        if admin_id:
-            try:
-                gender_str = "👨 Male" if database.get_onboarding_status(uid)[1] == "male" else "👩 Female"
-                markup = InlineKeyboardMarkup(row_width=2)
-                markup.add(
-                    InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{uid}"),
-                    InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
-                )
-                markup.add(
-                    InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{uid}")
-                )
-                markup.add(
-                    InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{uid}_5"),
-                    InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{uid}_10")
-                )
-                markup.add(
-                    InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{uid}_25"),
-                    InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{uid}_75")
-                )
-                markup.add(
-                    InlineKeyboardButton("👑 VIP (7 Days)", callback_data=f"adm_make_vip_{uid}_7"),
-                    InlineKeyboardButton("👑 VIP (30 Days)", callback_data=f"adm_make_vip_{uid}_30")
-                )
-                markup.add(
-                    InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{uid}"),
-                    InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{uid}")
-                )
-                
-                header = (
-                    f"💬 <b>New Feedback</b>\n━━━━━━━━━━━━━━\n"
-                    f"👤 {user_info.first_name} ({gender_str})\n"
-                    f"🌐 Lang: {lang}\n"
-                    f"🆔 ID: <code>{uid}</code>"
-                )
-                
-                if message.text:
-                    bot.send_message(
-                        admin_id,
-                        f"{header}\n\n<i>{message.text}</i>",
-                        parse_mode="HTML",
-                        reply_markup=markup
-                    )
-                else:
-                    # Send header with buttons, then copy the user's media (photo, etc.)
-                    bot.send_message(admin_id, header, parse_mode="HTML", reply_markup=markup)
-                    bot.copy_message(admin_id, chat_id, message.message_id)
-            except Exception as e:
-                pass
+        # Forward to all admins
+        if all_admins:
+            gender_str = "👨 Male" if database.get_onboarding_status(uid)[1] == "male" else "👩 Female"
+            markup = InlineKeyboardMarkup(row_width=2)
+            markup.add(
+                InlineKeyboardButton("↩️ Reply", callback_data=f"adm_reply_{uid}"),
+                InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
+            )
+            markup.add(
+                InlineKeyboardButton("📚 Push Book (Free / 10d Rent)", callback_data=f"adm_push_book_menu_{uid}")
+            )
+            markup.add(
+                InlineKeyboardButton("🎁 +5 Msgs", callback_data=f"adm_add_msgs_{uid}_5"),
+                InlineKeyboardButton("🎁 +10 Msgs", callback_data=f"adm_add_msgs_{uid}_10")
+            )
+            markup.add(
+                InlineKeyboardButton("🎁 +25 Msgs", callback_data=f"adm_add_msgs_{uid}_25"),
+                InlineKeyboardButton("🎁 +75 Msgs", callback_data=f"adm_add_msgs_{uid}_75")
+            )
+            markup.add(
+                InlineKeyboardButton("👑 VIP (7 Days)", callback_data=f"adm_make_vip_{uid}_7"),
+                InlineKeyboardButton("👑 VIP (30 Days)", callback_data=f"adm_make_vip_{uid}_30")
+            )
+            markup.add(
+                InlineKeyboardButton("🚫 Ban", callback_data=f"adm_ban_{uid}"),
+                InlineKeyboardButton("✅ Unban", callback_data=f"adm_unban_{uid}")
+            )
+            
+            header = (
+                f"💬 <b>New Feedback</b>\n━━━━━━━━━━━━━━\n"
+                f"👤 {user_info.first_name} ({gender_str})\n"
+                f"🌐 Lang: {lang}\n"
+                f"🆔 ID: <code>{uid}</code>"
+            )
+            
+            for adm_id in all_admins:
+                try:
+                    if message.text:
+                        bot.send_message(
+                            adm_id,
+                            f"{header}\n\n<i>{message.text}</i>",
+                            parse_mode="HTML",
+                            reply_markup=markup
+                        )
+                    else:
+                        # Send header with buttons, then copy the user's media (photo, etc.)
+                        bot.send_message(adm_id, header, parse_mode="HTML", reply_markup=markup)
+                        bot.copy_message(adm_id, chat_id, message.message_id)
+                except Exception as e:
+                    logging.error(f"Failed to forward feedback to admin {adm_id}: {e}")
         bot.send_message(chat_id, S(lang, 'feedback_thanks'), parse_mode="HTML")
         clear_state(uid)
         return
@@ -2919,9 +2989,12 @@ def handle_messages(message):
         return
         
     if message.text and "👤" in message.text:
+        is_adm = is_admin(message.from_user) or is_admin_uid(uid)
         is_vip = database.is_vip(uid)
         lang = get_lang(uid)
-        if is_vip:
+        if is_adm:
+            msgs_display = "♾️ Unlimited (👑 Admin)"
+        elif is_vip:
             user_data = database.get_user(uid)
             expiry_str = user_data["vip_expiry"] if user_data else ""
             formatted_expiry = ""
@@ -2937,7 +3010,12 @@ def handle_messages(message):
             msgs_display = f"<b>{msgs}</b>"
             
         count = database.get_uncredited_referral_count(uid)
-        ubooks, urentals, uexpired = database.get_user_books_state(uid)
+        if is_adm:
+            ubooks = get_all_book_keys()
+            urentals = {}
+            uexpired = []
+        else:
+            ubooks, urentals, uexpired = database.get_user_books_state(uid)
         books_section = ""
         if ubooks or uexpired:
             blines = []
@@ -2962,9 +3040,11 @@ def handle_messages(message):
             )
         if count >= 10:
             markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
-        markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
+        if not is_adm:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
         markup.add(InlineKeyboardButton(S(lang, 'btn_reset'), callback_data="confirm_reset"))
             
+        topup_hint = "" if is_adm else ("\n\n" + S(lang, 'mypage_topup_hint'))
         bot.send_message(
             chat_id,
             S(lang, 'mypage_title') + "\n━━━━━━━━━━━━━━━━━━━━\n" +
@@ -2973,8 +3053,8 @@ def handle_messages(message):
             S(lang, 'mypage_referrals', count=count) + "\n" +
             S(lang, 'mypage_referral_hint') + "\n\n" +
             S(lang, 'mypage_reset_info') + "\n" +
-            S(lang, 'mypage_reset_warn') + "\n\n" +
-            S(lang, 'mypage_topup_hint'),
+            S(lang, 'mypage_reset_warn') +
+            topup_hint,
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -3110,7 +3190,8 @@ def handle_messages(message):
                     return
                 
                 # Deduct quota (everyone counts down, but VIP/Admin bypass block)
-                database.consume_advice_message(uid)
+                if not is_adm:
+                    database.consume_advice_message(uid)
                 
                 # Check if this was the last free message — append punchy hook
                 remaining_after = database.get_advice_messages_left(uid)
@@ -3388,7 +3469,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             adata = database.get_all_authors_admin_data()
             self.send_response(200)
@@ -3402,7 +3483,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403)
                 self.end_headers()
                 self.wfile.write(b'Forbidden')
@@ -3418,7 +3499,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403)
                 self.end_headers()
                 self.wfile.write(b'Forbidden')
@@ -3435,7 +3516,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             limit = int(qs.get('limit', [100])[0])
             page = int(qs.get('page', [0])[0])
@@ -3453,7 +3534,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             target_uid = int(qs.get('uid', [0])[0])
             details = database.get_user_details(target_uid) or {}
@@ -3479,7 +3560,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             limit = int(qs.get('limit', [100])[0])
             page = int(qs.get('page', [0])[0])
@@ -3498,7 +3579,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             carts = database.get_abandoned_carts_admin_data()
             self.send_response(200)
@@ -3512,7 +3593,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             lines_n = int(qs.get('lines', [150])[0])
             logs = []
@@ -3534,7 +3615,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             token = qs.get('token', [''])[0]
-            if token != config.ADMIN_USERNAME:
+            if not is_valid_admin_token(token):
                 self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
             subs = database.get_all_sub_admins()
             self.send_response(200)
@@ -3603,7 +3684,12 @@ class DummyHandler(BaseHTTPRequestHandler):
             parsed_url = urlparse(self.path)
             qs = parse_qs(parsed_url.query)
             uid = qs.get('uid', [''])[0]
-            books, rentals, expired = database.get_user_books_state(uid)
+            if uid and is_admin_uid(uid):
+                books = get_all_book_keys()
+                rentals = {}
+                expired = []
+            else:
+                books, rentals, expired = database.get_user_books_state(uid)
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
@@ -3767,13 +3853,12 @@ class DummyHandler(BaseHTTPRequestHandler):
                     self.send_response(403); self.end_headers(); self.wfile.write(json.dumps({"ok": False, "error": "Unauthorized"}).encode('utf-8')); return
                 bkey = database.save_author_book(author['author_id'], data)
                 if data.get('status') == 'pending_review':
-                    admin_id = get_admin_id()
-                    if admin_id:
+                    for adm_id in get_all_admin_ids():
                         try:
                             a_name = author.get('pen_name') or author.get('name') or 'Author'
                             a_user = f"(@{author['telegram_username']})" if author.get('telegram_username') else ""
                             bot.send_message(
-                                admin_id,
+                                adm_id,
                                 f"📖 <b>NEW BOOK SUBMITTED FOR REVIEW</b>\n"
                                 f"━━━━━━━━━━━━━━━━━━━━\n"
                                 f"✍️ <b>Author:</b> {a_name} {a_user}\n"
@@ -3785,7 +3870,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                                 parse_mode="HTML"
                             )
                         except Exception as ex:
-                            logging.error(f"Failed to notify admin of book submission: {ex}")
+                            logging.error(f"Failed to notify admin {adm_id} of book submission: {ex}")
                 self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps({"ok": True, "book_key": bkey}).encode('utf-8'))
             except Exception as e:
@@ -3809,13 +3894,12 @@ class DummyHandler(BaseHTTPRequestHandler):
                     data.get('bank_account'),
                     data.get('account_holder')
                 )
-                admin_id = get_admin_id()
-                if admin_id:
+                for adm_id in get_all_admin_ids():
                     try:
                         a_name = author.get('pen_name') or author.get('name') or 'Author'
                         a_user = f"(@{author['telegram_username']})" if author.get('telegram_username') else ""
                         bot.send_message(
-                            admin_id,
+                            adm_id,
                             f"💸 <b>AUTHOR PAYOUT REQUEST</b>\n"
                             f"━━━━━━━━━━━━━━━━━━━━\n"
                             f"✍️ <b>Author:</b> {a_name} {a_user}\n"
@@ -3827,7 +3911,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                             parse_mode="HTML"
                         )
                     except Exception as ex:
-                        logging.error(f"Failed to notify admin of payout request: {ex}")
+                        logging.error(f"Failed to notify admin {adm_id} of payout request: {ex}")
                 self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps({"ok": True, "payout_id": pid}).encode('utf-8'))
             except Exception as e:
@@ -3858,7 +3942,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 token = data.get('token')
-                if token != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(token):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action')
                 msg = ""
@@ -3938,7 +4022,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 token = data.get('token')
-                if token != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(token):
                     self.send_response(403)
                     self.end_headers()
                     self.wfile.write(b'Forbidden')
@@ -4023,7 +4107,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                if data.get('token') != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(data.get('token')):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action')
                 uid = int(data.get('user_id'))
@@ -4071,7 +4155,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                if data.get('token') != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(data.get('token')):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action')
                 msg = ""
@@ -4105,7 +4189,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                if data.get('token') != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(data.get('token')):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action')
                 target_uid = int(data.get('user_id'))
@@ -4145,7 +4229,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                if data.get('token') != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(data.get('token')):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action') # 'test' or 'blast'
                 b_text = data.get('text', '').strip()
@@ -4162,12 +4246,16 @@ class DummyHandler(BaseHTTPRequestHandler):
                     markup.add(InlineKeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app")))
                     
                 if act == 'test':
-                    admin_id = get_admin_id()
-                    if admin_id:
-                        bot.send_message(admin_id, f"🧪 <b>[TEST BROADCAST PREVIEW]</b>\n\n{b_text}", parse_mode="HTML", reply_markup=markup)
-                        msg = f"Test broadcast preview sent to your Telegram (@{config.ADMIN_USERNAME})!"
+                    admins_to_test = get_all_admin_ids()
+                    if admins_to_test:
+                        for adm_id in admins_to_test:
+                            try:
+                                bot.send_message(adm_id, f"🧪 <b>[TEST BROADCAST PREVIEW]</b>\n\n{b_text}", parse_mode="HTML", reply_markup=markup)
+                            except Exception:
+                                pass
+                        msg = "Test broadcast preview sent to all admins!"
                     else:
-                        raise ValueError("Admin Telegram ID not configured.")
+                        raise ValueError("No admin Telegram IDs configured.")
                 elif act == 'blast':
                     def blast_worker():
                         uids = database.get_all_user_ids()
@@ -4196,7 +4284,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                if data.get('token') != config.ADMIN_USERNAME:
+                if not is_valid_admin_token(data.get('token')):
                     self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
                 act = data.get('action')
                 msg = ""

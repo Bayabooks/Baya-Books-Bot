@@ -108,6 +108,62 @@ def setup_database():
     except:
         pass
 
+    c.execute('''CREATE TABLE IF NOT EXISTS authors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        author_id TEXT UNIQUE,
+        access_token TEXT UNIQUE,
+        name TEXT,
+        pen_name TEXT,
+        email TEXT,
+        phone TEXT,
+        telegram_id INTEGER,
+        telegram_username TEXT,
+        royalty_percentage REAL DEFAULT 70.0,
+        bank_name TEXT DEFAULT 'CBE',
+        bank_account TEXT DEFAULT '',
+        account_holder TEXT DEFAULT '',
+        bio TEXT DEFAULT '',
+        status TEXT DEFAULT 'active',
+        created_at TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS author_books (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_key TEXT UNIQUE,
+        author_id TEXT,
+        title TEXT,
+        subtitle TEXT,
+        category TEXT DEFAULT 'psychology',
+        pages INTEGER DEFAULT 120,
+        price_buy REAL DEFAULT 399.0,
+        allow_rent INTEGER DEFAULT 1,
+        price_rent_5d REAL DEFAULT 99.0,
+        price_rent_10d REAL DEFAULT 149.0,
+        cover_url TEXT DEFAULT '',
+        description TEXT DEFAULT '',
+        sample_chapter_title TEXT DEFAULT 'መግቢያ (Introduction)',
+        sample_chapter_text TEXT DEFAULT '',
+        full_manuscript_url TEXT DEFAULT '',
+        status TEXT DEFAULT 'draft',
+        admin_feedback TEXT DEFAULT '',
+        created_at TEXT,
+        updated_at TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS author_payouts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        author_id TEXT,
+        amount REAL,
+        bank_name TEXT,
+        bank_account TEXT,
+        account_holder TEXT,
+        status TEXT DEFAULT 'pending',
+        tx_ref TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        requested_at TEXT,
+        processed_at TEXT
+    )''')
+
     conn.commit()
     conn.close()
 
@@ -1785,3 +1841,407 @@ def mark_paywall_nudged(user_id):
              (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_id))
     conn.commit()
     conn.close()
+
+
+# ─── Author & Publishing Platform ────────────────────────
+import uuid
+import secrets
+
+def create_or_get_author(name, phone='', telegram_username='', telegram_id=None, royalty=70.0, pen_name=''):
+    """Creates a new author record or returns an existing one."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    existing = None
+    if telegram_id:
+        c.execute("SELECT * FROM authors WHERE telegram_id = ?", (telegram_id,))
+        existing = c.fetchone()
+    if not existing and telegram_username:
+        clean_u = telegram_username.strip().lstrip('@').lower()
+        c.execute("SELECT * FROM authors WHERE LOWER(telegram_username) = ?", (clean_u,))
+        existing = c.fetchone()
+        
+    if existing:
+        conn.close()
+        return dict(existing)
+        
+    author_id = f"auth_{uuid.uuid4().hex[:8]}"
+    access_token = f"AUTH-{secrets.token_hex(4).upper()}"
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    clean_u = telegram_username.strip().lstrip('@').lower() if telegram_username else ''
+    
+    c.execute('''
+        INSERT INTO authors (
+            author_id, access_token, name, pen_name, phone, 
+            telegram_id, telegram_username, royalty_percentage, 
+            bank_name, bank_account, account_holder, bio, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CBE', '', '', '', 'active', ?)
+    ''', (author_id, access_token, name.strip(), pen_name.strip() or name.strip(), phone.strip(), 
+          telegram_id, clean_u, float(royalty), now_str))
+    
+    conn.commit()
+    c.execute("SELECT * FROM authors WHERE author_id = ?", (author_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row)
+
+def get_author_by_token(token):
+    """Retrieve author by access_token or author_id."""
+    if not token:
+        return None
+    token = token.strip()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM authors WHERE access_token = ? OR author_id = ?", (token, token))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_author_by_telegram_id(telegram_id, username=None):
+    """Retrieve author by telegram ID or username."""
+    conn = get_connection()
+    c = conn.cursor()
+    row = None
+    if telegram_id:
+        c.execute("SELECT * FROM authors WHERE telegram_id = ?", (telegram_id,))
+        row = c.fetchone()
+    if not row and username:
+        clean_u = username.strip().lstrip('@').lower()
+        c.execute("SELECT * FROM authors WHERE LOWER(telegram_username) = ?", (clean_u,))
+        row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_author_profile(author_id, data):
+    """Updates author pen name, bio, phone, and bank details."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        UPDATE authors SET
+            pen_name = COALESCE(?, pen_name),
+            bio = COALESCE(?, bio),
+            phone = COALESCE(?, phone),
+            bank_name = COALESCE(?, bank_name),
+            bank_account = COALESCE(?, bank_account),
+            account_holder = COALESCE(?, account_holder)
+        WHERE author_id = ?
+    ''', (
+        data.get('pen_name'),
+        data.get('bio'),
+        data.get('phone'),
+        data.get('bank_name'),
+        data.get('bank_account'),
+        data.get('account_holder'),
+        author_id
+    ))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_author_dashboard_stats(author_id):
+    """Calculates all metrics, sales, books, and payouts for an author."""
+    author = get_author_by_token(author_id)
+    if not author:
+        return None
+        
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # 1. Fetch author books
+    c.execute("SELECT * FROM author_books WHERE author_id = ? ORDER BY id DESC", (author_id,))
+    books_rows = c.fetchall()
+    author_books = [dict(r) for r in books_rows]
+    
+    # 2. Calculate earnings and readers per book
+    total_copies_sold = 0
+    total_rentals = 0
+    total_gross_revenue = 0.0
+    recent_sales = []
+    
+    royalty_pct = float(author.get('royalty_percentage', 70.0)) / 100.0
+    
+    for b in author_books:
+        bk = b['book_key']
+        
+        # Count sales from payments table
+        c.execute('''
+            SELECT p.id, p.user_id, p.amount, p.payment_date, p.tx_ref, u.first_name, u.username
+            FROM payments p
+            LEFT JOIN users u ON p.user_id = u.user_id
+            WHERE (p.status = 'approved' OR p.receipt_file_id LIKE '%WEBHOOK%' OR p.tx_ref LIKE '%WEBHOOK%')
+              AND (p.tx_ref LIKE ? OR p.receipt_file_id LIKE ?)
+            ORDER BY p.id DESC
+        ''', (f"%BOOK%{bk}%", f"%BOOK%{bk}%"))
+        sales = c.fetchall()
+        
+        b_sold = 0
+        b_rented = 0
+        b_revenue = 0.0
+        
+        for s in sales:
+            amt = float(s['amount'] or 0.0)
+            tx = (s['tx_ref'] or '').upper()
+            is_rent = 'RENT' in tx or 'EXT' in tx
+            if is_rent:
+                b_rented += 1
+            else:
+                b_sold += 1
+            b_revenue += amt
+            
+            author_cut = round(amt * royalty_pct, 2)
+            recent_sales.append({
+                "payment_id": s['id'],
+                "book_key": bk,
+                "book_title": b['title'],
+                "buyer_name": s['first_name'] or 'Reader',
+                "buyer_username": s['username'] or '',
+                "type": "Rental" if is_rent else "Lifetime Purchase",
+                "gross_amount": amt,
+                "author_cut": author_cut,
+                "date": s['payment_date']
+            })
+            
+        b['copies_sold'] = b_sold
+        b['rentals_count'] = b_rented
+        b['gross_revenue'] = b_revenue
+        b['author_royalties'] = round(b_revenue * royalty_pct, 2)
+        
+        total_copies_sold += b_sold
+        total_rentals += b_rented
+        total_gross_revenue += b_revenue
+
+    recent_sales.sort(key=lambda x: str(x['date'] or ''), reverse=True)
+    recent_sales = recent_sales[:50]
+    
+    total_royalties = round(total_gross_revenue * royalty_pct, 2)
+    
+    # 3. Payouts calculation
+    c.execute("SELECT * FROM author_payouts WHERE author_id = ? ORDER BY id DESC", (author_id,))
+    payout_rows = c.fetchall()
+    payouts = [dict(p) for p in payout_rows]
+    
+    paid_amount = sum(float(p['amount']) for p in payouts if p['status'] == 'paid')
+    pending_amount = sum(float(p['amount']) for p in payouts if p['status'] == 'pending')
+    available_balance = max(0.0, round(total_royalties - paid_amount - pending_amount, 2))
+    
+    conn.close()
+    
+    return {
+        "author": author,
+        "kpis": {
+            "total_gross_revenue": round(total_gross_revenue, 2),
+            "royalty_percentage": round(royalty_pct * 100, 1),
+            "total_royalties": total_royalties,
+            "paid_amount": round(paid_amount, 2),
+            "pending_amount": round(pending_amount, 2),
+            "available_balance": available_balance,
+            "total_copies_sold": total_copies_sold,
+            "total_rentals": total_rentals,
+            "total_readers": total_copies_sold + total_rentals,
+            "books_count": len(author_books)
+        },
+        "books": author_books,
+        "recent_sales": recent_sales,
+        "payouts": payouts
+    }
+
+def save_author_book(author_id, data):
+    """Creates or updates a book for an author."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    book_key = (data.get('book_key') or '').strip().lower()
+    title = data.get('title', '').strip()
+    subtitle = data.get('subtitle', '').strip()
+    category = data.get('category', 'psychology').strip()
+    pages = int(data.get('pages', 100))
+    price_buy = float(data.get('price_buy', 399.0))
+    allow_rent = 1 if data.get('allow_rent', True) else 0
+    price_rent_5d = float(data.get('price_rent_5d', 99.0))
+    price_rent_10d = float(data.get('price_rent_10d', 149.0))
+    cover_url = data.get('cover_url', '').strip()
+    description = data.get('description', '').strip()
+    sample_title = data.get('sample_chapter_title', 'መግቢያ (Introduction)').strip()
+    sample_text = data.get('sample_chapter_text', '').strip()
+    full_url = data.get('full_manuscript_url', '').strip()
+    req_status = data.get('status', 'draft') # 'draft' or 'pending_review'
+    
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if not book_key:
+        clean_slug = ''.join(ch for ch in title.lower() if ch.isalnum() or ch in '_-')[:16]
+        if not clean_slug:
+            clean_slug = f"book_{uuid.uuid4().hex[:6]}"
+        book_key = f"{clean_slug}_{uuid.uuid4().hex[:4]}"
+        
+    c.execute("SELECT id, author_id, status FROM author_books WHERE book_key = ?", (book_key,))
+    existing = c.fetchone()
+    
+    if existing:
+        if existing['author_id'] != author_id:
+            conn.close()
+            raise ValueError("You do not have permission to edit this book.")
+        c.execute('''
+            UPDATE author_books SET
+                title = ?, subtitle = ?, category = ?, pages = ?,
+                price_buy = ?, allow_rent = ?, price_rent_5d = ?, price_rent_10d = ?,
+                cover_url = ?, description = ?, sample_chapter_title = ?, sample_chapter_text = ?,
+                full_manuscript_url = ?, status = ?, updated_at = ?
+            WHERE book_key = ?
+        ''', (
+            title, subtitle, category, pages,
+            price_buy, allow_rent, price_rent_5d, price_rent_10d,
+            cover_url, description, sample_title, sample_text,
+            full_url, req_status, now_str, book_key
+        ))
+    else:
+        c.execute('''
+            INSERT INTO author_books (
+                book_key, author_id, title, subtitle, category, pages,
+                price_buy, allow_rent, price_rent_5d, price_rent_10d,
+                cover_url, description, sample_chapter_title, sample_chapter_text,
+                full_manuscript_url, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            book_key, author_id, title, subtitle, category, pages,
+            price_buy, allow_rent, price_rent_5d, price_rent_10d,
+            cover_url, description, sample_title, sample_text,
+            full_url, req_status, now_str, now_str
+        ))
+        
+    conn.commit()
+    conn.close()
+    return book_key
+
+def request_author_payout(author_id, amount, bank_name, bank_account, account_holder):
+    """Submits a payout request for an author."""
+    stats = get_author_dashboard_stats(author_id)
+    if not stats:
+        raise ValueError("Author not found.")
+        
+    avail = stats['kpis']['available_balance']
+    amount = float(amount)
+    if amount < 100.0:
+        raise ValueError("Minimum payout amount is 100 ETB.")
+    if amount > avail:
+        raise ValueError(f"Requested amount ({amount} ETB) exceeds available balance ({avail} ETB).")
+        
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO author_payouts (
+            author_id, amount, bank_name, bank_account, account_holder,
+            status, tx_ref, notes, requested_at
+        ) VALUES (?, ?, ?, ?, ?, 'pending', '', '', ?)
+    ''', (author_id, amount, bank_name, bank_account, account_holder, now_str))
+    payout_id = c.lastrowid
+    
+    c.execute('''
+        UPDATE authors SET bank_name = ?, bank_account = ?, account_holder = ?
+        WHERE author_id = ?
+    ''', (bank_name, bank_account, account_holder, author_id))
+    
+    conn.commit()
+    conn.close()
+    return payout_id
+
+def get_all_authors_admin_data():
+    """Returns summary of all authors, pending book reviews, and pending payouts."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    c.execute("SELECT * FROM authors ORDER BY id DESC")
+    authors_rows = c.fetchall()
+    
+    authors_list = []
+    for a in authors_rows:
+        aid = a['author_id']
+        stats = get_author_dashboard_stats(aid)
+        k = stats['kpis'] if stats else {}
+        ad = dict(a)
+        ad['kpis'] = k
+        authors_list.append(ad)
+        
+    c.execute('''
+        SELECT ab.*, a.name as author_name, a.pen_name, a.telegram_username
+        FROM author_books ab
+        LEFT JOIN authors a ON ab.author_id = a.author_id
+        WHERE ab.status = 'pending_review'
+        ORDER BY ab.id DESC
+    ''')
+    pending_books = [dict(r) for r in c.fetchall()]
+    
+    c.execute('''
+        SELECT ap.*, a.name as author_name, a.pen_name, a.telegram_username, a.phone
+        FROM author_payouts ap
+        LEFT JOIN authors a ON ap.author_id = a.author_id
+        WHERE ap.status = 'pending'
+        ORDER BY ap.id DESC
+    ''')
+    pending_payouts = [dict(r) for r in c.fetchall()]
+    
+    conn.close()
+    return {
+        "authors": authors_list,
+        "pending_books": pending_books,
+        "pending_payouts": pending_payouts
+    }
+
+def admin_process_book_submission(book_key, action, feedback=''):
+    """Approves or rejects a submitted book."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM author_books WHERE book_key = ?", (book_key,))
+    book = c.fetchone()
+    if not book:
+        conn.close()
+        raise ValueError(f"Book {book_key} not found.")
+        
+    new_status = 'published' if action == 'approve' else 'rejected'
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        UPDATE author_books 
+        SET status = ?, admin_feedback = ?, updated_at = ?
+        WHERE book_key = ?
+    ''', (new_status, feedback, now_str, book_key))
+    conn.commit()
+    conn.close()
+    return dict(book)
+
+def admin_process_payout_request(payout_id, action, tx_ref='', notes=''):
+    """Approves or rejects a payout request."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM author_payouts WHERE id = ?", (payout_id,))
+    payout = c.fetchone()
+    if not payout:
+        conn.close()
+        raise ValueError(f"Payout #{payout_id} not found.")
+        
+    new_status = 'paid' if action == 'approve' else 'rejected'
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        UPDATE author_payouts
+        SET status = ?, tx_ref = ?, notes = ?, processed_at = ?
+        WHERE id = ?
+    ''', (new_status, tx_ref, notes, now_str, payout_id))
+    conn.commit()
+    conn.close()
+    return dict(payout)
+
+def get_published_author_books():
+    """Returns all published author books."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT ab.*, a.name as author_real_name, a.pen_name
+        FROM author_books ab
+        LEFT JOIN authors a ON ab.author_id = a.author_id
+        WHERE ab.status = 'published'
+        ORDER BY ab.id DESC
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+

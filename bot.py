@@ -228,6 +228,7 @@ def get_admin_id():
 
 ADMIN_MENU_COMMANDS = [
     BotCommand("dashboard", "🌐 Unified Web Admin Dashboard"),
+    BotCommand("author", "✍️ Author & Publisher Portal"),
     BotCommand("rentals", "📚 Manage rented books & extensions"),
     BotCommand("lookup", "🔍 Look up user (Profile, Books, Balance)"),
     BotCommand("investigate", "🕵️ Audit report of last 20 users"),
@@ -244,6 +245,7 @@ DEFAULT_USER_COMMANDS = [
     BotCommand("start", "🚀 Start / Restart the bot"),
     BotCommand("topup", "💎 Top up / Buy packages"),
     BotCommand("mylibrary", "📚 My Books & Library"),
+    BotCommand("author", "✍️ Author & Publisher Portal"),
 ]
 
 def setup_admin_menu(uid):
@@ -878,12 +880,35 @@ def cmd_del_last(message):
         bot.reply_to(message, "No payments found to delete.")
     conn.close()
 
-BOOK_TITLES = {
+class DynamicBookTitles(dict):
+    def get(self, key, default=None):
+        if not key:
+            return default if default is not None else ''
+        k_str = str(key).strip().lower()
+        val = super().get(k_str)
+        if val:
+            return val
+        try:
+            conn = database.get_connection()
+            c = conn.cursor()
+            c.execute("SELECT title FROM author_books WHERE book_key = ?", (k_str,))
+            row = c.fetchone()
+            conn.close()
+            if row and row['title']:
+                return row['title']
+        except Exception:
+            pass
+        return default if default is not None else key
+
+    def __getitem__(self, key):
+        return self.get(key, key)
+
+BOOK_TITLES = DynamicBookTitles({
     "narcissist": "የናርስሲስቶች ወጥመድ",
     "boundaries": "ድንበርህን አብጅ",
     "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
     "meaning": "የህይወት ትርጉም"
-}
+})
 
 def notify_user_book_unlocked(uid, book_key, days=None):
     b_title = BOOK_TITLES.get(book_key, book_key)
@@ -1345,6 +1370,58 @@ def cmd_open_admin_dashboard(message):
         parse_mode="HTML",
         reply_markup=markup
     )
+
+@bot.message_handler(commands=["author", "publish", "authors"])
+def cmd_author_portal(message):
+    uid = message.from_user.id
+    username = message.from_user.username
+    author = database.get_author_by_telegram_id(uid, username)
+    
+    if author:
+        if not author.get('telegram_id'):
+            conn = database.get_connection()
+            c = conn.cursor()
+            c.execute("UPDATE authors SET telegram_id = ? WHERE author_id = ?", (uid, author['author_id']))
+            conn.commit()
+            conn.close()
+            
+        portal_url = f"{config.BASE_URL}/author_dashboard?token={author['access_token']}"
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("🚀 Launch Author Dashboard", web_app=WebAppInfo(url=portal_url)),
+            InlineKeyboardButton("🌐 Open in Web Browser", url=portal_url)
+        )
+        pen_name = author.get('pen_name') or author.get('name') or 'Author'
+        bot.reply_to(
+            message,
+            f"✍️ <b>WELCOME TO YOUR AUTHOR DASHBOARD</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Hello, <b>{pen_name}</b>!\n\n"
+            f"• <b>Author Key:</b> <code>{author['access_token']}</code>\n"
+            f"• <b>Royalty Rate:</b> <code>{author.get('royalty_percentage', 70)}%</code>\n\n"
+            f"Tap below to view your sales analytics, submit new books, and request payouts:",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+    else:
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("💬 Apply as Author (@bayabooks)", url="https://t.me/bayabooks"),
+            InlineKeyboardButton("🌐 Visit Author Portal", url=f"{config.BASE_URL}/author_dashboard")
+        )
+        bot.reply_to(
+            message,
+            f"✍️ <b>BAYA BOOKS AUTHOR & PUBLISHER PROGRAM</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Are you an author looking to publish and sell digital books across Ethiopia?\n\n"
+            f"💎 <b>70% Author Royalty Share:</b> Transparent and fair.\n"
+            f"📖 <b>High Reader Reach:</b> Bot & Telegram Mini App distribution.\n"
+            f"⚡ <b>Flexible Models:</b> Full purchases & 5/10-day rentals.\n"
+            f"💳 <b>Automated Payouts:</b> Fast withdrawals to CBE & Telebirr.\n\n"
+            f"To register and receive your Author Access Key, contact our publisher team:",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
 
 @bot.message_handler(commands=["rentals", "manage_rentals", "book_rentals"])
 def cmd_manage_rentals(message):
@@ -3278,6 +3355,49 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Admin Dashboard not found.")
             return
 
+        if self.path.startswith('/author_dashboard'):
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+            self.end_headers()
+            try:
+                with open('author_dashboard.html', 'rb') as f:
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.wfile.write(b"Author Dashboard not found.")
+            return
+
+        if self.path.startswith('/api/author/data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            author = database.get_author_by_token(token)
+            if not author:
+                self.send_response(403); self.end_headers(); self.wfile.write(json.dumps({"ok": False, "error": "Invalid or missing Author Token"}).encode('utf-8')); return
+            stats = database.get_author_dashboard_stats(author['author_id'])
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "data": stats}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/authors_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            adata = database.get_all_authors_admin_data()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(adata).encode('utf-8'))
+            return
+
         if self.path.startswith('/admin/data'):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
@@ -3633,6 +3753,182 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path == '/api/author/save_book':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                author = database.get_author_by_token(token)
+                if not author:
+                    self.send_response(403); self.end_headers(); self.wfile.write(json.dumps({"ok": False, "error": "Unauthorized"}).encode('utf-8')); return
+                bkey = database.save_author_book(author['author_id'], data)
+                if data.get('status') == 'pending_review':
+                    admin_id = get_admin_id()
+                    if admin_id:
+                        try:
+                            a_name = author.get('pen_name') or author.get('name') or 'Author'
+                            a_user = f"(@{author['telegram_username']})" if author.get('telegram_username') else ""
+                            bot.send_message(
+                                admin_id,
+                                f"📖 <b>NEW BOOK SUBMITTED FOR REVIEW</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━\n"
+                                f"✍️ <b>Author:</b> {a_name} {a_user}\n"
+                                f"📚 <b>Title:</b> {data.get('title')}\n"
+                                f"🏷️ <b>Category:</b> {data.get('category')}\n"
+                                f"💰 <b>Purchase Price:</b> {data.get('price_buy')} ETB\n"
+                                f"⏳ <b>Rental Price:</b> 5d: {data.get('price_rent_5d')} ETB | 10d: {data.get('price_rent_10d')} ETB\n\n"
+                                f"<i>Review & approve in the Admin Dashboard under Authors.</i>",
+                                parse_mode="HTML"
+                            )
+                        except Exception as ex:
+                            logging.error(f"Failed to notify admin of book submission: {ex}")
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "book_key": bkey}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path == '/api/author/request_payout':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                author = database.get_author_by_token(token)
+                if not author:
+                    self.send_response(403); self.end_headers(); self.wfile.write(json.dumps({"ok": False, "error": "Unauthorized"}).encode('utf-8')); return
+                pid = database.request_author_payout(
+                    author['author_id'],
+                    data.get('amount'),
+                    data.get('bank_name'),
+                    data.get('bank_account'),
+                    data.get('account_holder')
+                )
+                admin_id = get_admin_id()
+                if admin_id:
+                    try:
+                        a_name = author.get('pen_name') or author.get('name') or 'Author'
+                        a_user = f"(@{author['telegram_username']})" if author.get('telegram_username') else ""
+                        bot.send_message(
+                            admin_id,
+                            f"💸 <b>AUTHOR PAYOUT REQUEST</b>\n"
+                            f"━━━━━━━━━━━━━━━━━━━━\n"
+                            f"✍️ <b>Author:</b> {a_name} {a_user}\n"
+                            f"💰 <b>Amount:</b> <b>{data.get('amount')} ETB</b>\n"
+                            f"🏦 <b>Bank:</b> {data.get('bank_name')}\n"
+                            f"🔢 <b>Account:</b> <code>{data.get('bank_account')}</code>\n"
+                            f"👤 <b>Holder:</b> {data.get('account_holder')}\n\n"
+                            f"<i>Process this transfer in your Admin Dashboard under Authors.</i>",
+                            parse_mode="HTML"
+                        )
+                    except Exception as ex:
+                        logging.error(f"Failed to notify admin of payout request: {ex}")
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "payout_id": pid}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path == '/api/author/update_profile':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                author = database.get_author_by_token(token)
+                if not author:
+                    self.send_response(403); self.end_headers(); self.wfile.write(json.dumps({"ok": False, "error": "Unauthorized"}).encode('utf-8')); return
+                database.update_author_profile(author['author_id'], data)
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/author_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                if token != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action')
+                msg = ""
+                if act == 'create_author':
+                    name = data.get('name', '').strip()
+                    phone = data.get('phone', '').strip()
+                    tg_user = data.get('telegram_username', '').strip()
+                    royalty = float(data.get('royalty', 70.0))
+                    author_rec = database.create_or_get_author(name, phone=phone, telegram_username=tg_user, royalty=royalty)
+                    msg = f"Author registered: {author_rec['name']} (Key: {author_rec['access_token']})"
+                elif act == 'update_royalty':
+                    aid = data.get('author_id')
+                    royalty = float(data.get('royalty', 70.0))
+                    conn = database.get_connection()
+                    c = conn.cursor()
+                    c.execute("UPDATE authors SET royalty_percentage = ? WHERE author_id = ?", (royalty, aid))
+                    conn.commit()
+                    conn.close()
+                    msg = f"Royalty updated to {royalty}%"
+                elif act == 'review_book':
+                    bkey = data.get('book_key')
+                    sub_act = data.get('sub_action')
+                    feedback = data.get('feedback', '')
+                    b_rec = database.admin_process_book_submission(bkey, sub_act, feedback)
+                    msg = f"Book '{b_rec['title']}' {'approved & published' if sub_act == 'approve' else 'rejected'}."
+                    author = database.get_author_by_token(b_rec['author_id'])
+                    if author and author.get('telegram_id'):
+                        try:
+                            if sub_act == 'approve':
+                                bot.send_message(
+                                    author['telegram_id'],
+                                    f"🎉 <b>Congratulations!</b>\n\n"
+                                    f"Your book <b>{b_rec['title']}</b> has been approved and is now LIVE in the Baya Books Library!\n"
+                                    f"Readers can now purchase and rent it.",
+                                    parse_mode="HTML"
+                                )
+                            else:
+                                bot.send_message(
+                                    author['telegram_id'],
+                                    f"ℹ️ <b>Book Review Update</b>\n\n"
+                                    f"Your book <b>{b_rec['title']}</b> requires updates before publishing:\n"
+                                    f"<i>{feedback or 'Please check your author dashboard for details.'}</i>",
+                                    parse_mode="HTML"
+                                )
+                        except Exception:
+                            pass
+                elif act == 'process_payout':
+                    pid = int(data.get('payout_id'))
+                    sub_act = data.get('sub_action')
+                    tx_ref = data.get('tx_ref', '').strip()
+                    notes = data.get('notes', '').strip()
+                    p_rec = database.admin_process_payout_request(pid, sub_act, tx_ref, notes)
+                    msg = f"Payout #{pid} marked as {'PAID' if sub_act == 'approve' else 'REJECTED'}."
+                    author = database.get_author_by_token(p_rec['author_id'])
+                    if author and author.get('telegram_id') and sub_act == 'approve':
+                        try:
+                            bot.send_message(
+                                author['telegram_id'],
+                                f"✅ <b>Payout Transferred!</b>\n\n"
+                                f"We have transferred <b>{p_rec['amount']} ETB</b> to your {p_rec['bank_name']} account (<code>{p_rec['bank_account']}</code>).\n"
+                                f"Reference: <code>{tx_ref or 'Direct Transfer'}</code>\n\n"
+                                f"Thank you for being a valued author on Baya Books! 💙",
+                                parse_mode="HTML"
+                            )
+                        except Exception:
+                            pass
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
             return
 

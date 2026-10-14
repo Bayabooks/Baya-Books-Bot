@@ -211,6 +211,24 @@ def remove_user_book(user_id, book_key):
     conn.commit()
     conn.close()
 
+def clear_expired_rental(user_id, book_key):
+    """Safely removes a book rental ONLY if expires_at is set and in the past. Never deletes permanent purchases."""
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(
+        "DELETE FROM user_books WHERE user_id = ? AND book_key = ? AND expires_at IS NOT NULL AND (expires_at <= ? OR expires_at <= datetime('now'))",
+        (user_id, book_key, now_str)
+    )
+    deleted = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
+
 def get_user_books_state(user_id):
     if not user_id:
         return [], {}, []
@@ -1789,6 +1807,10 @@ def set_setting(key, value):
 
 def mark_nudge_sent(user_id, nudge_type):
     """Marks a user as having received a specific nudge (nudge_onboard_sent, nudge_silent_sent, nudge_revive_sent)"""
+    ALLOWED_NUDGES = {"nudge_onboard_sent", "nudge_silent_sent", "nudge_revive_sent"}
+    if nudge_type not in ALLOWED_NUDGES:
+        logging.error(f"Invalid nudge_type in mark_nudge_sent: {nudge_type}")
+        return
     conn = get_connection()
     c = conn.cursor()
     c.execute(f"UPDATE users SET {nudge_type} = IFNULL({nudge_type}, 0) + 1 WHERE user_id = ?", (user_id,))

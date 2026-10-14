@@ -249,20 +249,28 @@ def get_all_admin_ids():
             logging.error(f"Error resolving config.SUB_ADMINS: {e}")
     return list(admin_ids)
 
+import hmac
+
 def is_valid_admin_token(token):
     if not token:
         return False
-    token_str = str(token).strip().lower().lstrip('@')
-    if token_str == config.ADMIN_USERNAME:
-        return True
-    if hasattr(config, "SUB_ADMINS") and token_str in config.SUB_ADMINS:
+    token_str = str(token).strip()
+    
+    # 1. Cryptographic admin secret comparison
+    if hasattr(config, "ADMIN_SECRET_KEY") and config.ADMIN_SECRET_KEY:
+        if hmac.compare_digest(token_str, config.ADMIN_SECRET_KEY):
+            return True
+
+    # 2. Sub-Admin verification
+    token_clean = token_str.lower().lstrip('@')
+    if hasattr(config, "SUB_ADMINS") and token_clean in config.SUB_ADMINS:
         return True
     try:
         sub_admins = database.get_all_sub_admins()
         for sa in sub_admins:
             sa_uname = (sa.get('username') or "").lower().lstrip('@')
             sa_uid = str(sa.get('user_id') or "")
-            if token_str == sa_uname or token_str == sa_uid:
+            if token_clean == sa_uname or token_str == sa_uid:
                 return True
     except Exception as e:
         logging.error(f"Error checking admin token: {e}")
@@ -1491,7 +1499,7 @@ def cmd_open_admin_dashboard(message):
     if not is_admin(message.from_user):
         bot.reply_to(message, "❌ Admin only!")
         return
-    dash_url = f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_USERNAME}"
+    dash_url = f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_SECRET_KEY}"
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("🚀 Open Admin Dashboard", web_app=WebAppInfo(url=dash_url)),
@@ -1603,7 +1611,7 @@ def send_rentals_admin_dashboard(chat_id, user=None, call=None):
     markup.add(
         InlineKeyboardButton(
             "🌐 Open Web Rentals Dashboard",
-            web_app=WebAppInfo(url=f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_USERNAME}#rentals")
+            web_app=WebAppInfo(url=f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_SECRET_KEY}#rentals")
         )
     )
     markup.add(
@@ -3596,6 +3604,15 @@ def process_payment_success(tx_ref):
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/admin_dashboard'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if not is_valid_admin_token(token):
+                self.send_response(403)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"403 Forbidden: Invalid or missing Admin credentials.")
+                return
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -3799,12 +3816,20 @@ class DummyHandler(BaseHTTPRequestHandler):
             return
 
         if self.path.startswith('/admin/advice_history'):
+            parsed_url = urlparse(self.path)
+            qs = parse_qs(parsed_url.query)
+            token = qs.get('token', [''])[0]
+            if not is_valid_admin_token(token):
+                self.send_response(403)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"403 Forbidden")
+                return
+
             self.send_response(200)
-            self.send_header("Content-type", "text/html")
+            self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
             try:
-                parsed_url = urlparse(self.path)
-                qs = parse_qs(parsed_url.query)
                 uid = int(qs.get('uid', [0])[0])
                 history_str = database.get_advice_history(uid)
                 if not history_str or history_str == '[]':
@@ -3813,45 +3838,50 @@ class DummyHandler(BaseHTTPRequestHandler):
                 history = json.loads(history_str)
                 html_out = "<ul>"
                 for msg in history:
-                    role = msg.get("role", "user")
+                    raw_role = str(msg.get("role", "user")).lower()
+                    role_safe = html.escape(raw_role)
                     text = msg.get("parts", [""])[0]
-                    color = "blue" if role == "user" else "green"
-                    html_out += f"<li class='mb-2'><strong class='text-{color}-600'>{role.upper()}:</strong> {html.escape(text)}</li>"
+                    color = "blue" if raw_role == "user" else "green"
+                    html_out += f"<li class='mb-2'><strong class='text-{color}-600'>{role_safe.upper()}:</strong> {html.escape(text)}</li>"
                 html_out += "</ul>"
                 self.wfile.write(html_out.encode('utf-8'))
             except Exception as e:
-                self.wfile.write(f"Error: {e}".encode('utf-8'))
+                self.wfile.write(f"Error: {html.escape(str(e))}".encode('utf-8'))
             return
 
         if self.path.startswith('/static/'):
-            filepath = self.path.lstrip('/').split('?')[0]
-            if os.path.exists(filepath) and os.path.isfile(filepath):
-                ext = filepath.split('.')[-1].lower()
-                if ext in ['jpg', 'jpeg']:
-                    mime = 'image/jpeg'
-                elif ext == 'png':
-                    mime = 'image/png'
-                elif ext == 'json':
-                    mime = 'application/json; charset=utf-8'
-                else:
-                    mime = 'application/octet-stream'
-                with open(filepath, 'rb') as f:
-                    raw_bytes = f.read()
-                accept_enc = self.headers.get('Accept-Encoding', '')
-                self.send_response(200)
-                self.send_header("Content-type", mime)
-                self.send_header("Cache-Control", "public, max-age=3600")
-                if ext == 'json' and 'gzip' in accept_enc:
-                    raw_bytes = gzip.compress(raw_bytes)
-                    self.send_header("Content-Encoding", "gzip")
-                self.send_header("Content-Length", str(len(raw_bytes)))
-                self.end_headers()
-                self.wfile.write(raw_bytes)
-                return
-            else:
+            clean_path = self.path.split('?')[0].lstrip('/')
+            base_dir = os.path.abspath('static')
+            target_path = os.path.abspath(clean_path)
+            if not target_path.startswith(base_dir) or not os.path.exists(target_path) or not os.path.isfile(target_path):
                 self.send_response(404)
                 self.end_headers()
                 return
+
+            ext = target_path.split('.')[-1].lower()
+            if ext in ['jpg', 'jpeg']:
+                mime = 'image/jpeg'
+            elif ext == 'png':
+                mime = 'image/png'
+            elif ext == 'json':
+                mime = 'application/json; charset=utf-8'
+            elif ext in ['ttf', 'woff', 'woff2']:
+                mime = 'font/ttf'
+            else:
+                mime = 'application/octet-stream'
+            with open(target_path, 'rb') as f:
+                raw_bytes = f.read()
+            accept_enc = self.headers.get('Accept-Encoding', '')
+            self.send_response(200)
+            self.send_header("Content-type", mime)
+            self.send_header("Cache-Control", "public, max-age=3600")
+            if ext == 'json' and 'gzip' in accept_enc:
+                raw_bytes = gzip.compress(raw_bytes)
+                self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(raw_bytes)))
+            self.end_headers()
+            self.wfile.write(raw_bytes)
+            return
 
         if self.path.startswith('/api/user_books'):
             parsed_url = urlparse(self.path)
@@ -3877,7 +3907,7 @@ class DummyHandler(BaseHTTPRequestHandler):
             book_key = qs.get('book', [''])[0]
             if uid and book_key:
                 try:
-                    database.remove_user_book(int(uid), book_key)
+                    database.clear_expired_rental(int(uid), book_key)
                 except Exception as e:
                     logging.error(f"Failed to finish rental: {e}")
             self.send_response(200)
@@ -3973,8 +4003,17 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"Baya Books Bot is running!")
             
     def do_POST(self):
-        if self.path == '/api/quote_card':
+        try:
             content_length = int(self.headers.get('Content-Length', 0))
+        except (ValueError, TypeError):
+            content_length = 0
+        if content_length > 10 * 1024 * 1024:
+            self.send_response(413)
+            self.end_headers()
+            self.wfile.write(b"413 Payload Too Large")
+            return
+
+        if self.path == '/api/quote_card':
             post_data = self.rfile.read(content_length)
             try:
                 import base64

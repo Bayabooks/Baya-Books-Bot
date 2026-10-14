@@ -8,7 +8,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 TELEBIRR_PHONE = os.getenv("TELEBIRR_PHONE", "0912338058")
 TELEBIRR_NAME = os.getenv("TELEBIRR_NAME", "Michael Getachew")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "BAYABOOKS1")
+import hashlib
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "bayabooks").lower().lstrip('@')
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY") or hashlib.sha256(f"BAYA_ADMIN_{BOT_TOKEN}".encode()).hexdigest()[:32]
 SUB_ADMINS = [u.strip().lstrip('@').lower() for u in os.getenv("SUB_ADMINS", "").split(",") if u.strip()]
 PRICE_SINGLE = 10 # Forced to 10 for testing
 DB_PATH = os.getenv("DB_PATH", "baya_books.db")

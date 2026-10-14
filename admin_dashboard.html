@@ -3,84 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baya Books — Admin & Rental Dashboard</title>
+    <title>Baya Unified Management Console</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         body { font-family: 'Inter', 'Noto Sans Ethiopic', sans-serif; background: #0f172a; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
         .card { background: #1e293b; border-radius: 16px; border: 1px solid #334155; }
         .card-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.05); }
         .stat-value { font-variant-numeric: tabular-nums; }
         .pulse-dot { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
         .toast { animation: toastIn 0.3s ease-out forwards; }
         @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .terminal-log { background: #090d16; font-family: 'JetBrains Mono', monospace; }
     </style>
 </head>
-<body class="text-gray-200 min-h-screen pb-12">
+<body class="text-gray-200 min-h-screen pb-16">
 
     <!-- Toast Notification Container -->
     <div id="toast_container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Top Bar -->
-    <header class="sticky top-0 z-50 bg-[#0f172a]/90 backdrop-blur-xl border-b border-slate-800">
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- TOP NAVIGATION & BRANDING BAR                                    -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <header class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-xl border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            
             <!-- Brand -->
             <div class="flex items-center gap-3 shrink-0">
                 <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
-                    <i class="fa-solid fa-book-open text-white text-sm"></i>
+                    <i class="fa-solid fa-cube text-white text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        Baya Books
-                        <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">Admin</span>
+                    <h1 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                        Baya Suite
+                        <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Live</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 -mt-0.5 hidden sm:block">Management Console</p>
+                    <p class="text-[11px] text-slate-400 -mt-0.5 hidden sm:block">Unified Bot Management Console</p>
                 </div>
             </div>
 
-            <!-- Tab Switcher Navigation -->
-            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
-                <button id="btn_tab_overview" onclick="switchTab('overview')" class="px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-chart-pie text-[11px]"></i>
-                    <span class="hidden sm:inline">Overview &</span> Revenue
+            <!-- Tab Navigation (Scrollable on small screens) -->
+            <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
+                <button id="nav_overview" onclick="switchTab('overview')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-pie text-[11px]"></i> Overview
                 </button>
-                <button id="btn_tab_rentals" onclick="switchTab('rentals')" class="px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-book-bookmark text-[11px]"></i>
-                    <span>Rented Books</span>
-                    <span id="tab_active_rentals_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">0</span>
+                <button id="nav_rentals" onclick="switchTab('rentals')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-book-bookmark text-[11px]"></i> Book Rentals
+                    <span id="tab_rentals_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">0</span>
                 </button>
-            </div>
+                <button id="nav_users" onclick="switchTab('users')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-users text-[11px]"></i> Users
+                </button>
+                <button id="nav_payments" onclick="switchTab('payments')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-receipt text-[11px]"></i> Payments
+                </button>
+                <button id="nav_carts" onclick="switchTab('carts')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping text-[11px]"></i> Carts
+                    <span id="tab_carts_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">0</span>
+                </button>
+                <button id="nav_broadcast" onclick="switchTab('broadcast')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-bullhorn text-[11px]"></i> Broadcast
+                </button>
+                <button id="nav_system" onclick="switchTab('system')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-terminal text-[11px]"></i> System & Logs
+                </button>
+            </nav>
 
-            <!-- Actions -->
+            <!-- Refresh & Actions -->
             <div class="flex items-center gap-2 shrink-0">
-                <span id="last_updated" class="text-xs text-slate-500 hidden md:block"></span>
-                <button onclick="refreshCurrentTab()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 border border-slate-700">
+                <button onclick="refreshCurrentTab()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-all flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate-right text-[11px]" id="refresh_icon"></i>
                     <span class="hidden sm:inline">Refresh</span>
-                </button>
-                <button id="top_grant_btn" onclick="openGrantModal()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-orange-500/10">
-                    <i class="fa-solid fa-plus text-[11px]"></i>
-                    <span class="hidden sm:inline">Grant Book</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
         <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- VIEW 1: OVERVIEW & REVENUE                                       -->
+        <!-- TAB 1: OVERVIEW & REVENUE ANALYTICS                              -->
         <!-- ════════════════════════════════════════════════════════════════ -->
-        <div id="view_overview" class="space-y-6 fade-in">
-            <!-- Stats Row 1: Users -->
+        <section id="view_overview" class="space-y-6 fade-in">
+            <!-- User Growth Stats -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="card card-glow p-5">
                     <div class="flex items-center justify-between mb-3">
@@ -89,18 +103,18 @@
                             <i class="fa-solid fa-users text-blue-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-3xl font-bold text-white stat-value" id="total_users">—</p>
-                    <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle text-green-400 text-[6px] pulse-dot mr-1"></i> <span id="new_today">0</span> new today</p>
+                    <p class="text-3xl font-bold text-white stat-value" id="ov_total_users">—</p>
+                    <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle text-green-400 text-[6px] pulse-dot mr-1"></i> <span id="ov_new_today">0</span> new today</p>
                 </div>
 
                 <div class="card card-glow p-5">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Left / Blocked</span>
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Churned / Blocked</span>
                         <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
                             <i class="fa-solid fa-user-slash text-red-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-3xl font-bold text-white stat-value" id="blocked_users">—</p>
+                    <p class="text-3xl font-bold text-white stat-value" id="ov_blocked_users">—</p>
                     <p class="text-xs text-slate-500 mt-2">Stopped using bot</p>
                 </div>
 
@@ -111,7 +125,7 @@
                             <i class="fa-solid fa-user-plus text-cyan-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-3xl font-bold text-white stat-value" id="new_this_week">—</p>
+                    <p class="text-3xl font-bold text-white stat-value" id="ov_new_this_week">—</p>
                     <p class="text-xs text-slate-500 mt-2">Last 7 days</p>
                 </div>
 
@@ -122,12 +136,12 @@
                             <i class="fa-solid fa-comments text-purple-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-3xl font-bold text-white stat-value" id="active_advice_users">—</p>
-                    <p class="text-xs text-slate-500 mt-2">🔥 <span id="trial_exhausted_users" class="text-amber-400 font-semibold">0</span> finished 5 free msgs</p>
+                    <p class="text-3xl font-bold text-white stat-value" id="ov_active_advice_users">—</p>
+                    <p class="text-xs text-slate-500 mt-2">🔥 <span id="ov_trial_exhausted_users" class="text-amber-400 font-semibold">0</span> completed free trial</p>
                 </div>
             </div>
 
-            <!-- Stats Row 2: Revenue -->
+            <!-- Revenue Stats -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="card p-5 border-emerald-500/20">
                     <div class="flex items-center justify-between mb-3">
@@ -136,7 +150,7 @@
                             <i class="fa-solid fa-calendar-day text-emerald-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="today_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="ov_today_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
                 </div>
 
                 <div class="card p-5 border-emerald-500/20">
@@ -146,7 +160,7 @@
                             <i class="fa-solid fa-calendar-week text-emerald-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="weekly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="ov_weekly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
                 </div>
 
                 <div class="card p-5 border-emerald-500/20">
@@ -156,7 +170,7 @@
                             <i class="fa-solid fa-calendar text-emerald-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="monthly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="ov_monthly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
                 </div>
 
                 <div class="card p-5 border-yellow-500/20">
@@ -166,81 +180,58 @@
                             <i class="fa-solid fa-coins text-yellow-400 text-sm"></i>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-yellow-400 stat-value"><span id="total_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
-                    <p class="text-xs text-slate-500 mt-1"><span id="total_transactions">0</span> transactions</p>
+                    <p class="text-2xl font-bold text-yellow-400 stat-value"><span id="ov_total_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                    <p class="text-xs text-slate-500 mt-1"><span id="ov_total_transactions">0</span> total transactions</p>
                 </div>
             </div>
 
-            <!-- Charts + Tables Row -->
+            <!-- Charts & Recent Activity -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Gender Chart -->
+                <!-- Gender Demographics -->
                 <div class="card p-6">
                     <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">User Demographics</h3>
                     <div class="relative h-56 w-full flex items-center justify-center">
-                        <canvas id="genderChart"></canvas>
+                        <canvas id="ov_genderChart"></canvas>
                     </div>
                     <div class="flex justify-center gap-6 mt-4 text-sm">
-                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Male <span id="male_pct" class="text-slate-500"></span></span>
-                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Female <span id="female_pct" class="text-slate-500"></span></span>
+                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Male <span id="ov_male_pct" class="text-slate-500"></span></span>
+                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Female <span id="ov_female_pct" class="text-slate-500"></span></span>
                     </div>
                 </div>
 
-                <!-- Recent Payments -->
+                <!-- Recent Payments Stream -->
                 <div class="card overflow-hidden lg:col-span-2 flex flex-col">
                     <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Payments</h3>
-                        <span class="text-xs text-slate-500"><span id="total_transactions_2">0</span> total</span>
+                        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Transactions</h3>
+                        <button onclick="switchTab('payments')" class="text-xs text-blue-400 hover:underline">View All →</button>
                     </div>
                     <div class="overflow-x-auto flex-1">
-                        <table class="w-full">
+                        <table class="w-full text-left">
                             <thead>
-                                <tr class="text-xs text-slate-500 uppercase tracking-wider">
-                                    <th class="px-6 py-3 text-left font-medium">User</th>
-                                    <th class="px-6 py-3 text-left font-medium">Type</th>
-                                    <th class="px-6 py-3 text-right font-medium">Amount</th>
-                                    <th class="px-6 py-3 text-right font-medium">Date</th>
+                                <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/40">
+                                    <th class="px-5 py-3">Customer</th>
+                                    <th class="px-5 py-3">Type</th>
+                                    <th class="px-5 py-3 text-right">Amount</th>
+                                    <th class="px-5 py-3 text-right">Date</th>
                                 </tr>
                             </thead>
-                            <tbody id="payments_table" class="divide-y divide-slate-800 text-sm">
+                            <tbody id="ov_payments_table" class="divide-y divide-slate-800 text-sm">
                                 <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-
-            <!-- Recent Users -->
-            <div class="card overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Users (Active)</h3>
-                    <span class="text-xs text-slate-500">Excludes blocked</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="text-xs text-slate-500 uppercase tracking-wider">
-                                <th class="px-6 py-3 text-left font-medium">Name</th>
-                                <th class="px-6 py-3 text-left font-medium">Username</th>
-                                <th class="px-6 py-3 text-right font-medium">Joined</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users_table" class="divide-y divide-slate-800 text-sm">
-                            <tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        </section>
 
 
         <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- VIEW 2: RENTED BOOKS MANAGEMENT CONSOLE                          -->
+        <!-- TAB 2: BOOK RENTALS MANAGEMENT                                   -->
         <!-- ════════════════════════════════════════════════════════════════ -->
-        <div id="view_rentals" class="space-y-6 fade-in hidden">
-            
+        <section id="view_rentals" class="space-y-6 fade-in hidden">
             <!-- Rental KPI Cards -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="card p-5 border-blue-500/30 bg-gradient-to-br from-blue-900/20 to-slate-900 cursor-pointer hover:border-blue-400 transition-all" onclick="setFilterStatus('active')">
+                <div class="card p-5 border-blue-500/30 bg-gradient-to-br from-blue-900/20 to-slate-900 cursor-pointer hover:border-blue-400 transition-all" onclick="setRentalsStatusFilter('active')">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Active Rentals</span>
                         <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -251,10 +242,10 @@
                         <p class="text-3xl font-extrabold text-white stat-value" id="kpi_active_rentals">0</p>
                         <span class="text-xs text-emerald-400 font-medium flex items-center"><i class="fa-solid fa-circle text-[6px] pulse-dot mr-1"></i> Valid</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Readers with active reading time</p>
+                    <p class="text-xs text-slate-400 mt-2">Currently valid reading access</p>
                 </div>
 
-                <div class="card p-5 border-amber-500/30 bg-gradient-to-br from-amber-900/20 to-slate-900 cursor-pointer hover:border-amber-400 transition-all" onclick="setFilterStatus('expiring_soon')">
+                <div class="card p-5 border-amber-500/30 bg-gradient-to-br from-amber-900/20 to-slate-900 cursor-pointer hover:border-amber-400 transition-all" onclick="setRentalsStatusFilter('expiring_soon')">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Expiring Soon</span>
                         <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -265,10 +256,10 @@
                         <p class="text-3xl font-extrabold text-amber-400 stat-value" id="kpi_expiring_soon">0</p>
                         <span class="text-xs text-amber-300 font-medium">≤ 48 hours</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Prime candidates for extension</p>
+                    <p class="text-xs text-slate-400 mt-2">Actionable renewal candidates</p>
                 </div>
 
-                <div class="card p-5 border-rose-500/30 bg-gradient-to-br from-rose-900/20 to-slate-900 cursor-pointer hover:border-rose-400 transition-all" onclick="setFilterStatus('expired')">
+                <div class="card p-5 border-rose-500/30 bg-gradient-to-br from-rose-900/20 to-slate-900 cursor-pointer hover:border-rose-400 transition-all" onclick="setRentalsStatusFilter('expired')">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-rose-400 uppercase tracking-wider">Expired Rentals</span>
                         <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
@@ -282,7 +273,7 @@
                     <p class="text-xs text-slate-400 mt-2">Rental period ended</p>
                 </div>
 
-                <div class="card p-5 border-purple-500/30 bg-gradient-to-br from-purple-900/20 to-slate-900 cursor-pointer hover:border-purple-400 transition-all" onclick="setFilterStatus('lifetime')">
+                <div class="card p-5 border-purple-500/30 bg-gradient-to-br from-purple-900/20 to-slate-900 cursor-pointer hover:border-purple-400 transition-all" onclick="setRentalsStatusFilter('lifetime')">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Lifetime Buys</span>
                         <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
@@ -291,25 +282,21 @@
                     </div>
                     <div class="flex items-baseline gap-2">
                         <p class="text-3xl font-extrabold text-purple-400 stat-value" id="kpi_lifetime_buys">0</p>
-                        <span class="text-xs text-purple-300 font-medium">Permanent</span>
+                        <span class="text-xs text-purple-300 font-medium">Full</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Full purchases with lifetime access</p>
+                    <p class="text-xs text-slate-400 mt-2">Permanent full book owners</p>
                 </div>
             </div>
 
-            <!-- Toolbar: Search, Filters & Grant Button -->
+            <!-- Toolbar -->
             <div class="card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/90">
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
-                    <!-- Search Input -->
                     <div class="relative flex-1 max-w-md">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="rentals_search_input" oninput="onSearchChange()" placeholder="Search reader name, @username, or user ID..." 
-                            class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors">
+                        <input type="text" id="rentals_search_input" oninput="renderRentalsTable()" placeholder="Search reader, username, ID, or book..." 
+                            class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
                     </div>
-
-                    <!-- Book Filter Dropdown -->
-                    <select id="rentals_book_filter" onchange="onFilterChange()" 
-                        class="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors">
+                    <select id="rentals_book_filter" onchange="renderRentalsTable()" class="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
                         <option value="all">📚 All Books</option>
                         <option value="boundaries">ድንበርህን አብጅ (Boundaries)</option>
                         <option value="narcissist">የናርስሲስቶች ወጥመድ</option>
@@ -317,14 +304,12 @@
                         <option value="meaning">የህይወት ትርጉም (Meaning)</option>
                     </select>
                 </div>
-
-                <!-- Status Filter Pills -->
                 <div class="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
-                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all whitespace-nowrap" data-status="all" onclick="setFilterStatus('all')">All (<span id="count_pill_all">0</span>)</button>
-                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="active" onclick="setFilterStatus('active')">🟢 Active</button>
-                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="expiring_soon" onclick="setFilterStatus('expiring_soon')">⏳ Expiring</button>
-                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="expired" onclick="setFilterStatus('expired')">⌛ Expired</button>
-                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="lifetime" onclick="setFilterStatus('lifetime')">👑 Lifetime</button>
+                    <button class="rent-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow whitespace-nowrap" data-status="all" onclick="setRentalsStatusFilter('all')">All</button>
+                    <button class="rent-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-status="active" onclick="setRentalsStatusFilter('active')">🟢 Active</button>
+                    <button class="rent-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-status="expiring_soon" onclick="setRentalsStatusFilter('expiring_soon')">⏳ Expiring</button>
+                    <button class="rent-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-status="expired" onclick="setRentalsStatusFilter('expired')">⌛ Expired</button>
+                    <button class="rent-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-status="lifetime" onclick="setRentalsStatusFilter('lifetime')">👑 Lifetime</button>
                 </div>
             </div>
 
@@ -334,9 +319,8 @@
                     <div>
                         <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                             <span>Reader Book Library & Rentals</span>
-                            <span id="filtered_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 found</span>
+                            <span id="rentals_filtered_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 found</span>
                         </h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Manage access, extend durations, convert to lifetime, or notify readers.</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="exportRentalsCSV()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5">
@@ -361,79 +345,431 @@
                             </tr>
                         </thead>
                         <tbody id="rentals_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-slate-500">
-                                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-blue-500"></i>
-                                    <p>Loading rental records...</p>
-                                </td>
-                            </tr>
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Loading rentals...</td></tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </section>
 
-                <!-- Empty state placeholder -->
-                <div id="rentals_empty_state" class="hidden p-12 text-center">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-500">
-                        <i class="fa-solid fa-book-open text-xl"></i>
-                    </div>
-                    <h4 class="text-sm font-semibold text-slate-300">No matching book records found</h4>
-                    <p class="text-xs text-slate-500 mt-1">Try adjusting your search query or filter tags.</p>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- TAB 3: USER DIRECTORY & PROFILES                                 -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_users" class="space-y-6 fade-in hidden">
+            <!-- Search & Filters -->
+            <div class="card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/90">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" id="users_search_input" oninput="onUserSearchInput()" placeholder="Search reader by name, @username, or User ID..." 
+                        class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="flex items-center gap-1 overflow-x-auto">
+                    <button class="user-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow whitespace-nowrap" data-filter="all" onclick="setUserFilter('all')">All</button>
+                    <button class="user-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-filter="active" onclick="setUserFilter('active')">🟢 Active</button>
+                    <button class="user-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-filter="vip" onclick="setUserFilter('vip')">👑 VIP</button>
+                    <button class="user-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-filter="exhausted" onclick="setUserFilter('exhausted')">⏰ Trial Ended</button>
+                    <button class="user-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap" data-filter="blocked" onclick="setUserFilter('blocked')">🚫 Blocked</button>
                 </div>
             </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="text-center text-xs text-slate-600 mt-12 pb-4">
-            Baya Books & Psychology AI — Admin & Rental Management Console v3.5
-        </div>
-    </div>
-
-
-    <!-- ════════════════════════════════════════════════════════════════ -->
-    <!-- MODAL: GRANT BOOK / RENTAL                                       -->
-    <!-- ════════════════════════════════════════════════════════════════ -->
-    <div id="grant_modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="card p-6 w-full max-w-md border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 fade-in">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                        <i class="fa-solid fa-book-bookmark text-xs"></i>
-                    </div>
-                    <h3 class="text-base font-bold text-white">Grant Book / Rental</h3>
+            <!-- Users Table Card -->
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-900/40">
+                    <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <span>Telegram Users & Readers Directory</span>
+                        <span id="users_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 Total</span>
+                    </h3>
                 </div>
-                <button onclick="closeGrantModal()" class="text-slate-400 hover:text-white transition-colors">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800">
+                                <th class="px-5 py-3 font-semibold">User</th>
+                                <th class="px-5 py-3 font-semibold">Language / Gender</th>
+                                <th class="px-5 py-3 font-semibold">Advice Quota</th>
+                                <th class="px-5 py-3 font-semibold">VIP Status</th>
+                                <th class="px-5 py-3 font-semibold">Books & Spend</th>
+                                <th class="px-5 py-3 text-right font-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Loading user directory...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- TAB 4: PAYMENTS & FINANCIAL AUDIT                                -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_payments" class="space-y-6 fade-in hidden">
+            <!-- Toolbar -->
+            <div class="card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/90">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+                    <div class="relative flex-1 max-w-md">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="payments_search_input" oninput="onPaymentSearchInput()" placeholder="Search tx_ref, user name, or ID..." 
+                            class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <select id="payments_type_filter" onchange="fetchPaymentsData()" class="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="all">💳 All Types</option>
+                        <option value="book">📚 Books & Rentals</option>
+                        <option value="advice">🧠 Advice Packages</option>
+                        <option value="tip">☕ Tips</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openManualPayModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Record Manual Pay
+                    </button>
+                    <button onclick="deleteLastPayment()" class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i> Delete Last
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payments Table Card -->
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-900/40">
+                    <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <span>Payment Records & Audit Stream</span>
+                        <span id="payments_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 Total</span>
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800">
+                                <th class="px-5 py-3 font-semibold">Customer</th>
+                                <th class="px-5 py-3 font-semibold">Item & Type</th>
+                                <th class="px-5 py-3 font-semibold">Provider</th>
+                                <th class="px-5 py-3 font-semibold">Amount</th>
+                                <th class="px-5 py-3 font-semibold">Reference ID</th>
+                                <th class="px-5 py-3 font-semibold">Date & Time</th>
+                                <th class="px-5 py-3 text-right font-semibold">Status / Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
+                            <tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Loading payment records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- TAB 5: ABANDONED CARTS & RECOVERY                                -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_carts" class="space-y-6 fade-in hidden">
+            <div class="card p-6 border-amber-500/30 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-amber-400"></i> Abandoned Checkout Recovery
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Readers who clicked "Pay Now" but haven't completed purchase. Send a polite recovery message with 1 click.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl">
+                        <span id="carts_pending_count">0</span> Pending Recovery
+                    </span>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800">
+                                <th class="px-5 py-3 font-semibold">Reader</th>
+                                <th class="px-5 py-3 font-semibold">Target Product</th>
+                                <th class="px-5 py-3 font-semibold">Amount</th>
+                                <th class="px-5 py-3 font-semibold">Initiated Time</th>
+                                <th class="px-5 py-3 font-semibold">Language</th>
+                                <th class="px-5 py-3 text-right font-semibold">1-Click Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carts_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Checking pending checkouts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- TAB 6: BROADCAST CENTER WITH LIVE PREVIEW                        -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_broadcast" class="space-y-6 fade-in hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Composer -->
+                <div class="card p-6 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-bullhorn text-orange-400"></i> Compose Broadcast Message
+                        </h3>
+                        <span class="text-[11px] text-slate-400">Supports HTML tags</span>
+                    </div>
+
+                    <!-- Target Audience -->
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-300 mb-1">Target Audience</label>
+                            <select id="bc_target_group" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                                <option value="all">👥 All Users</option>
+                                <option value="active">🟢 Active Only (Excludes blocked)</option>
+                                <option value="trial_ended">⏰ Trial Ended (Finished 5 msgs)</option>
+                                <option value="vip">👑 Active VIPs Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-300 mb-1">Language Filter</label>
+                            <select id="bc_lang_filter" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                                <option value="all">🌐 All Languages</option>
+                                <option value="am">🇪🇹 አማርኛ (Amharic)</option>
+                                <option value="en">🇬🇧 English</option>
+                                <option value="ti">🇪🇹 ትግርኛ (Tigrinya)</option>
+                                <option value="om">🇪🇹 Afaan Oromoo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Message Textarea with formatting pills -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="font-semibold text-slate-300 text-xs">Message Text (HTML)</label>
+                            <div class="flex items-center gap-1 text-[11px]">
+                                <button onclick="insertTag('b')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">&lt;b&gt;</button>
+                                <button onclick="insertTag('i')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 italic">&lt;i&gt;</button>
+                                <button onclick="insertTag('code')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono">&lt;code&gt;</button>
+                            </div>
+                        </div>
+                        <textarea id="bc_message_text" rows="7" oninput="updateBroadcastPreview()" placeholder="Type your broadcast message here...&#10;&#10;<b>ታላቅ ዜና!</b> አዲሱ መጽሐፍ ተለቋል..." 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans"></textarea>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-2 text-xs pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="bc_has_app" onchange="updateBroadcastPreview()" checked class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                            <span class="text-slate-300">Attach "📚 መጻሕፍት ቤት (Library)" Mini App Button</span>
+                        </label>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                        <button onclick="sendTestBroadcast()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-vial"></i> Send Test to My Telegram
+                        </button>
+                        <button onclick="launchMassBroadcast()" id="btn_launch_bc" class="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Blast Broadcast
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Telegram Mobile Preview -->
+                <div class="card p-6 flex flex-col">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i class="fa-brands fa-telegram text-blue-400"></i> Live Telegram Preview
+                    </h3>
+                    <div class="flex-1 bg-[#17212b] rounded-2xl p-4 border border-slate-800/80 flex flex-col justify-end">
+                        <div class="max-w-[85%] bg-[#182533] rounded-2xl rounded-bl-sm p-3.5 shadow-md border border-slate-700/30 text-xs text-slate-100 space-y-3">
+                            <div id="bc_preview_content" class="break-words whitespace-pre-wrap leading-relaxed">
+                                <b>ታላቅ ዜና!</b><br>የእርስዎ መልእክት እዚህ ይታያል...
+                            </div>
+                            <div id="bc_preview_btn_container" class="pt-1">
+                                <div class="bg-[#2b5278] hover:bg-[#346290] text-white text-center py-2 px-3 rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-book-open"></i> 📚 መጻሕፍት ቤት (Library)
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 text-right">Just now ✓✓</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- TAB 7: SYSTEM, DIAGNOSTICS & LIVE LOGS                           -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_system" class="space-y-6 fade-in hidden">
+            <!-- Maintenance Actions Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card p-5 border-slate-700 space-y-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-broom"></i>
+                    </div>
+                    <h4 class="text-sm font-bold text-white">Ghost Cleanup</h4>
+                    <p class="text-xs text-slate-400">Silently tests un-onboarded users and removes churned users.</p>
+                    <button onclick="runSystemMaintenance('clean_ghosts')" class="w-full mt-2 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-colors">
+                        Run Cleanup
+                    </button>
+                </div>
+
+                <div class="card p-5 border-slate-700 space-y-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-keyboard"></i>
+                    </div>
+                    <h4 class="text-sm font-bold text-white">Refresh Keyboards</h4>
+                    <p class="text-xs text-slate-400">Silently pushes updated persistent bottom menu to all users.</p>
+                    <button onclick="runSystemMaintenance('refresh_keyboards')" class="w-full mt-2 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition-colors">
+                        Refresh All Keyboards
+                    </button>
+                </div>
+
+                <div class="card p-5 border-slate-700 space-y-2 sm:col-span-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <h4 class="text-sm font-bold text-white">Add Sub-Admin</h4>
+                    <div class="flex gap-2 pt-1">
+                        <input type="text" id="subadmin_input" placeholder="@username or User ID..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                        <button onclick="addSubAdmin()" class="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition-colors">
+                            Grant Admin
+                        </button>
+                    </div>
+                    <div id="subadmins_list" class="text-xs text-slate-400 pt-1 flex flex-wrap gap-1"></div>
+                </div>
+            </div>
+
+            <!-- Live Server Logs Viewer -->
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-900/60">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-blue-400"></i>
+                        <h3 class="text-sm font-bold text-white">Live Server Logs (app.log)</h3>
+                        <span id="log_status_badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Listening</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="log_filter_select" onchange="renderLogs()" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none">
+                            <option value="all">All Levels</option>
+                            <option value="ERROR">🚨 Errors Only</option>
+                            <option value="WARNING">⚠️ Warnings</option>
+                            <option value="INFO">ℹ️ Info</option>
+                        </select>
+                        <button onclick="fetchServerLogs()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition-colors">
+                            <i class="fa-solid fa-rotate text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="terminal-log p-4 text-xs font-mono max-h-96 overflow-y-auto leading-relaxed select-text" id="terminal_console">
+                    <div class="text-slate-600">Connecting to server log stream...</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- MODALS & DIALOGS                                                 -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+
+    <!-- Modal 1: User Profile Inspector & Actions -->
+    <div id="user_profile_modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-2xl border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center text-sm border border-blue-500/30" id="prof_avatar">U</div>
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2" id="prof_name">Reader Profile</h3>
+                        <p class="text-xs text-slate-400" id="prof_handle">@username</p>
+                    </div>
+                </div>
+                <button onclick="closeUserProfileModal()" class="text-slate-400 hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
+            <!-- User Stat Badges -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-500 block">User ID</span>
+                    <span class="font-mono font-bold text-slate-200" id="prof_uid">—</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-500 block">Advice Msgs</span>
+                    <span class="font-bold text-amber-400" id="prof_msgs">—</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-500 block">VIP Status</span>
+                    <span class="font-bold text-purple-400" id="prof_vip">—</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-500 block">Total Spent</span>
+                    <span class="font-bold text-emerald-400" id="prof_spent">— ETB</span>
+                </div>
+            </div>
+
+            <!-- Unlocked Books -->
+            <div class="space-y-2">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Unlocked Books & Rentals</h4>
+                <div id="prof_books_container" class="bg-slate-900/40 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
+                    No books unlocked.
+                </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="space-y-2 pt-2 border-t border-slate-700">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Controls</h4>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="triggerUserAction('add_msgs', 5)" class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold">+5 Messages</button>
+                    <button onclick="triggerUserAction('add_msgs', 25)" class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold">+25 Messages</button>
+                    <button onclick="triggerUserAction('set_vip', 30)" class="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-semibold">👑 Grant 30d VIP</button>
+                    <button onclick="openDirectDMModal()" class="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold">💬 Send Telegram DM</button>
+                    <button id="prof_ban_btn" onclick="toggleUserBan()" class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold">🚫 Ban User</button>
+                </div>
+            </div>
+
+            <!-- Advice History Accordion -->
+            <div class="space-y-2 pt-2 border-t border-slate-700">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Psychology AI Chat History</h4>
+                <div id="prof_advice_history" class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 max-h-48 overflow-y-auto text-xs space-y-2 font-sans">
+                    <span class="text-slate-500">No chat history recorded.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Grant Book / Rental -->
+    <div id="grant_modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-md border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-book-bookmark text-blue-400"></i> Grant Book Access
+                </h3>
+                <button onclick="closeGrantModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Telegram User ID <span class="text-red-400">*</span></label>
-                    <input type="number" id="grant_uid" placeholder="e.g. 524189021" 
-                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
-                    <p class="text-[11px] text-slate-500 mt-1">Numeric Telegram ID of the reader.</p>
+                    <label class="block font-semibold text-slate-300 mb-1">Telegram User ID</label>
+                    <input type="number" id="grant_uid" placeholder="e.g. 524189021" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
                 </div>
-
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Select Book <span class="text-red-400">*</span></label>
+                    <label class="block font-semibold text-slate-300 mb-1">Select Book</label>
                     <select id="grant_book" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
                         <option value="boundaries">ድንበርህን አብጅ (Boundaries)</option>
-                        <option value="narcissist">የናርስሲስቶች ወጥመድ</option>
+                        <option value="narcissist">የናርስሲስቶች ወጥመድ (Narcissist)</option>
                         <option value="buyback">ጊዜህን አስመልስ (Buy Back Your Time)</option>
                         <option value="meaning">የህይወት ትርጉም (Man's Search for Meaning)</option>
                     </select>
                 </div>
-
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Access Duration <span class="text-red-400">*</span></label>
+                    <label class="block font-semibold text-slate-300 mb-1">Duration</label>
                     <select id="grant_duration" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
-                        <option value="10">⏳ 10 Days Rental (Standard Book Rent)</option>
-                        <option value="5">⏳ 5 Days Rental (Short Trial / Ext)</option>
+                        <option value="10">⏳ 10 Days Rental (Standard)</option>
+                        <option value="5">⏳ 5 Days Rental (Short)</option>
                         <option value="30">⏳ 30 Days Rental (Extended)</option>
-                        <option value="0">👑 Permanent Full Access (Lifetime Buy)</option>
+                        <option value="0">👑 Permanent (Lifetime Full Ownership)</option>
                     </select>
                 </div>
-
                 <div class="pt-2">
                     <label class="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" id="grant_notify" checked class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
@@ -441,33 +777,94 @@
                     </label>
                 </div>
             </div>
-
             <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
-                <button onclick="closeGrantModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-colors">
-                    Cancel
+                <button onclick="closeGrantModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs">Cancel</button>
+                <button onclick="submitGrantBook()" id="btn_submit_grant" class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow">Grant Access</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Direct DM to User -->
+    <div id="dm_modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-md border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-blue-400"></i> Send Direct Message
+                </h3>
+                <button onclick="closeDirectDMModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
-                <button onclick="submitGrantBook()" id="btn_submit_grant" class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-check"></i> Grant Access
+            </div>
+            <div class="space-y-3 text-xs">
+                <p class="text-slate-400">Sending to: <b class="text-white" id="dm_target_display">User</b></p>
+                <textarea id="dm_text" rows="5" placeholder="Type your message to this user... (HTML supported)" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
+                <button onclick="closeDirectDMModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs">Cancel</button>
+                <button onclick="submitDirectDM()" class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow">Send Message</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Record Manual Payment -->
+    <div id="manual_pay_modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-md border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-emerald-400"></i> Record Manual Payment
+                </h3>
+                <button onclick="closeManualPayModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Telegram User ID</label>
+                    <input type="number" id="manual_pay_uid" placeholder="e.g. 524189021" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Amount (ETB)</label>
+                    <input type="number" id="manual_pay_amount" placeholder="e.g. 400" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Package Type</label>
+                    <select id="manual_pay_type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="ADVICE">🧠 Advice Package (+10 Messages)</option>
+                        <option value="VIP">👑 VIP Package (30 Days Unlimited)</option>
+                        <option value="BOOK">📚 Book Purchase / Rental</option>
+                        <option value="TIP">☕ Tip / Donation</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
+                <button onclick="closeManualPayModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs">Cancel</button>
+                <button onclick="submitManualPay()" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs shadow">Record & Approve</button>
             </div>
         </div>
     </div>
 
 
     <!-- ════════════════════════════════════════════════════════════════ -->
-    <!-- JAVASCRIPT LOGIC                                                 -->
+    <!-- JAVASCRIPT MASTER CLIENT LOGIC                                   -->
     <!-- ════════════════════════════════════════════════════════════════ -->
     <script>
-        // State
+        // Global State
         let currentTab = 'overview';
-        let rawRentalsData = [];
-        let rentalSummary = {};
-        let activeStatusFilter = 'all';
-        let genderChartInstance = null;
-        
-        // Admin Token from URL query
         const urlParams = new URLSearchParams(window.location.search);
         const adminToken = urlParams.get('token') || '';
+
+        let ovChartInstance = null;
+        let rawRentals = [];
+        let rentalSummary = {};
+        let activeRentalsFilter = 'all';
+
+        let activeUserFilter = 'all';
+        let inspectedUserId = null;
+        let inspectedUserIsBanned = false;
+
+        let logFilter = 'all';
+        let rawLogs = [];
 
         function fmt(n) { return (n || 0).toLocaleString(); }
         function setTxt(id, val) { const el = document.getElementById(id); if (el) el.innerText = val; }
@@ -492,42 +889,43 @@
             }, 3500);
         }
 
-        // Tab Switching
+        // Navigation Switcher
         function switchTab(tab) {
             currentTab = tab;
-            const btnOver = document.getElementById('btn_tab_overview');
-            const btnRent = document.getElementById('btn_tab_rentals');
-            const viewOver = document.getElementById('view_overview');
-            const viewRent = document.getElementById('view_rentals');
+            const tabs = ['overview', 'rentals', 'users', 'payments', 'carts', 'broadcast', 'system'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`nav_${t}`);
+                const view = document.getElementById(`view_${t}`);
+                if (t === tab) {
+                    if (btn) btn.className = "tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5 whitespace-nowrap";
+                    if (view) view.classList.remove('hidden');
+                } else {
+                    if (btn) btn.className = "tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap";
+                    if (view) view.classList.add('hidden');
+                }
+            });
 
-            if (tab === 'rentals') {
-                btnOver.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5";
-                btnRent.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5";
-                viewOver.classList.add('hidden');
-                viewRent.classList.remove('hidden');
-                fetchRentalsData();
-                history.replaceState(null, '', '#rentals' + window.location.search);
-            } else {
-                btnOver.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5";
-                btnRent.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5";
-                viewRent.classList.add('hidden');
-                viewOver.classList.remove('hidden');
-                fetchOverviewData();
-                history.replaceState(null, '', '#overview' + window.location.search);
-            }
+            // Trigger specific fetch
+            refreshCurrentTab();
+            history.replaceState(null, '', `#${tab}` + window.location.search);
         }
 
         function refreshCurrentTab() {
             const icon = document.getElementById('refresh_icon');
             if (icon) icon.classList.add('fa-spin');
-            if (currentTab === 'rentals') {
-                fetchRentalsData().finally(() => icon && icon.classList.remove('fa-spin'));
-            } else {
-                fetchOverviewData().finally(() => icon && icon.classList.remove('fa-spin'));
-            }
+            let p;
+            if (currentTab === 'overview') p = fetchOverviewData();
+            else if (currentTab === 'rentals') p = fetchRentalsData();
+            else if (currentTab === 'users') p = fetchUsersData();
+            else if (currentTab === 'payments') p = fetchPaymentsData();
+            else if (currentTab === 'carts') p = fetchCartsData();
+            else if (currentTab === 'system') p = Promise.all([fetchServerLogs(), fetchSubAdmins()]);
+            else p = Promise.resolve();
+
+            Promise.resolve(p).finally(() => icon && icon.classList.remove('fa-spin'));
         }
 
-        // ── Overview Data Fetch ──────────────────────────────────────────
+        // ── 1. Overview Tab ─────────────────────────────────────────────
         const TYPE_BADGES = {
             'Advice': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">🧠 Advice</span>',
             'Book':   '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">📚 Book</span>',
@@ -538,69 +936,50 @@
         async function fetchOverviewData() {
             try {
                 const response = await fetch('/admin/data' + window.location.search);
-                if (response.status === 403) {
-                    document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl font-bold">🔒 Access Denied</div>';
-                    return;
-                }
+                if (response.status === 403) return showAccessDenied();
                 const d = await response.json();
 
-                setTxt('total_users', fmt(d.total_users));
-                setTxt('blocked_users', fmt(d.blocked_users));
-                setTxt('new_today', fmt(d.new_today));
-                setTxt('new_this_week', fmt(d.new_this_week));
-                setTxt('active_advice_users', fmt(d.active_advice_users));
-                setTxt('trial_exhausted_users', fmt(d.trial_exhausted_users || 0));
-                setTxt('today_revenue', fmt(d.today_revenue));
-                setTxt('weekly_revenue', fmt(d.weekly_revenue));
-                setTxt('monthly_revenue', fmt(d.monthly_revenue));
-                setTxt('total_revenue', fmt(d.total_revenue));
-                setTxt('total_transactions', fmt(d.total_transactions));
-                setTxt('total_transactions_2', fmt(d.total_transactions));
+                setTxt('ov_total_users', fmt(d.total_users));
+                setTxt('ov_blocked_users', fmt(d.blocked_users));
+                setTxt('ov_new_today', fmt(d.new_today));
+                setTxt('ov_new_this_week', fmt(d.new_this_week));
+                setTxt('ov_active_advice_users', fmt(d.active_advice_users));
+                setTxt('ov_trial_exhausted_users', fmt(d.trial_exhausted_users || 0));
+                setTxt('ov_today_revenue', fmt(d.today_revenue));
+                setTxt('ov_weekly_revenue', fmt(d.weekly_revenue));
+                setTxt('ov_monthly_revenue', fmt(d.monthly_revenue));
+                setTxt('ov_total_revenue', fmt(d.total_revenue));
+                setTxt('ov_total_transactions', fmt(d.total_transactions));
 
                 const total = (d.male_count || 0) + (d.female_count || 0);
-                setTxt('male_pct', total > 0 ? `(${Math.round(d.male_count/total*100)}%)` : '');
-                setTxt('female_pct', total > 0 ? `(${Math.round(d.female_count/total*100)}%)` : '');
+                setTxt('ov_male_pct', total > 0 ? `(${Math.round(d.male_count/total*100)}%)` : '');
+                setTxt('ov_female_pct', total > 0 ? `(${Math.round(d.female_count/total*100)}%)` : '');
                 renderGenderChart(d.male_count || 0, d.female_count || 0);
 
-                const ptb = document.getElementById('payments_table');
-                if (!d.recent_payments || d.recent_payments.length === 0) {
-                    ptb.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">No payments yet</td></tr>';
+                const ptb = document.getElementById('ov_payments_table');
+                if (!d.recent_payments || !d.recent_payments.length) {
+                    ptb.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">No transactions recorded yet</td></tr>';
                 } else {
                     ptb.innerHTML = d.recent_payments.map(p => `
-                        <tr class="hover:bg-slate-800/50 transition-colors">
-                            <td class="px-6 py-3 text-slate-300">${p.name || 'Unknown'}</td>
-                            <td class="px-6 py-3">${TYPE_BADGES[p.type] || TYPE_BADGES['Other']}</td>
-                            <td class="px-6 py-3 text-right font-semibold text-emerald-400">${fmt(p.amount)} ብር</td>
-                            <td class="px-6 py-3 text-right text-slate-500">${(p.date || '').substring(0, 10)}</td>
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-5 py-3 text-slate-200 font-medium">${p.name || 'Unknown'}</td>
+                            <td class="px-5 py-3">${TYPE_BADGES[p.type] || TYPE_BADGES['Other']}</td>
+                            <td class="px-5 py-3 text-right font-bold text-emerald-400 font-mono">${fmt(p.amount)} ETB</td>
+                            <td class="px-5 py-3 text-right text-slate-500 font-mono text-xs">${(p.date || '').substring(0, 10)}</td>
                         </tr>
                     `).join('');
                 }
-
-                const utb = document.getElementById('users_table');
-                if (!d.recent_users || d.recent_users.length === 0) {
-                    utb.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">No users yet</td></tr>';
-                } else {
-                    utb.innerHTML = d.recent_users.map(u => `
-                        <tr class="hover:bg-slate-800/50 transition-colors">
-                            <td class="px-6 py-3 text-slate-300">${u.name || 'Unknown'}</td>
-                            <td class="px-6 py-3 text-slate-500">${u.username ? '@' + u.username : '—'}</td>
-                            <td class="px-6 py-3 text-right text-slate-500">${(u.date || '').substring(0, 10)}</td>
-                        </tr>
-                    `).join('');
-                }
-
-                setTxt('last_updated', 'Updated: ' + new Date().toLocaleTimeString());
             } catch (err) {
                 console.error("Overview fetch error:", err);
             }
         }
 
         function renderGenderChart(male, female) {
-            const ctx = document.getElementById('genderChart').getContext('2d');
-            if (genderChartInstance) genderChartInstance.destroy();
+            const ctx = document.getElementById('ov_genderChart')?.getContext('2d');
+            if (!ctx) return;
+            if (ovChartInstance) ovChartInstance.destroy();
             if (male === 0 && female === 0) { male = 1; female = 1; }
-
-            genderChartInstance = new Chart(ctx, {
+            ovChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Male', 'Female'],
@@ -608,8 +987,7 @@
                         data: [male, female],
                         backgroundColor: ['#3b82f6', '#ec4899'],
                         borderColor: ['#1e293b', '#1e293b'],
-                        borderWidth: 3,
-                        hoverOffset: 6
+                        borderWidth: 3
                     }]
                 },
                 options: {
@@ -622,173 +1000,91 @@
         }
 
 
-        // ── Rented Books Management Logic ───────────────────────────────
+        // ── 2. Rentals Tab ──────────────────────────────────────────────
         async function fetchRentalsData() {
             try {
                 const response = await fetch('/admin/rentals_data' + window.location.search);
-                if (response.status === 403) {
-                    document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl font-bold">🔒 Access Denied</div>';
-                    return;
-                }
+                if (response.status === 403) return showAccessDenied();
                 const data = await response.json();
-                rawRentalsData = data.rentals || [];
+                rawRentals = data.rentals || [];
                 rentalSummary = data.summary || {};
 
-                // Update KPI Cards
                 setTxt('kpi_active_rentals', fmt(rentalSummary.active_rentals));
                 setTxt('kpi_expiring_soon', fmt(rentalSummary.expiring_soon_rentals));
                 setTxt('kpi_expired_rentals', fmt(rentalSummary.expired_rentals));
                 setTxt('kpi_lifetime_buys', fmt(rentalSummary.lifetime_purchases));
-                setTxt('tab_active_rentals_badge', fmt(rentalSummary.active_rentals));
-                setTxt('count_pill_all', fmt(rentalSummary.total_records));
+                setTxt('tab_rentals_badge', fmt(rentalSummary.active_rentals));
 
                 renderRentalsTable();
-                setTxt('last_updated', 'Updated: ' + new Date().toLocaleTimeString());
             } catch (err) {
-                console.error("Rentals fetch error:", err);
-                showToast("Failed to fetch rental records", "error");
+                console.error("Rentals error:", err);
             }
         }
 
-        function setFilterStatus(status) {
-            activeStatusFilter = status;
-            document.querySelectorAll('.status-pill').forEach(btn => {
-                if (btn.getAttribute('data-status') === status) {
-                    btn.className = "status-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all whitespace-nowrap shadow";
+        function setRentalsStatusFilter(st) {
+            activeRentalsFilter = st;
+            document.querySelectorAll('.rent-pill').forEach(btn => {
+                if (btn.getAttribute('data-status') === st) {
+                    btn.className = "rent-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow whitespace-nowrap";
                 } else {
-                    btn.className = "status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap";
+                    btn.className = "rent-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap";
                 }
             });
             renderRentalsTable();
         }
 
-        function onSearchChange() { renderRentalsTable(); }
-        function onFilterChange() { renderRentalsTable(); }
-
         function renderRentalsTable() {
             const query = (document.getElementById('rentals_search_input')?.value || '').toLowerCase().trim();
             const bookFilter = document.getElementById('rentals_book_filter')?.value || 'all';
 
-            const filtered = rawRentalsData.filter(item => {
-                // Status match
-                if (activeStatusFilter !== 'all') {
-                    if (item.status !== activeStatusFilter) return false;
-                }
-                // Book match
-                if (bookFilter !== 'all') {
-                    if (item.book_key !== bookFilter) return false;
-                }
-                // Search match
+            const filtered = rawRentals.filter(r => {
+                if (activeRentalsFilter !== 'all' && r.status !== activeRentalsFilter) return false;
+                if (bookFilter !== 'all' && r.book_key !== bookFilter) return false;
                 if (query) {
-                    const nameMatch = (item.first_name || '').toLowerCase().includes(query);
-                    const unameMatch = (item.username || '').toLowerCase().includes(query);
-                    const uidMatch = String(item.user_id || '').includes(query);
-                    const btitleMatch = (item.book_title || '').toLowerCase().includes(query);
-                    if (!nameMatch && !unameMatch && !uidMatch && !btitleMatch) return false;
+                    const match = (r.first_name || '').toLowerCase().includes(query) ||
+                                  (r.username || '').toLowerCase().includes(query) ||
+                                  String(r.user_id).includes(query) ||
+                                  (r.book_title || '').toLowerCase().includes(query);
+                    if (!match) return false;
                 }
                 return true;
             });
 
-            setTxt('filtered_count_badge', `${filtered.length} found`);
+            setTxt('rentals_filtered_count_badge', `${filtered.length} found`);
             const tbody = document.getElementById('rentals_table_body');
-            const emptyState = document.getElementById('rentals_empty_state');
-
             if (!filtered.length) {
-                tbody.innerHTML = '';
-                emptyState.classList.remove('hidden');
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No matching rental records</td></tr>';
                 return;
             }
 
-            emptyState.classList.add('hidden');
             tbody.innerHTML = filtered.map(r => {
-                // Status Badge
-                let statusBadge = '';
-                if (r.status === 'lifetime') {
-                    statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30"><i class="fa-solid fa-crown text-[10px]"></i> Lifetime</span>';
-                } else if (r.status === 'expiring_soon') {
-                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"><i class="fa-solid fa-hourglass-half text-[10px]"></i> ${r.hours_left}h left</span>`;
-                } else if (r.status === 'active') {
-                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-circle text-[6px]"></i> ${r.days_left}d left</span>`;
-                } else {
-                    statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i> Expired</span>';
-                }
+                let badge = '';
+                if (r.status === 'lifetime') badge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30">👑 Lifetime</span>';
+                else if (r.status === 'expiring_soon') badge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">⏳ ${r.hours_left}h left</span>`;
+                else if (r.status === 'active') badge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">🟢 ${r.days_left}d left</span>`;
+                else badge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">⌛ Expired</span>';
 
-                // Telegram profile link
-                const unameDisplay = r.username ? 
-                    `<a href="https://t.me/${r.username}" target="_blank" class="text-blue-400 hover:underline flex items-center gap-1 font-mono text-[11px]"><i class="fa-brands fa-telegram text-blue-400"></i>@${r.username}</a>` : 
-                    '<span class="text-slate-500 text-[11px]">—</span>';
-
-                const blockedBadge = r.bot_blocked ? 
-                    '<span class="px-1.5 py-0.2 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 ml-1">Blocked Bot</span>' : '';
+                const unameDisplay = r.username ? `<a href="https://t.me/${r.username}" target="_blank" class="text-blue-400 hover:underline font-mono text-[11px]">@${r.username}</a>` : '<span class="text-slate-500 text-[11px]">—</span>';
 
                 return `
                     <tr class="hover:bg-slate-800/40 transition-colors">
-                        <!-- Reader -->
                         <td class="px-5 py-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center font-bold text-slate-300 text-xs shrink-0 border border-slate-700">
-                                    ${(r.first_name || 'U').charAt(0)}
-                                </div>
-                                <div>
-                                    <div class="font-semibold text-slate-200 flex items-center">
-                                        <span>${r.first_name || 'User'}</span>
-                                        ${blockedBadge}
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        ${unameDisplay}
-                                        <span class="text-[10px] text-slate-500 font-mono bg-slate-800 px-1 rounded">ID: ${r.user_id}</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="font-semibold text-slate-200">${r.first_name || 'User'}</div>
+                            <div class="flex items-center gap-2 mt-0.5">${unameDisplay} <span class="text-[10px] text-slate-500 font-mono">ID: ${r.user_id}</span></div>
                         </td>
-
-                        <!-- Book -->
-                        <td class="px-5 py-3">
-                            <div class="font-medium text-slate-200">${r.book_title}</div>
-                            <span class="text-[10px] text-slate-500 font-mono">${r.book_key}</span>
-                        </td>
-
-                        <!-- Status & Remaining -->
-                        <td class="px-5 py-3 whitespace-nowrap">
-                            ${statusBadge}
-                        </td>
-
-                        <!-- Purchased On -->
-                        <td class="px-5 py-3 text-slate-400 font-mono text-xs whitespace-nowrap">
-                            ${(r.purchased_at || '—').substring(0, 10)}
-                        </td>
-
-                        <!-- Expires At -->
-                        <td class="px-5 py-3 text-slate-300 font-mono text-xs whitespace-nowrap">
-                            ${r.expires_at ? r.expires_at.substring(0, 16) : '<span class="text-purple-400 font-semibold">Never (Lifetime)</span>'}
-                        </td>
-
-                        <!-- Actions -->
+                        <td class="px-5 py-3 font-medium text-slate-300">${r.book_title}</td>
+                        <td class="px-5 py-3 whitespace-nowrap">${badge}</td>
+                        <td class="px-5 py-3 text-slate-400 font-mono text-xs">${(r.purchased_at || '—').substring(0, 10)}</td>
+                        <td class="px-5 py-3 text-slate-300 font-mono text-xs">${r.expires_at ? r.expires_at.substring(0, 16) : '<span class="text-purple-400 font-semibold">Lifetime</span>'}</td>
                         <td class="px-5 py-3 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1.5">
-                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 5)" title="Extend +5 Days" 
-                                    class="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold text-xs border border-blue-500/30 transition-all flex items-center gap-1">
-                                    <i class="fa-solid fa-plus text-[9px]"></i>5d
-                                </button>
-                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 10)" title="Extend +10 Days" 
-                                    class="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs border border-emerald-500/30 transition-all flex items-center gap-1">
-                                    <i class="fa-solid fa-plus text-[9px]"></i>10d
-                                </button>
+                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 5)" title="+5 Days" class="px-2 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold border border-blue-500/30">+5d</button>
+                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 10)" title="+10 Days" class="px-2 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">+10d</button>
                                 ${r.status !== 'lifetime' ? `
-                                    <button onclick="triggerRentalAction('lifetime', ${r.user_id}, '${r.book_key}')" title="Upgrade to Lifetime Ownership" 
-                                        class="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-semibold text-xs border border-purple-500/30 transition-all flex items-center gap-1">
-                                        <i class="fa-solid fa-crown text-[9px]"></i>Full
-                                    </button>
-                                    <button onclick="triggerRentalAction('nudge', ${r.user_id}, '${r.book_key}', 0, ${r.days_left || 0})" title="Send Expiry Nudge in Telegram" 
-                                        class="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-xs border border-amber-500/30 transition-all flex items-center gap-1">
-                                        <i class="fa-solid fa-bell text-[9px]"></i>
-                                    </button>
+                                    <button onclick="triggerRentalAction('lifetime', ${r.user_id}, '${r.book_key}')" title="Make Lifetime" class="px-2 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-bold border border-purple-500/30">👑 Full</button>
+                                    <button onclick="triggerRentalAction('nudge', ${r.user_id}, '${r.book_key}', 0, ${r.days_left || 0})" title="Send Reminder" class="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30"><i class="fa-solid fa-bell"></i></button>
                                 ` : ''}
-
-                                <!-- More menu dropdown trigger -->
-                                <button onclick="showMoreActionsMenu(event, ${r.user_id}, '${r.book_key}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs transition-colors">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
+                                <button onclick="triggerRentalAction('revoke', ${r.user_id}, '${r.book_key}')" title="Revoke" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/30"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -796,78 +1092,549 @@
             }).join('');
         }
 
-        // More Actions Contextual Menu
-        function showMoreActionsMenu(event, uid, bkey) {
-            event.stopPropagation();
-            const existing = document.getElementById('context_actions_menu');
-            if (existing) existing.remove();
-
-            const menu = document.createElement('div');
-            menu.id = 'context_actions_menu';
-            menu.className = 'fixed z-[99] bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl p-1.5 text-xs text-slate-300 w-36 fade-in';
-            
-            // Positioning
-            menu.style.top = `${event.clientY + 5}px`;
-            menu.style.left = `${Math.min(event.clientX - 100, window.innerWidth - 160)}px`;
-
-            menu.innerHTML = `
-                <button onclick="triggerRentalAction('expire', ${uid}, '${bkey}')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-rose-500/20 hover:text-rose-300 transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-ban text-[10px] text-rose-400"></i> Expire Now
-                </button>
-                <button onclick="triggerRentalAction('revoke', ${uid}, '${bkey}')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-red-500/20 hover:text-red-300 transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-trash-can text-[10px] text-red-400"></i> Revoke / Delete
-                </button>
-            `;
-
-            document.body.appendChild(menu);
-            const closeHandler = () => { menu.remove(); document.removeEventListener('click', closeHandler); };
-            setTimeout(() => document.addEventListener('click', closeHandler), 10);
-        }
-
-        // Action Trigger
         async function triggerRentalAction(action, uid, bkey, days = 0, daysLeft = 0) {
-            if (action === 'revoke') {
-                if (!confirm(`Are you sure you want to permanently revoke this book from user ${uid}?`)) return;
-            } else if (action === 'expire') {
-                if (!confirm(`Expire this rental immediately for user ${uid}?`)) return;
-            }
-
+            if (action === 'revoke' && !confirm(`Revoke this book access for user ${uid}?`)) return;
             try {
                 const response = await fetch('/admin/rentals/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: adminToken,
-                        action: action,
-                        user_id: uid,
-                        book_key: bkey,
-                        days: days,
-                        days_left: daysLeft,
-                        notify: true
-                    })
+                    body: JSON.stringify({ token: adminToken, action, user_id: uid, book_key: bkey, days, days_left: daysLeft, notify: true })
                 });
                 const res = await response.json();
-                if (res.ok) {
-                    showToast(res.message || "Action executed successfully!");
-                    fetchRentalsData();
+                if (res.ok) { showToast(res.message); fetchRentalsData(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to execute action", "error"); }
+        }
+
+        function exportRentalsCSV() {
+            if (!rawRentals.length) return showToast("No records to export", "error");
+            let csv = "User ID,First Name,Username,Book Key,Book Title,Status,Purchased On,Expires At,Remaining Days\n";
+            rawRentals.forEach(r => {
+                csv += `${r.user_id},"${r.first_name || ''}","${r.username || ''}","${r.book_key}","${r.book_title}","${r.status}","${r.purchased_at}","${r.expires_at || 'Permanent'}","${r.days_left || 0}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `baya_rentals_${new Date().toISOString().substring(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Exported CSV successfully!");
+        }
+
+        // ── 3. Users Directory Tab ──────────────────────────────────────
+        let userSearchTimeout = null;
+        function onUserSearchInput() {
+            clearTimeout(userSearchTimeout);
+            userSearchTimeout = setTimeout(fetchUsersData, 300);
+        }
+
+        function setUserFilter(flt) {
+            activeUserFilter = flt;
+            document.querySelectorAll('.user-pill').forEach(btn => {
+                if (btn.getAttribute('data-filter') === flt) {
+                    btn.className = "user-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow whitespace-nowrap";
                 } else {
-                    showToast(res.error || "Action failed", "error");
+                    btn.className = "user-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap";
                 }
+            });
+            fetchUsersData();
+        }
+
+        async function fetchUsersData() {
+            try {
+                const q = document.getElementById('users_search_input')?.value || '';
+                const response = await fetch(`/admin/users_data?token=${adminToken}&query=${encodeURIComponent(q)}&filter=${activeUserFilter}`);
+                if (response.status === 403) return showAccessDenied();
+                const d = await response.json();
+
+                setTxt('users_count_badge', `${fmt(d.total)} Total`);
+                const tbody = document.getElementById('users_table_body');
+                if (!d.users || !d.users.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No users found matching query</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = d.users.map(u => {
+                    const vipBadge = u.is_vip ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">👑 VIP</span>' : '<span class="text-slate-500 text-xs">Standard</span>';
+                    const blockedBadge = u.bot_blocked ? '<span class="px-1.5 py-0.2 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 ml-1">Blocked</span>' : '';
+                    const langBadge = (u.bot_language || 'am').toUpperCase();
+
+                    return `
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-5 py-3">
+                                <div class="font-bold text-slate-200 flex items-center gap-1">${u.first_name || 'User'} ${blockedBadge}</div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-blue-400 font-mono text-[11px]">${u.username ? '@' + u.username : 'No username'}</span>
+                                    <span class="text-[10px] text-slate-500 font-mono">ID: ${u.user_id}</span>
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-xs">
+                                <span class="bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">${langBadge}</span>
+                                <span class="text-slate-500 ml-1">${u.gender || '—'}</span>
+                            </td>
+                            <td class="px-5 py-3 font-mono font-bold text-amber-400 text-xs">${u.advice_messages_left} msgs</td>
+                            <td class="px-5 py-3 whitespace-nowrap">${vipBadge}</td>
+                            <td class="px-5 py-3 text-xs">
+                                <div class="font-bold text-slate-300">${u.books_count || 0} Books</div>
+                                <div class="text-[11px] text-emerald-400 font-mono">${fmt(u.total_spent || 0)} ETB</div>
+                            </td>
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="openUserProfileModal(${u.user_id})" class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow">Inspect</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (err) {
-                console.error("Action error:", err);
-                showToast("Network error executing action", "error");
+                console.error("Users error:", err);
             }
         }
 
-        // Grant Modal Logic
-        function openGrantModal() {
-            document.getElementById('grant_modal').classList.remove('hidden');
-            document.getElementById('grant_uid').focus();
+        // User Profile Inspector Modal
+        async function openUserProfileModal(uid) {
+            inspectedUserId = uid;
+            document.getElementById('user_profile_modal').classList.remove('hidden');
+            setTxt('prof_name', 'Loading Profile...');
+            setTxt('prof_uid', String(uid));
+
+            try {
+                const response = await fetch(`/admin/user_profile_data?token=${adminToken}&uid=${uid}`);
+                const data = await response.json();
+                const u = data.details?.user || {};
+
+                inspectedUserIsBanned = bool(u.is_banned);
+                setTxt('prof_name', u.first_name || 'User');
+                setTxt('prof_handle', u.username ? '@' + u.username : 'No username');
+                setTxt('prof_avatar', (u.first_name || 'U').charAt(0));
+                setTxt('prof_msgs', `${u.advice_messages_left} msgs`);
+                setTxt('prof_vip', u.vip_expiry ? 'Active VIP' : 'None');
+                setTxt('prof_spent', fmt(data.details?.total_paid || 0));
+
+                const banBtn = document.getElementById('prof_ban_btn');
+                if (banBtn) banBtn.innerText = u.is_banned ? "✅ Unban User" : "🚫 Ban User";
+
+                // Books
+                const owned = data.books?.owned || [];
+                const rentals = data.books?.rentals || {};
+                const bCont = document.getElementById('prof_books_container');
+                if (!owned.length) {
+                    bCont.innerHTML = '<span class="text-slate-500">No books unlocked yet.</span>';
+                } else {
+                    bCont.innerHTML = owned.map(bk => {
+                        const rentInfo = rentals[bk] ? `<span class="text-amber-400">⏳ Rental (${rentals[bk]}d left)</span>` : '<span class="text-purple-400">👑 Lifetime Full</span>';
+                        return `<div class="flex justify-between py-1 border-b border-slate-800 last:border-0 font-medium"><span>📚 ${bk}</span>${rentInfo}</div>`;
+                    }).join('');
+                }
+
+                // Chat History
+                const hist = data.advice_history || [];
+                const histCont = document.getElementById('prof_advice_history');
+                if (!hist.length) {
+                    histCont.innerHTML = '<span class="text-slate-500">No psychology readings recorded.</span>';
+                } else {
+                    histCont.innerHTML = hist.map(m => {
+                        const isUser = m.role === 'user';
+                        const text = m.parts ? m.parts[0] : '';
+                        return `
+                            <div class="${isUser ? 'text-blue-300' : 'text-emerald-300'} pb-1 border-b border-slate-800/40 last:border-0">
+                                <b>${isUser ? 'USER' : 'BAYA AI'}:</b> ${escapeHtml(text)}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error("Profile fetch error:", err);
+            }
         }
 
-        function closeGrantModal() {
-            document.getElementById('grant_modal').classList.add('hidden');
+        function closeUserProfileModal() {
+            document.getElementById('user_profile_modal').classList.add('hidden');
         }
+
+        async function triggerUserAction(action, val) {
+            if (!inspectedUserId) return;
+            try {
+                const response = await fetch('/admin/user_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action, user_id: inspectedUserId, count: val, days: val, notify: true })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); openUserProfileModal(inspectedUserId); fetchUsersData(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Action failed", "error"); }
+        }
+
+        async function toggleUserBan() {
+            const action = inspectedUserIsBanned ? 'unban' : 'ban';
+            await triggerUserAction(action, 0);
+        }
+
+        // Direct DM Modal
+        function openDirectDMModal() {
+            if (!inspectedUserId) return;
+            setTxt('dm_target_display', `User ID ${inspectedUserId}`);
+            document.getElementById('dm_text').value = '';
+            document.getElementById('dm_modal').classList.remove('hidden');
+        }
+
+        function closeDirectDMModal() {
+            document.getElementById('dm_modal').classList.add('hidden');
+        }
+
+        async function submitDirectDM() {
+            const msg = document.getElementById('dm_text').value.trim();
+            if (!msg) return showToast("Message text cannot be empty", "error");
+            try {
+                const response = await fetch('/admin/user_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'send_dm', user_id: inspectedUserId, message_text: msg })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast("Direct Message delivered to Telegram!"); closeDirectDMModal(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to send message", "error"); }
+        }
+
+
+        // ── 4. Payments Tab ─────────────────────────────────────────────
+        let paySearchTimeout = null;
+        function onPaymentSearchInput() {
+            clearTimeout(paySearchTimeout);
+            paySearchTimeout = setTimeout(fetchPaymentsData, 300);
+        }
+
+        async function fetchPaymentsData() {
+            try {
+                const q = document.getElementById('payments_search_input')?.value || '';
+                const ptype = document.getElementById('payments_type_filter')?.value || 'all';
+                const response = await fetch(`/admin/payments_data?token=${adminToken}&query=${encodeURIComponent(q)}&type=${ptype}`);
+                if (response.status === 403) return showAccessDenied();
+                const d = await response.json();
+
+                setTxt('payments_count_badge', `${fmt(d.total)} Total`);
+                const tbody = document.getElementById('payments_table_body');
+                if (!d.payments || !d.payments.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No payment records found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = d.payments.map(p => {
+                    const statusBadge = p.status === 'approved' ? 
+                        '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Approved</span>' : 
+                        '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">Pending</span>';
+
+                    return `
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-5 py-3">
+                                <div class="font-bold text-slate-200">${p.name}</div>
+                                <div class="text-[11px] text-slate-500 font-mono">ID: ${p.user_id}</div>
+                            </td>
+                            <td class="px-5 py-3">${TYPE_BADGES[p.type] || TYPE_BADGES['Other']}</td>
+                            <td class="px-5 py-3 font-mono text-xs text-slate-300">${p.provider}</td>
+                            <td class="px-5 py-3 font-mono font-bold text-emerald-400">${fmt(p.amount)} ETB</td>
+                            <td class="px-5 py-3 font-mono text-[11px] text-slate-400 select-all">${p.tx_ref || '—'}</td>
+                            <td class="px-5 py-3 font-mono text-xs text-slate-500">${(p.date || '').substring(0, 16)}</td>
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-2">
+                                    ${statusBadge}
+                                    <button onclick="deletePaymentById(${p.id})" title="Delete Payment" class="text-slate-500 hover:text-rose-400 transition-colors px-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("Payments error:", err);
+            }
+        }
+
+        async function deletePaymentById(pid) {
+            if (!confirm(`Permanently delete payment record ID ${pid}?`)) return;
+            try {
+                const response = await fetch('/admin/payment_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'delete_id', payment_id: pid })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); fetchPaymentsData(); }
+            } catch { showToast("Failed to delete", "error"); }
+        }
+
+        async function deleteLastPayment() {
+            if (!confirm("Are you sure you want to remove the LAST approved payment from the dashboard?")) return;
+            try {
+                const response = await fetch('/admin/payment_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'delete_last' })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); fetchPaymentsData(); }
+            } catch { showToast("Failed to delete", "error"); }
+        }
+
+        // Manual Pay Modal
+        function openManualPayModal() { document.getElementById('manual_pay_modal').classList.remove('hidden'); }
+        function closeManualPayModal() { document.getElementById('manual_pay_modal').classList.add('hidden'); }
+
+        async function submitManualPay() {
+            const uid = document.getElementById('manual_pay_uid').value.trim();
+            const amt = document.getElementById('manual_pay_amount').value.trim();
+            const ptype = document.getElementById('manual_pay_type').value;
+
+            if (!uid || !amt) return showToast("User ID and Amount required", "error");
+            try {
+                const response = await fetch('/admin/payment_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'record_manual', user_id: parseInt(uid), amount: parseFloat(amt), type: ptype })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); closeManualPayModal(); fetchPaymentsData(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to record payment", "error"); }
+        }
+
+
+        // ── 5. Carts Recovery Tab ───────────────────────────────────────
+        async function fetchCartsData() {
+            try {
+                const response = await fetch('/admin/carts_data' + window.location.search);
+                if (response.status === 403) return showAccessDenied();
+                const carts = await response.json();
+
+                setTxt('carts_pending_count', String(carts.length));
+                setTxt('tab_carts_badge', String(carts.length));
+
+                const tbody = document.getElementById('carts_table_body');
+                if (!carts.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">🎉 No abandoned checkout sessions found! All clean.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = carts.map(c => `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-5 py-3">
+                            <div class="font-bold text-slate-200">${c.name}</div>
+                            <div class="text-[11px] text-slate-500 font-mono">ID: ${c.user_id}</div>
+                        </td>
+                        <td class="px-5 py-3 font-semibold text-slate-300">${c.item_title}</td>
+                        <td class="px-5 py-3 font-mono font-bold text-amber-400">${fmt(c.amount)} ETB</td>
+                        <td class="px-5 py-3 font-mono text-xs text-slate-400">${c.time_ago}</td>
+                        <td class="px-5 py-3 text-xs uppercase font-mono text-slate-400">${c.language}</td>
+                        <td class="px-5 py-3 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="triggerCartNudge(${c.user_id}, ${c.id})" class="px-3 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bell"></i> Send Recovery Nudge
+                                </button>
+                                <button onclick="dismissCart(${c.id})" class="text-slate-500 hover:text-slate-300 text-xs px-2 py-1">Dismiss</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Carts error:", err);
+            }
+        }
+
+        async function triggerCartNudge(uid, cid) {
+            try {
+                const response = await fetch('/admin/cart_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'nudge', user_id: uid, cart_id: cid })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); fetchCartsData(); }
+            } catch { showToast("Failed to nudge", "error"); }
+        }
+
+        async function dismissCart(cid) {
+            try {
+                const response = await fetch('/admin/cart_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'dismiss', user_id: 0, cart_id: cid })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast("Cart dismissed"); fetchCartsData(); }
+            } catch { showToast("Failed to dismiss", "error"); }
+        }
+
+
+        // ── 6. Broadcast Tab ────────────────────────────────────────────
+        function insertTag(tag) {
+            const ta = document.getElementById('bc_message_text');
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const selected = ta.value.substring(start, end) || 'text';
+            const rep = `<${tag}>${selected}</${tag}>`;
+            ta.value = ta.value.substring(0, start) + rep + ta.value.substring(end);
+            ta.focus();
+            updateBroadcastPreview();
+        }
+
+        function updateBroadcastPreview() {
+            const text = document.getElementById('bc_message_text').value;
+            const hasApp = document.getElementById('bc_has_app').checked;
+            const previewEl = document.getElementById('bc_preview_content');
+            const btnEl = document.getElementById('bc_preview_btn_container');
+
+            previewEl.innerHTML = text ? text : '<span class="text-slate-500 italic">Type a message to see live preview...</span>';
+            btnEl.style.display = hasApp ? 'block' : 'none';
+        }
+
+        async function sendTestBroadcast() {
+            const text = document.getElementById('bc_message_text').value.trim();
+            const hasApp = document.getElementById('bc_has_app').checked;
+            if (!text) return showToast("Type message text first", "error");
+
+            try {
+                const response = await fetch('/admin/broadcast_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'test', text, has_app_btn: hasApp })
+                });
+                const res = await response.json();
+                if (res.ok) showToast(res.message);
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to send test", "error"); }
+        }
+
+        async function launchMassBroadcast() {
+            const text = document.getElementById('bc_message_text').value.trim();
+            const hasApp = document.getElementById('bc_has_app').checked;
+            const target = document.getElementById('bc_target_group').value;
+            const lang = document.getElementById('bc_lang_filter').value;
+
+            if (!text) return showToast("Type message text first", "error");
+            if (!confirm(`ARE YOU SURE you want to broadcast this message to audience group "${target.toUpperCase()}"?`)) return;
+
+            const btn = document.getElementById('btn_launch_bc');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Blasting...';
+
+            try {
+                const response = await fetch('/admin/broadcast_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'blast', text, has_app_btn: hasApp, target, lang })
+                });
+                const res = await response.json();
+                if (res.ok) showToast(res.message);
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to launch broadcast", "error"); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Blast Broadcast';
+            }
+        }
+
+
+        // ── 7. System, Logs & Maintenance Tab ───────────────────────────
+        async function fetchServerLogs() {
+            try {
+                const response = await fetch(`/admin/logs_data?token=${adminToken}&lines=180`);
+                if (response.status === 403) return showAccessDenied();
+                rawLogs = await response.json();
+                renderLogs();
+            } catch (err) {
+                console.error("Logs error:", err);
+            }
+        }
+
+        function renderLogs() {
+            const consoleEl = document.getElementById('terminal_console');
+            const flt = document.getElementById('log_filter_select')?.value || 'all';
+
+            const filtered = rawLogs.filter(l => {
+                if (flt === 'all') return true;
+                return l.includes(flt);
+            });
+
+            if (!filtered.length) {
+                consoleEl.innerHTML = '<div class="text-slate-500">No logs matching level.</div>';
+                return;
+            }
+
+            consoleEl.innerHTML = filtered.map(line => {
+                let colorClass = 'text-slate-300';
+                if (line.includes('ERROR')) colorClass = 'text-red-400 font-bold';
+                else if (line.includes('WARNING')) colorClass = 'text-amber-300';
+                else if (line.includes('STARTING') || line.includes('SUCCESS')) colorClass = 'text-emerald-300';
+                return `<div class="${colorClass}">${escapeHtml(line)}</div>`;
+            }).join('');
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        async function fetchSubAdmins() {
+            try {
+                const response = await fetch(`/admin/subadmins_data?token=${adminToken}`);
+                const subs = await response.json();
+                const cont = document.getElementById('subadmins_list');
+                if (!subs.length) {
+                    cont.innerHTML = '<span class="text-slate-500">No sub-admins assigned.</span>';
+                } else {
+                    cont.innerHTML = subs.map(s => `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-200">
+                            <span>👮 ${s.first_name || 'Sub-Admin'} (@${s.username || s.user_id})</span>
+                            <button onclick="removeSubAdmin(${s.user_id})" class="text-rose-400 hover:text-rose-200"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                        </span>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error("Sub-admins error:", err);
+            }
+        }
+
+        async function addSubAdmin() {
+            const input = document.getElementById('subadmin_input').value.trim();
+            if (!input) return showToast("Enter @username or ID", "error");
+            try {
+                const response = await fetch('/admin/maintenance_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'add_subadmin', identifier: input })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); document.getElementById('subadmin_input').value = ''; fetchSubAdmins(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Failed to add sub-admin", "error"); }
+        }
+
+        async function removeSubAdmin(uid) {
+            if (!confirm(`Remove sub-admin privileges for user ${uid}?`)) return;
+            try {
+                const response = await fetch('/admin/maintenance_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action: 'remove_subadmin', user_id: uid })
+                });
+                const res = await response.json();
+                if (res.ok) { showToast(res.message); fetchSubAdmins(); }
+            } catch { showToast("Failed to remove sub-admin", "error"); }
+        }
+
+        async function runSystemMaintenance(action) {
+            try {
+                const response = await fetch('/admin/maintenance_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: adminToken, action })
+                });
+                const res = await response.json();
+                if (res.ok) showToast(res.message);
+            } catch { showToast("Maintenance failed", "error"); }
+        }
+
+        // Grant Modal
+        function openGrantModal() { document.getElementById('grant_modal').classList.remove('hidden'); }
+        function closeGrantModal() { document.getElementById('grant_modal').classList.add('hidden'); }
 
         async function submitGrantBook() {
             const uidInput = document.getElementById('grant_uid').value.trim();
@@ -875,88 +1642,47 @@
             const duration = document.getElementById('grant_duration').value;
             const notify = document.getElementById('grant_notify').checked;
 
-            if (!uidInput) {
-                showToast("Please enter a valid Telegram User ID", "error");
-                document.getElementById('grant_uid').focus();
-                return;
-            }
-
-            const btn = document.getElementById('btn_submit_grant');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Granting...';
-
+            if (!uidInput) return showToast("Enter User ID", "error");
             try {
                 const daysVal = duration === '0' ? null : parseInt(duration);
                 const response = await fetch('/admin/rentals/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: adminToken,
-                        action: 'grant',
-                        user_id: parseInt(uidInput),
-                        book_key: bookKey,
-                        days: daysVal,
-                        notify: notify
-                    })
+                    body: JSON.stringify({ token: adminToken, action: 'grant', user_id: parseInt(uidInput), book_key: bookKey, days: daysVal, notify })
                 });
                 const res = await response.json();
-                if (res.ok) {
-                    showToast(res.message || "Book access granted successfully!");
-                    closeGrantModal();
-                    document.getElementById('grant_uid').value = '';
-                    fetchRentalsData();
-                } else {
-                    showToast(res.error || "Failed to grant access", "error");
-                }
-            } catch (err) {
-                console.error("Grant error:", err);
-                showToast("Network error granting access", "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Grant Access';
-            }
+                if (res.ok) { showToast(res.message); closeGrantModal(); fetchRentalsData(); }
+                else showToast(res.error, 'error');
+            } catch { showToast("Grant failed", "error"); }
         }
 
-        // CSV Export
-        function exportRentalsCSV() {
-            if (!rawRentalsData.length) {
-                showToast("No records available to export", "error");
-                return;
-            }
-            let csv = "User ID,First Name,Username,Book Key,Book Title,Status,Purchased On,Expires At,Remaining Days\n";
-            rawRentalsData.forEach(r => {
-                const uname = (r.username || '').replace(/,/g, '');
-                const fname = (r.first_name || '').replace(/,/g, '');
-                const btitle = (r.book_title || '').replace(/,/g, '');
-                csv += `${r.user_id},"${fname}","${uname}","${r.book_key}","${btitle}","${r.status}","${r.purchased_at}","${r.expires_at || 'Permanent'}","${r.days_left || 0}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `baya_books_rentals_${new Date().toISOString().substring(0,10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast("Exported rentals CSV!");
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
-        // Initial setup
+        function bool(v) { return v === true || v === 1 || v === '1'; }
+
+        function showAccessDenied() {
+            document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl font-black">🔒 Access Denied. Invalid or missing admin token.</div>';
+        }
+
+        // Setup on Load
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.location.hash === '#rentals') {
-                switchTab('rentals');
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ['overview', 'rentals', 'users', 'payments', 'carts', 'broadcast', 'system'].includes(hash)) {
+                switchTab(hash);
             } else {
                 fetchOverviewData();
             }
+            updateBroadcastPreview();
         });
 
-        // Periodic auto-refresh every 30s
+        // Background auto-refresh
         setInterval(() => {
-            if (currentTab === 'rentals') {
-                fetchRentalsData();
-            } else {
-                fetchOverviewData();
-            }
+            if (currentTab === 'overview') fetchOverviewData();
+            else if (currentTab === 'rentals') fetchRentalsData();
+            else if (currentTab === 'carts') fetchCartsData();
+            else if (currentTab === 'system') fetchServerLogs();
         }, 30000);
     </script>
 </body>

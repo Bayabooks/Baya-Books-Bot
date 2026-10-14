@@ -399,6 +399,244 @@ def expire_book_rental_now(user_id, book_key):
     conn.close()
     return True
 
+def get_all_users_admin_data(limit=150, offset=0, query='', filter_status='all'):
+    """Fetch users for the admin user directory with aggregated stats."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    where_clauses = []
+    params = []
+    
+    if query:
+        q = f"%{query.strip().lower()}%"
+        where_clauses.append("(LOWER(u.first_name) LIKE ? OR LOWER(u.username) LIKE ? OR CAST(u.user_id AS TEXT) LIKE ?)")
+        params.extend([q, q, q])
+        
+    if filter_status == 'active':
+        where_clauses.append("u.bot_blocked = 0")
+    elif filter_status == 'blocked':
+        where_clauses.append("u.bot_blocked = 1")
+    elif filter_status == 'vip':
+        where_clauses.append("u.vip_expiry IS NOT NULL AND u.vip_expiry > datetime('now')")
+    elif filter_status == 'exhausted':
+        where_clauses.append("u.advice_messages_left <= 0 AND (u.vip_expiry IS NULL OR u.vip_expiry <= datetime('now'))")
+    elif filter_status == 'male':
+        where_clauses.append("u.gender = 'male'")
+    elif filter_status == 'female':
+        where_clauses.append("u.gender = 'female'")
+
+    where_str = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+    
+    c.execute(f"SELECT COUNT(*) FROM users u {where_str}", params)
+    total_count = c.fetchone()[0]
+    
+    sql = f"""
+        SELECT 
+            u.user_id,
+            u.username,
+            u.first_name,
+            u.joined_date,
+            u.credits,
+            u.advice_messages_left,
+            u.vip_expiry,
+            u.bot_language,
+            u.gender,
+            u.bot_blocked,
+            (SELECT COUNT(*) FROM user_books ub WHERE ub.user_id = u.user_id) as books_count,
+            (SELECT COALESCE(SUM(amount), 0) FROM payments p WHERE p.user_id = u.user_id AND (p.status = 'approved' OR p.receipt_file_id LIKE '%WEBHOOK%' OR p.tx_ref LIKE '%WEBHOOK%')) as total_spent
+        FROM users u
+        {where_str}
+        ORDER BY u.user_id DESC
+        LIMIT ? OFFSET ?
+    """
+    c.execute(sql, params + [limit, offset])
+    rows = c.fetchall()
+    conn.close()
+    
+    now_dt = datetime.now()
+    user_list = []
+    for r in rows:
+        d = dict(r)
+        vip_exp = d.get('vip_expiry')
+        is_vip_active = False
+        if vip_exp:
+            try:
+                is_vip_active = datetime.strptime(vip_exp[:19], "%Y-%m-%d %H:%M:%S") > now_dt
+            except Exception:
+                pass
+        d['is_vip'] = is_vip_active
+        user_list.append(d)
+        
+    return {
+        "total": total_count,
+        "users": user_list
+    }
+
+def get_all_payments_admin_data(limit=100, offset=0, query='', status='all', ptype='all'):
+    """Fetch payments records for the transactions table."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    where_clauses = []
+    params = []
+    
+    if query:
+        q = f"%{query.strip().lower()}%"
+        where_clauses.append("(LOWER(u.first_name) LIKE ? OR LOWER(u.username) LIKE ? OR CAST(p.user_id AS TEXT) LIKE ? OR LOWER(p.tx_ref) LIKE ?)")
+        params.extend([q, q, q, q])
+        
+    if status != 'all':
+        if status == 'approved':
+            where_clauses.append("(p.status = 'approved' OR p.receipt_file_id LIKE '%WEBHOOK%' OR p.tx_ref LIKE '%WEBHOOK%')")
+        else:
+            where_clauses.append("p.status = ?")
+            params.append(status)
+            
+    if ptype != 'all':
+        if ptype == 'book':
+            where_clauses.append("p.tx_ref LIKE '%BOOK%'")
+        elif ptype == 'advice':
+            where_clauses.append("p.tx_ref LIKE '%ADVICE%'")
+        elif ptype == 'tip':
+            where_clauses.append("p.tx_ref LIKE '%TIP%'")
+
+    where_str = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+    
+    c.execute(f"SELECT COUNT(*) FROM payments p LEFT JOIN users u ON p.user_id = u.user_id {where_str}", params)
+    total_count = c.fetchone()[0]
+    
+    sql = f"""
+        SELECT 
+            p.id,
+            p.user_id,
+            p.amount,
+            p.payment_date,
+            p.tx_ref,
+            p.receipt_file_id,
+            p.status,
+            u.first_name,
+            u.username
+        FROM payments p
+        LEFT JOIN users u ON p.user_id = u.user_id
+        {where_str}
+        ORDER BY p.id DESC
+        LIMIT ? OFFSET ?
+    """
+    c.execute(sql, params + [limit, offset])
+    rows = c.fetchall()
+    conn.close()
+    
+    items = []
+    for r in rows:
+        tx = r['tx_ref'] or ''
+        rf = r['receipt_file_id'] or ''
+        st = r['status']
+        if rf.startswith('PENDING_CHECKOUT'):
+            st = 'abandoned_cart'
+        elif st == 'approved' or 'WEBHOOK' in rf or 'WEBHOOK' in tx:
+            st = 'approved'
+            
+        t_type = 'Book' if 'BOOK' in tx else 'Advice' if 'ADVICE' in tx else 'Tip' if 'TIP' in tx else 'VIP' if 'VIP' in tx else 'Other'
+        provider = 'Chapa' if 'CHAPA' in tx or 'WEBHOOK' in rf else 'ShegerPay' if 'SHEGER' in tx else 'Manual/CBE'
+        
+        items.append({
+            "id": r['id'],
+            "user_id": r['user_id'],
+            "name": r['first_name'] or 'Unknown',
+            "username": r['username'] or '',
+            "amount": r['amount'],
+            "date": r['payment_date'],
+            "tx_ref": tx,
+            "type": t_type,
+            "provider": provider,
+            "status": st
+        })
+        
+    return {
+        "total": total_count,
+        "payments": items
+    }
+
+def get_abandoned_carts_admin_data():
+    """Fetch pending checkout sessions for recovery."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT 
+            p.id,
+            p.user_id,
+            p.amount,
+            p.payment_date,
+            p.tx_ref,
+            u.first_name,
+            u.username,
+            u.bot_language,
+            u.bot_blocked
+        FROM payments p
+        LEFT JOIN users u ON p.user_id = u.user_id
+        WHERE p.receipt_file_id = 'PENDING_CHECKOUT' AND p.status = 'pending'
+        ORDER BY p.id DESC LIMIT 100
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    
+    now_dt = datetime.now()
+    carts = []
+    for r in rows:
+        tx = r['tx_ref'] or ''
+        item_title = "Book Checkout" if "BOOK" in tx else "Advice Package" if "ADVICE" in tx else "Checkout Order"
+        pdate = r['payment_date']
+        time_ago = ""
+        if pdate:
+            try:
+                dt = datetime.strptime(pdate[:19], "%Y-%m-%d %H:%M:%S")
+                diff = now_dt - dt
+                if diff.days > 0:
+                    time_ago = f"{diff.days}d ago"
+                elif diff.seconds >= 3600:
+                    time_ago = f"{diff.seconds // 3600}h ago"
+                else:
+                    time_ago = f"{diff.seconds // 60}m ago"
+            except Exception:
+                time_ago = pdate[:16]
+                
+        carts.append({
+            "id": r['id'],
+            "user_id": r['user_id'],
+            "name": r['first_name'] or 'User',
+            "username": r['username'] or '',
+            "language": r['bot_language'] or 'am',
+            "blocked": bool(r['bot_blocked']),
+            "amount": r['amount'],
+            "date": pdate,
+            "time_ago": time_ago,
+            "item_title": item_title,
+            "tx_ref": tx
+        })
+    return carts
+
+def delete_payment_record_by_id(pid):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM payments WHERE id = ?", (pid,))
+    deleted = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
+
+def delete_last_approved_payment():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, amount FROM payments WHERE status = 'approved' ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    if row:
+        c.execute("DELETE FROM payments WHERE id = ?", (row['id'],))
+        conn.commit()
+        conn.close()
+        return dict(row)
+    conn.close()
+    return None
+
 
 # ─── User Functions ────────────────────────
 

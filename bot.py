@@ -3282,6 +3282,119 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(rentals_data).encode('utf-8'))
             return
 
+        if self.path.startswith('/admin/users_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            limit = int(qs.get('limit', [100])[0])
+            page = int(qs.get('page', [0])[0])
+            query = qs.get('query', [''])[0]
+            flt = qs.get('filter', ['all'])[0]
+            data = database.get_all_users_admin_data(limit=limit, offset=page * limit, query=query, filter_status=flt)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/user_profile_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            target_uid = int(qs.get('uid', [0])[0])
+            details = database.get_user_details(target_uid) or {}
+            ubooks, urentals, uexp = database.get_user_books_state(target_uid)
+            hist_str = database.get_advice_history(target_uid)
+            hist = []
+            if hist_str:
+                try: hist = json.loads(hist_str)
+                except: pass
+            res = {
+                "details": details,
+                "books": {"owned": ubooks, "rentals": urentals, "expired": uexp},
+                "advice_history": hist
+            }
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(res).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/payments_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            limit = int(qs.get('limit', [100])[0])
+            page = int(qs.get('page', [0])[0])
+            query = qs.get('query', [''])[0]
+            st = qs.get('status', ['all'])[0]
+            ptype = qs.get('type', ['all'])[0]
+            data = database.get_all_payments_admin_data(limit=limit, offset=page * limit, query=query, status=st, ptype=ptype)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/carts_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            carts = database.get_abandoned_carts_admin_data()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(carts).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/logs_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            lines_n = int(qs.get('lines', [150])[0])
+            logs = []
+            if os.path.exists('app.log'):
+                try:
+                    with open('app.log', 'r', encoding='utf-8', errors='ignore') as f:
+                        lines = f.readlines()
+                        logs = [l.strip() for l in lines[-lines_n:]]
+                except Exception as e:
+                    logs = [f"Error reading app.log: {e}"]
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(logs).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/subadmins_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            subs = database.get_all_sub_admins()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(subs).encode('utf-8'))
+            return
+
         if self.path.startswith('/admin/advice_history'):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -3577,6 +3690,230 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/user_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                if data.get('token') != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action')
+                uid = int(data.get('user_id'))
+                msg = ""
+                if act == 'add_msgs':
+                    count = int(data.get('count', 5))
+                    database.add_advice_messages(uid, count)
+                    msg = f"Added {count} advice messages."
+                    if data.get('notify'):
+                        try: bot.send_message(uid, S(get_lang(uid), 'gift_notification', amount=count), parse_mode="HTML")
+                        except: pass
+                elif act == 'add_credits':
+                    amt = int(data.get('amount', 5))
+                    database.add_credits(uid, amt)
+                    msg = f"Added {amt} credits."
+                elif act == 'set_vip':
+                    days = int(data.get('days', 30))
+                    database.set_vip(uid, days=days)
+                    msg = f"Granted VIP for {days} days."
+                    if data.get('notify'):
+                        try: bot.send_message(uid, f"🎉 <b>እንኳን ደስ አለዎት!</b>\nለ {days} ቀናት VIP ሆነዋል!", parse_mode="HTML")
+                        except: pass
+                elif act == 'ban':
+                    database.ban_user(uid)
+                    msg = f"User {uid} banned."
+                elif act == 'unban':
+                    database.unban_user(uid)
+                    msg = f"User {uid} unbanned."
+                elif act == 'send_dm':
+                    text_to_send = data.get('message_text', '').strip()
+                    if text_to_send:
+                        bot.send_message(uid, text_to_send, parse_mode="HTML")
+                        msg = f"Direct message sent to user {uid}."
+                    else:
+                        raise ValueError("Message text cannot be empty.")
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/payment_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                if data.get('token') != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action')
+                msg = ""
+                if act == 'record_manual':
+                    target_uid = int(data.get('user_id'))
+                    amt = float(data.get('amount', 0))
+                    ptype = data.get('type', 'ADVICE')
+                    ref = f"MANUAL_{ptype}_{uuid.uuid4().hex[:6]}"
+                    database.record_payment(target_uid, None, amt, ref, "MANUAL_WEB_ADMIN", status="approved")
+                    if ptype == 'ADVICE':
+                        database.add_advice_messages(target_uid, 10)
+                    elif ptype == 'VIP':
+                        database.set_vip(target_uid, 30)
+                    msg = f"Recorded manual payment of {amt:,.0f} ETB."
+                elif act == 'delete_last':
+                    row = database.delete_last_approved_payment()
+                    msg = f"Deleted last payment ({row['amount'] if row else 'None'})."
+                elif act == 'delete_id':
+                    pid = int(data.get('payment_id'))
+                    database.delete_payment_record_by_id(pid)
+                    msg = f"Deleted payment ID {pid}."
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/cart_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                if data.get('token') != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action')
+                target_uid = int(data.get('user_id'))
+                cart_id = int(data.get('cart_id', 0))
+                msg = ""
+                if act == 'nudge':
+                    u_lang = database.get_bot_language(target_uid) or 'am'
+                    nudge_msgs = {
+                        'am': (
+                            "👋 <b>ሰላም!</b>\n\n"
+                            "የጀመሩት ክፍያ እንዳልተጠናቀቀ አስተውለናል። ማንኛውም የክፍያ ወይም የቦት ችግር ካጋጠመዎት "
+                            "እርዳታ ለመስጠት ዝግጁ ነን!\n\n"
+                            "እንደገና ለመሞከር ከታች <b>«💎 ጥቅል ግዛ (Top Up)»</b> የሚለውን ይጫኑ ወይም በድጋፍ መስመር ያነጋግሩን። 💙"
+                        ),
+                        'en': (
+                            "👋 <b>Hello!</b>\n\n"
+                            "We noticed your payment checkout was not completed. If you experienced any issue or need assistance, "
+                            "we are here to help!\n\n"
+                            "Feel free to try again or reach out to our support anytime. 💙"
+                        )
+                    }
+                    bot.send_message(target_uid, nudge_msgs.get(u_lang, nudge_msgs['am']), parse_mode="HTML")
+                    database.mark_checkout_nudged(cart_id)
+                    msg = f"Recovery reminder sent to user {target_uid}."
+                elif act == 'dismiss':
+                    database.delete_payment_record_by_id(cart_id)
+                    msg = f"Cart {cart_id} dismissed."
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/broadcast_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                if data.get('token') != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action') # 'test' or 'blast'
+                b_text = data.get('text', '').strip()
+                has_app = data.get('has_app_btn', False)
+                target_group = data.get('target', 'all')
+                lang_filter = data.get('lang', 'all')
+                
+                if not b_text:
+                    raise ValueError("Broadcast text cannot be empty.")
+                    
+                markup = None
+                if has_app:
+                    markup = InlineKeyboardMarkup()
+                    markup.add(InlineKeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app")))
+                    
+                if act == 'test':
+                    admin_id = get_admin_id()
+                    if admin_id:
+                        bot.send_message(admin_id, f"🧪 <b>[TEST BROADCAST PREVIEW]</b>\n\n{b_text}", parse_mode="HTML", reply_markup=markup)
+                        msg = f"Test broadcast preview sent to your Telegram (@{config.ADMIN_USERNAME})!"
+                    else:
+                        raise ValueError("Admin Telegram ID not configured.")
+                elif act == 'blast':
+                    def blast_worker():
+                        uids = database.get_all_user_ids()
+                        for u in uids:
+                            try:
+                                if lang_filter != 'all' and database.get_bot_language(u) != lang_filter:
+                                    continue
+                                if target_group == 'active' and database.is_banned(u):
+                                    continue
+                                bot.send_message(u, b_text, parse_mode="HTML", reply_markup=markup)
+                            except Exception:
+                                pass
+                            time.sleep(0.05)
+                    threading.Thread(target=blast_worker, daemon=True).start()
+                    msg = "Mass broadcast launched in background safe mode."
+                    
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/maintenance_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                if data.get('token') != config.ADMIN_USERNAME:
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                act = data.get('action')
+                msg = ""
+                if act == 'clean_ghosts':
+                    def run_clean():
+                        conn = database.get_connection()
+                        c = conn.cursor()
+                        c.execute("SELECT user_id FROM users WHERE bot_blocked = 0 AND (gender IS NULL OR gender = '')")
+                        stuck = [r[0] for r in c.fetchall()]
+                        conn.close()
+                        cleaned = 0
+                        for u in stuck:
+                            try:
+                                bot.send_chat_action(u, "typing")
+                            except:
+                                database.mark_user_blocked(u, 1)
+                                cleaned += 1
+                            time.sleep(0.05)
+                    threading.Thread(target=run_clean, daemon=True).start()
+                    msg = "Ghost cleanup routine running in background."
+                elif act == 'refresh_keyboards':
+                    admin_id = get_admin_id()
+                    if admin_id:
+                        run_refresh_all_menus(admin_id)
+                    msg = "Silent keyboard refresh initiated for all users."
+                elif act == 'add_subadmin':
+                    ident = data.get('identifier', '').strip()
+                    uid_res = database.add_sub_admin_by_identifier(ident)
+                    if uid_res:
+                        setup_admin_menu(uid_res)
+                        msg = f"Sub-Admin added: {ident} (ID: {uid_res})"
+                    else:
+                        raise ValueError(f"User {ident} not found in database.")
+                elif act == 'remove_subadmin':
+                    target_id = int(data.get('user_id'))
+                    database.remove_sub_admin(target_id)
+                    msg = f"Sub-Admin {target_id} removed."
+                    
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": msg}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
             return
 

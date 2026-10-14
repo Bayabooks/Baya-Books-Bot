@@ -152,6 +152,11 @@ CRITICAL CULTURAL CONSTRAINTS (ETHIOPIAN CONTEXT):
 
 RECEIPT_VERIFY_PROMPT = """You are an expert Ethiopian payment receipt verification system (CBE Mobile Banking, CBE Birr, Telebirr, and Bank Transfer receipts/SMS confirmations).
 
+Current System Context:
+- Today's Date: {today_date} (Current Year: {current_year}). Any receipt dated today ({today_date}) or recently within {current_year} is CURRENT and REAL-TIME, NOT a future date!
+- Ethiopian Banking Context: Commercial Bank of Ethiopia (CBE) modern mobile banking receipts legitimately display transaction breakdowns including 'Reason: MB Transfer', 'Service Charge', 'VAT (15%)', and 'Disaster Recovery (5%)'. These are 100% genuine official CBE banking fields in Ethiopia, NOT anomalies.
+- Account Suffixes: In CBE Mobile Banking, account numbers are frequently displayed as 'ETB-XXXX' where XXXX is the last 4 digits (e.g. 'ETB-4765' represents 1000073164765, and 'ETB-7878' represents 1000326477878). Both full account numbers and 'ETB-XXXX' suffix forms are valid!
+
 Analyze this image/screenshot carefully and extract:
 1. The exact amount paid (in ETB / Birr)
 2. The recipient name, account number, or phone number
@@ -160,9 +165,9 @@ Analyze this image/screenshot carefully and extract:
 
 Expected payment details:
 - Expected Amount: {expected_amount} Birr/ETB
-- Accepted Recipient Accounts: 1000073164765 or 1000326477878{extra_cbe}
+- Accepted Recipient Accounts: 1000073164765 (or ETB-4765) or 1000326477878 (or ETB-7878){extra_cbe}
 - Accepted Recipient Phones: 0912689900 or 0912338058 (+251912689900, +251912338058){extra_phone}
-- Accepted Recipient Names: "Behailu Getachew", "በኃይሉ ጌታቸው", "Michael Getachew", "ሚካኤል ጌታቸው"{extra_names}
+- Accepted Recipient Names: "Behailu Getachew", "Behailu Getachew Urga", "በኃይሉ ጌታቸው", "Michael Getachew", "ሚካኤል ጌታቸው"{extra_names}
 
 Respond in this exact JSON format only, no other text or markdown codeblocks:
 {{
@@ -179,9 +184,9 @@ Respond in this exact JSON format only, no other text or markdown codeblocks:
 
 Rules:
 - is_valid_receipt: true ONLY if the image looks like a genuine, completed payment receipt, transfer confirmation, or bank SMS. Set false if it is a pending transfer, a balance inquiry, a blank image, or completely illegible.
-- anti_tamper_check: Inspect closely for any signs of Photoshop, image editing, font mismatch, pasted text, pixel halos around the amount, or altered digits. If ANY digital alteration, font anomaly, or tampering is detected, set is_valid_receipt to false, set confidence to "low", and note the tampering in "reason".
+- anti_tamper_check: Inspect closely for any signs of Photoshop or digital tampering (e.g. font mismatch, pasted text, pixel halos around the amount, or altered digits). Note: Official CBE layout with 'Disaster Recovery (5%)' is genuine and NOT tampering.
 - amount_matches: true ONLY if the extracted amount equals exactly {expected_amount} (or within standard rounding, e.g. 200.00).
-- recipient_matches: true ONLY if the extracted recipient account, phone, or name contains ANY of the accepted accounts, phones, or names listed above.
+- recipient_matches: true ONLY if the extracted recipient account (including ETB-4765 or ETB-7878), phone, or name contains ANY of the accepted accounts, phones, or names listed above.
 - transaction_id: The extracted transaction/reference ID (e.g. FT..., CI..., etc.), or null if not visible.
 - confidence: "high" if the text is sharp and clearly visible with zero tampering; "medium" if readable with minor compression; "low" if blurry, cropped, ambiguous, or suspected of tampering."""
 
@@ -497,11 +502,18 @@ def verify_receipt(image_bytes, expected_amount, telebirr_name=None, telebirr_ph
     if cbe_name and str(cbe_name) not in ("Michael Getachew", "Behailu Getachew", "በኃይሉ ጌታቸው"):
         extra_names += f', "{cbe_name}"'
 
+    from datetime import datetime
+    now = datetime.now()
+    today_date = now.strftime("%b %d, %Y")
+    current_year = now.year
+
     prompt = RECEIPT_VERIFY_PROMPT.format(
         expected_amount=expected_amount,
         extra_cbe=extra_cbe,
         extra_phone=extra_phone,
         extra_names=extra_names,
+        today_date=today_date,
+        current_year=current_year,
     )
     
     try:

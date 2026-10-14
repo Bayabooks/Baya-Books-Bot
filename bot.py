@@ -3453,11 +3453,11 @@ def handle_messages(message):
             file_info = bot.get_file(file_id)
             downloaded_file = bot.download_file(file_info.file_path)
             
-            # Verify with Gemini Vision (Fast, native Amharic OCR & tamper inspection)
-            res = ai_engine.verify_receipt(downloaded_file, amount)
+            # Verify with ShegerPay OCR (optimized image + retry)
+            import shegerpay
+            success, ref_id, err = shegerpay.verify_receipt_image(downloaded_file, amount)
             
-            if res.get("auto_approved"):
-                ref_id = res.get("ref_id")
+            if success:
                 if database.is_receipt_ref_used(ref_id):
                     bot.edit_message_text(
                         S(lang, 'receipt_used'),
@@ -3471,18 +3471,16 @@ def handle_messages(message):
                 uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
                 full_name = html.escape(get_full_name(message.from_user))
                 notify_admin(
-                    f"🤖💰 <b>Auto-Verified Payment (Gemini Vision)</b>\n"
+                    f"💰 <b>New Verified Payment (ShegerPay)!</b>\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"👤 User: <b>{full_name}</b> ({uname})\n"
                     f"🆔 ID: <code>{uid}</code>\n"
                     f"📦 Item: <b>{item_summary}</b>\n"
                     f"💵 Amount: <b>{amount:,} ETB</b>\n"
-                    f"🧾 Ref: <code>{ref_id}</code>\n"
-                    f"🔍 AI Note: <i>{res.get('reason', 'Auto-approved')}</i>"
+                    f"🧾 Ref: <code>{ref_id}</code>"
                 )
             else:
-                # Receipt could not be auto-verified with high confidence (blurry, edited, or mismatch)
-                # Reassure customer and forward to admin team for instant 1-tap review
+                # ShegerPay could not verify or timed out -> Forward to Admin for 1-tap approval
                 bot.edit_message_text(
                     S(lang, 'receipt_forwarded_to_admin'),
                     chat_id, msg.message_id,
@@ -3491,7 +3489,7 @@ def handle_messages(message):
                 
                 uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
                 full_name = html.escape(get_full_name(message.from_user))
-                ai_reason = html.escape(res.get("reason") or res.get("error") or "Uncertain verification")
+                sheger_note = html.escape(str(err or "Verification failed"))
                 admin_caption = (
                     f"⚠️ <b>Manual Receipt Review Required</b>\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -3499,7 +3497,7 @@ def handle_messages(message):
                     f"🆔 User ID: <code>{uid}</code>\n"
                     f"📦 Item: <b>{item_summary}</b>\n"
                     f"💵 Expected: <b>{amount:,} ETB</b>\n"
-                    f"🤖 AI Check: <i>{ai_reason}</i>\n"
+                    f"ℹ️ ShegerPay Note: <i>{sheger_note}</i>\n"
                     f"🔖 Pending ID: <code>{pending_id}</code>"
                 )
                 markup = InlineKeyboardMarkup(row_width=2)

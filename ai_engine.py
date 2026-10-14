@@ -150,37 +150,40 @@ CRITICAL CULTURAL CONSTRAINTS (ETHIOPIAN CONTEXT):
 """
 
 
-RECEIPT_VERIFY_PROMPT = """You are a payment receipt verification system for Ethiopian mobile money (Telebirr) and bank transfers (CBE).
+RECEIPT_VERIFY_PROMPT = """You are an expert Ethiopian payment receipt verification system (CBE Mobile Banking, CBE Birr, Telebirr, and Bank Transfer receipts/SMS confirmations).
 
-Analyze this screenshot carefully and extract:
-1. The exact amount paid (in ETB/Birr)
-2. The recipient name or phone number
-3. The transaction date
-4. The unique Transaction ID or Reference number
+Analyze this image/screenshot carefully and extract:
+1. The exact amount paid (in ETB / Birr)
+2. The recipient name, account number, or phone number
+3. The transaction date / time
+4. The unique Transaction ID or Reference number (e.g. CBE Ref starting with FT..., or Telebirr Transaction No.)
 
 Expected payment details:
-- Expected Amount: {expected_amount} Birr
-- Expected Recipient (Telebirr): {telebirr_name} or {telebirr_phone}
-- Expected Recipient (CBE): {cbe_name} or {cbe_account}
+- Expected Amount: {expected_amount} Birr/ETB
+- Accepted Recipient Accounts: 1000073164765 or 1000326477878{extra_cbe}
+- Accepted Recipient Phones: 0912689900 or 0912338058 (+251912689900, +251912338058){extra_phone}
+- Accepted Recipient Names: "Behailu Getachew", "በኃይሉ ጌታቸው", "Michael Getachew", "ሚካኤል ጌታቸው"{extra_names}
 
-Respond in this exact JSON format only, no other text:
+Respond in this exact JSON format only, no other text or markdown codeblocks:
 {{
+  "is_valid_receipt": false,
+  "amount_matches": false,
+  "recipient_matches": false,
   "amount": null,
   "recipient": null,
   "date": null,
   "transaction_id": null,
-  "amount_matches": false,
-  "recipient_matches": false,
-  "is_valid_receipt": false,
-  "confidence": "low"
+  "confidence": "low",
+  "reason": "Brief summary in English explaining what was detected or why it failed"
 }}
 
 Rules:
-- Set amount, recipient, date, transaction_id to the extracted values, or null if unreadable
-- amount_matches: true ONLY if amount equals exactly {expected_amount}
-- recipient_matches: true ONLY if the extracted recipient contains ANY of these: "{telebirr_name}", "{telebirr_phone}", "{cbe_name}", or "{cbe_account}".
-- is_valid_receipt: true ONLY if it looks like a genuine payment receipt/confirmation
-- confidence: "high" if image is clear, "medium" if partially readable, "low" if blurry/unclear"""
+- is_valid_receipt: true ONLY if the image looks like a genuine, completed payment receipt, transfer confirmation, or bank SMS. Set false if it is a pending transfer, a balance inquiry, a blank image, or completely illegible.
+- anti_tamper_check: Inspect closely for any signs of Photoshop, image editing, font mismatch, pasted text, pixel halos around the amount, or altered digits. If ANY digital alteration, font anomaly, or tampering is detected, set is_valid_receipt to false, set confidence to "low", and note the tampering in "reason".
+- amount_matches: true ONLY if the extracted amount equals exactly {expected_amount} (or within standard rounding, e.g. 200.00).
+- recipient_matches: true ONLY if the extracted recipient account, phone, or name contains ANY of the accepted accounts, phones, or names listed above.
+- transaction_id: The extracted transaction/reference ID (e.g. FT..., CI..., etc.), or null if not visible.
+- confidence: "high" if the text is sharp and clearly visible with zero tampering; "medium" if readable with minor compression; "low" if blurry, cropped, ambiguous, or suspected of tampering."""
 
 
 # ─── Language Mapping ──────────────────────
@@ -484,14 +487,21 @@ def verify_book_title(query):
         return {"title": "", "author": "", "found": False, "error_msg": str(e) + " " + traceback.format_exc()[-200:]}
 
 
-def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, cbe_name, cbe_account):
+def verify_receipt(image_bytes, expected_amount, telebirr_name=None, telebirr_phone=None, cbe_name=None, cbe_account=None):
     """Verify a payment screenshot using Gemini Vision."""
+    extra_cbe = f" or {cbe_account}" if cbe_account and str(cbe_account) not in ("1000073164765", "1000326477878") else ""
+    extra_phone = f" or {telebirr_phone}" if telebirr_phone and str(telebirr_phone) not in ("0912689900", "0912338058") else ""
+    extra_names = ""
+    if telebirr_name and str(telebirr_name) not in ("Michael Getachew", "Behailu Getachew", "በኃይሉ ጌታቸው"):
+        extra_names += f', "{telebirr_name}"'
+    if cbe_name and str(cbe_name) not in ("Michael Getachew", "Behailu Getachew", "በኃይሉ ጌታቸው"):
+        extra_names += f', "{cbe_name}"'
+
     prompt = RECEIPT_VERIFY_PROMPT.format(
         expected_amount=expected_amount,
-        telebirr_name=telebirr_name,
-        telebirr_phone=telebirr_phone,
-        cbe_name=cbe_name,
-        cbe_account=cbe_account,
+        extra_cbe=extra_cbe,
+        extra_phone=extra_phone,
+        extra_names=extra_names,
     )
     
     try:
@@ -499,7 +509,7 @@ def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, 
         response = model.generate_content([
             prompt,
             {"mime_type": "image/jpeg", "data": image_bytes}
-        ], request_options={"timeout": 45})
+        ], request_options={"timeout": 35})
         text = response.text.strip()
         # Extract JSON object robustly
         start_idx = text.find('{')
@@ -525,7 +535,16 @@ def verify_receipt(image_bytes, expected_amount, telebirr_name, telebirr_phone, 
             result.get("confidence", "low").lower() in ("high", "medium")
         )
         result["auto_approved"] = is_approved
+        
+        # Determine reference ID
+        tx_id = result.get("transaction_id")
+        if tx_id and str(tx_id).strip() and str(tx_id).lower() not in ("none", "null", "unknown"):
+            result["ref_id"] = str(tx_id).strip()
+        else:
+            import uuid
+            result["ref_id"] = f"GEMINI_{uuid.uuid4().hex[:8].upper()}"
+            
         return result
     except Exception as e:
         logging.error(f"Receipt verification error: {e}")
-        return {"auto_approved": False, "error": str(e)}
+        return {"auto_approved": False, "error": str(e), "reason": f"Verification error: {str(e)}"}

@@ -1005,6 +1005,80 @@ def notify_user_book_unlocked(uid, book_key, days=None):
     except Exception as e:
         logging.error(f"Failed to notify user {uid} of unlocked book: {e}")
 
+def get_payment_item_summary(tx_ref):
+    if not tx_ref:
+        return "Unknown Item"
+    parts = tx_ref.split("-")
+    purpose = parts[2] if len(parts) >= 3 else ""
+    if purpose.startswith("BOOKRENT_"):
+        bkey = purpose.replace("BOOKRENT_", "")
+        bt = BOOK_TITLES.get(bkey, bkey)
+        return f"⏳ Book Rental (10d): {bt}"
+    elif purpose.startswith("BOOKEXT_"):
+        bkey = purpose.replace("BOOKEXT_", "")
+        bt = BOOK_TITLES.get(bkey, bkey)
+        return f"➕ Book Extension (+5d): {bt}"
+    elif purpose.startswith("BOOK_"):
+        bkey = purpose.replace("BOOK_", "")
+        bt = BOOK_TITLES.get(bkey, bkey)
+        return f"💎 Book Full Purchase: {bt}"
+    elif purpose.startswith("ADVICE_"):
+        pkg = purpose.split("_")[1]
+        return f"🧠 Advice Package ({pkg})"
+    elif purpose == "TIP":
+        return "☕ Tip / Support"
+    return purpose or "Unknown Item"
+
+def fulfill_payment(uid, tx_ref, order_id=None, receipt_ref=None):
+    """
+    Approves payment in database, unlocks the purchased item/package,
+    and sends the success message to the customer.
+    Returns (success, item_summary).
+    """
+    if not order_id:
+        import uuid
+        order_id = f"ORDER-{uuid.uuid4().hex[:8].upper()}"
+        
+    database.approve_payment(tx_ref, order_id, receipt_ref=receipt_ref)
+    
+    parts = tx_ref.split("-")
+    purpose = parts[2] if len(parts) >= 3 else ""
+    item_summary = get_payment_item_summary(tx_ref)
+    lang = get_lang(uid)
+    chat_id = uid
+    
+    try:
+        if purpose.startswith("BOOKRENT_"):
+            book_key = purpose.replace("BOOKRENT_", "")
+            database.unlock_book(uid, book_key, days=10)
+            notify_user_book_unlocked(uid, book_key, days=10)
+        elif purpose.startswith("BOOKEXT_"):
+            book_key = purpose.replace("BOOKEXT_", "")
+            database.unlock_book(uid, book_key, days=5)
+            notify_user_book_unlocked(uid, book_key, days=5)
+        elif purpose.startswith("BOOK_"):
+            book_key = purpose.replace("BOOK_", "")
+            database.unlock_book(uid, book_key, days=None)
+            notify_user_book_unlocked(uid, book_key, days=None)
+        elif purpose.startswith("ADVICE_"):
+            pkg = purpose.split("_")[1]
+            if pkg == "unlimited":
+                database.set_vip(uid, days=7)
+                bot.send_message(chat_id, S(lang, 'payment_success_unlimited'), parse_mode="HTML")
+            elif pkg == "unlimited_month":
+                database.set_vip(uid, days=30)
+                bot.send_message(chat_id, S(lang, 'payment_success_unlimited_month'), parse_mode="HTML")
+            else:
+                msgs = int(pkg)
+                database.add_advice_messages(uid, msgs)
+                bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
+        elif purpose == "TIP":
+            bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
+        return True, item_summary
+    except Exception as e:
+        logging.error(f"Error in fulfill_payment for {uid}: {e}")
+        return False, item_summary
+
 _book_prompt_lock = threading.Lock()
 _last_book_prompt = {}
 
@@ -1987,6 +2061,102 @@ def handle_callback(call):
         set_state(uid, f"ADMIN_REPLY_{target_uid}")
         bot.send_message(chat_id, f"📝 <b>Reply to User {target_uid}</b>\n\nType your message below (/cancel to abort):", parse_mode="HTML")
         bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("adm_rec_appr_"):
+        if not is_admin(call.from_user):
+            bot.answer_callback_query(call.id, "Unauthorized", show_alert=True)
+            return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        pending_id = int(parts[4])
+        
+        payment = database.get_payment(pending_id)
+        if not payment:
+            bot.answer_callback_query(call.id, "❌ Payment record not found.", show_alert=True)
+            return
+        if payment["status"] == "approved":
+            bot.answer_callback_query(call.id, "⚠️ Already approved!", show_alert=True)
+            try:
+                bot.edit_message_caption(
+                    caption=(call.message.caption or "") + "\n\n⚠️ <i>(Already approved earlier)</i>",
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+            return
+            
+        admin_uname = f"@{call.from_user.username}" if call.from_user.username else (call.from_user.first_name or "Admin")
+        import uuid
+        tx_ref = payment["tx_ref"]
+        order_id = payment["order_id"] or f"ORDER-{uuid.uuid4().hex[:8].upper()}"
+        receipt_ref = f"MANUAL_ADMIN_{call.from_user.id}"
+        
+        success, item_summary = fulfill_payment(target_uid, tx_ref, order_id=order_id, receipt_ref=receipt_ref)
+        bot.answer_callback_query(call.id, f"✅ Approved for user {target_uid}!", show_alert=True)
+        
+        new_caption = (
+            f"✅ <b>Approved by {admin_uname}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 User ID: <code>{target_uid}</code>\n"
+            f"📦 Item: <b>{item_summary}</b>\n"
+            f"💵 Amount: <b>{payment['amount']:,} ETB</b>\n"
+            f"🧾 Status: <b>Activated</b>"
+        )
+        try:
+            bot.edit_message_caption(
+                caption=new_caption,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                parse_mode="HTML",
+                reply_markup=None
+            )
+        except Exception as e:
+            logging.error(f"Failed to edit admin review caption: {e}")
+        return
+
+    if data.startswith("adm_rec_rej_"):
+        if not is_admin(call.from_user):
+            bot.answer_callback_query(call.id, "Unauthorized", show_alert=True)
+            return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        pending_id = int(parts[4])
+        
+        payment = database.get_payment(pending_id)
+        if payment and payment["status"] == "approved":
+            bot.answer_callback_query(call.id, "⚠️ Already approved! Cannot reject.", show_alert=True)
+            return
+            
+        database.reject_payment(pending_id)
+        admin_uname = f"@{call.from_user.username}" if call.from_user.username else (call.from_user.first_name or "Admin")
+        bot.answer_callback_query(call.id, f"❌ Rejected payment {pending_id}", show_alert=True)
+        
+        target_lang = get_lang(target_uid)
+        try:
+            bot.send_message(target_uid, S(target_lang, 'receipt_rejected_user'), parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Failed to notify user {target_uid} of payment rejection: {e}")
+            
+        new_caption = (
+            f"❌ <b>Rejected by {admin_uname}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 User ID: <code>{target_uid}</code>\n"
+            f"💵 Amount: <b>{payment['amount'] if payment else 'N/A'} ETB</b>\n"
+            f"🧾 Status: <b>Rejected (User Notified)</b>"
+        )
+        try:
+            bot.edit_message_caption(
+                caption=new_caption,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                parse_mode="HTML",
+                reply_markup=None
+            )
+        except Exception as e:
+            logging.error(f"Failed to edit admin review caption: {e}")
         return
 
     if data.startswith("adm_view_user_"):
@@ -3274,110 +3444,89 @@ def handle_messages(message):
             return
             
         pending_id, amount, tx_ref, order_id = pending
+        item_summary = get_payment_item_summary(tx_ref)
         
-        msg = bot.reply_to(message, "⏳ ደረሰኝዎን በማረጋገጥ ላይ ነን... (Verifying receipt...)")
+        msg = bot.reply_to(message, S(lang, 'receipt_verifying'))
         
         try:
             file_id = message.photo[-1].file_id
             file_info = bot.get_file(file_id)
             downloaded_file = bot.download_file(file_info.file_path)
             
-            import shegerpay
-            success, ref_id, err = shegerpay.verify_receipt_image(downloaded_file, amount)
+            # Verify with Gemini Vision (Fast, native Amharic OCR & tamper inspection)
+            res = ai_engine.verify_receipt(downloaded_file, amount)
             
-            if success:
+            if res.get("auto_approved"):
+                ref_id = res.get("ref_id")
                 if database.is_receipt_ref_used(ref_id):
                     bot.edit_message_text(
-                        "❌ ይህ የክፍያ ደረሰኝ ከዚህ በፊት ጥቅም ላይ ውሏል! እባክዎ አዲስ የክፍያ ደረሰኝ (Screenshot) ይላኩ። (This receipt has already been used.)",
+                        S(lang, 'receipt_used'),
                         chat_id, msg.message_id
                     )
                     return
 
-                database.approve_payment(tx_ref, order_id, receipt_ref=ref_id)
-                parts = tx_ref.split("-")
-                purpose = parts[2] if len(parts) >= 3 else ""
-                item_summary = purpose
-                
-                if purpose.startswith("BOOKRENT_"):
-                    book_key = purpose.replace("BOOKRENT_", "")
-                    database.unlock_book(uid, book_key, days=10)
-                    b_title = BOOK_TITLES.get(book_key, book_key)
-                    item_summary = f"⏳ Book 10d Rental: {b_title}"
-                    markup = InlineKeyboardMarkup()
-                    markup.add(
-                        InlineKeyboardButton(
-                            "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
-                            web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
-                        )
-                    )
-                    bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ 10 ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጻሕፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
-                        chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
-                    )
-                elif purpose.startswith("BOOKEXT_"):
-                    book_key = purpose.replace("BOOKEXT_", "")
-                    database.unlock_book(uid, book_key, days=5)
-                    b_title = BOOK_TITLES.get(book_key, book_key)
-                    item_summary = f"➕ Book +5d Extension: {b_title}"
-                    markup = InlineKeyboardMarkup()
-                    markup.add(
-                        InlineKeyboardButton(
-                            "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
-                            web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
-                        )
-                    )
-                    bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 ለ<b>«{b_title}»</b> <b>ተጨማሪ 5 ቀናት</b> የኪራይ ጊዜ ተጨምሮልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ማንበብዎን መቀጠል ይችላሉ!",
-                        chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
-                    )
-                elif purpose.startswith("BOOK_"):
-                    book_key = purpose.replace("BOOK_", "")
-                    database.unlock_book(uid, book_key, days=None)
-                    b_title = BOOK_TITLES.get(book_key, book_key)
-                    item_summary = f"💎 Book Full Purchase: {b_title}"
-                    markup = InlineKeyboardMarkup()
-                    markup.add(
-                        InlineKeyboardButton(
-                            "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
-                            web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
-                        )
-                    )
-                    bot.edit_message_text(
-                        f"✅ <b>ክፍያዎ ተረጋግጧል!</b>\n\n🎉 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለዘላለም</b> ተከፍቶልዎታል!\nከታች ያለውን ቁልፍ ተጭነው ወይም በ<b>📚 መጻሕፍት ቤት (Library)</b> ውስጥ <b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ!",
-                        chat_id, msg.message_id, parse_mode="HTML", reply_markup=markup
-                    )
-                elif purpose.startswith("ADVICE_"):
-                    pkg = purpose.split("_")[1]
-                    item_summary = f"🧠 Advice Package ({pkg})"
-                    if pkg == "unlimited":
-                        database.set_vip(uid, days=7)
-                        bot.edit_message_text(S(lang, 'payment_success_unlimited'), chat_id, msg.message_id, parse_mode="HTML")
-                    elif pkg == "unlimited_month":
-                        database.set_vip(uid, days=30)
-                        bot.edit_message_text(S(lang, 'payment_success_unlimited_month'), chat_id, msg.message_id, parse_mode="HTML")
-                    else:
-                        msgs = int(pkg)
-                        database.add_advice_messages(uid, msgs)
-                        bot.edit_message_text(S(lang, 'payment_success_msgs', msgs=msgs), chat_id, msg.message_id, parse_mode="HTML")
-                elif purpose == "TIP":
-                    item_summary = "☕ Tip / Support"
-                    bot.edit_message_text(S(lang, 'tip_received'), chat_id, msg.message_id, parse_mode="HTML")
+                fulfill_payment(uid, tx_ref, order_id=order_id, receipt_ref=ref_id)
+                safe_delete_message(chat_id, msg.message_id)
 
                 uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+                full_name = html.escape(get_full_name(message.from_user))
                 notify_admin(
-                    f"💰 <b>New Verified Payment!</b>\n"
+                    f"🤖💰 <b>Auto-Verified Payment (Gemini Vision)</b>\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"👤 User: <b>{html.escape(message.from_user.first_name or 'User')}</b> ({uname})\n"
+                    f"👤 User: <b>{full_name}</b> ({uname})\n"
                     f"🆔 ID: <code>{uid}</code>\n"
                     f"📦 Item: <b>{item_summary}</b>\n"
                     f"💵 Amount: <b>{amount:,} ETB</b>\n"
-                    f"🧾 Ref: <code>{ref_id}</code>"
+                    f"🧾 Ref: <code>{ref_id}</code>\n"
+                    f"🔍 AI Note: <i>{res.get('reason', 'Auto-approved')}</i>"
                 )
             else:
-                bot.edit_message_text(f"❌ ማረጋገጥ አልተቻለም (Failed): {err}", chat_id, msg.message_id)
+                # Receipt could not be auto-verified with high confidence (blurry, edited, or mismatch)
+                # Reassure customer and forward to admin team for instant 1-tap review
+                bot.edit_message_text(
+                    S(lang, 'receipt_forwarded_to_admin'),
+                    chat_id, msg.message_id,
+                    parse_mode="HTML"
+                )
+                
+                uname = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+                full_name = html.escape(get_full_name(message.from_user))
+                ai_reason = html.escape(res.get("reason") or res.get("error") or "Uncertain verification")
+                admin_caption = (
+                    f"⚠️ <b>Manual Receipt Review Required</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"👤 User: <b>{full_name}</b> ({uname})\n"
+                    f"🆔 User ID: <code>{uid}</code>\n"
+                    f"📦 Item: <b>{item_summary}</b>\n"
+                    f"💵 Expected: <b>{amount:,} ETB</b>\n"
+                    f"🤖 AI Check: <i>{ai_reason}</i>\n"
+                    f"🔖 Pending ID: <code>{pending_id}</code>"
+                )
+                markup = InlineKeyboardMarkup(row_width=2)
+                markup.add(
+                    InlineKeyboardButton("✅ Approve", callback_data=f"adm_rec_appr_{uid}_{pending_id}"),
+                    InlineKeyboardButton("❌ Reject", callback_data=f"adm_rec_rej_{uid}_{pending_id}"),
+                )
+                markup.add(
+                    InlineKeyboardButton("🔍 View User", callback_data=f"adm_view_user_{uid}")
+                )
+                for adm_id in get_all_admin_ids():
+                    try:
+                        bot.send_photo(adm_id, file_id, caption=admin_caption, parse_mode="HTML", reply_markup=markup)
+                    except Exception as e:
+                        logging.error(f"Failed to forward receipt to admin {adm_id}: {e}")
                 
         except Exception as e:
-            bot.edit_message_text(f"⚠️ የቴክኒክ ችግር: {e}", chat_id, msg.message_id)
+            logging.error(f"Receipt processing exception for {uid}: {e}")
+            try:
+                bot.edit_message_text(S(lang, 'receipt_forwarded_to_admin'), chat_id, msg.message_id, parse_mode="HTML")
+            except Exception:
+                pass
+            for adm_id in get_all_admin_ids():
+                try:
+                    bot.send_message(adm_id, f"⚠️ Error processing receipt photo for user {uid}: {e}")
+                except Exception:
+                    pass
         return
 
     if message.document:

@@ -378,6 +378,30 @@ STRINGS = {
         "ti": "✅ <b>ክፍሊትኩም ተረጋጊጹ ኣሎ!</b>\nን1 ወርሒ ዝኣክል ዘይተደረተ (Unlimited) ተበጻሕነት ረኺብኩም ኣለኹም።\nዕላልና ክንቅጽል ንኽእል ኢና...",
         "om": "✅ <b>Kaffaltiin keessan mirkanaa'eera!</b>\nJi'a 1f argannoo daangaa hin qabne (Unlimited) argattaniittu.\nMarii keenya itti fufuu ni dandeenya..."
     },
+    "receipt_verifying": {
+        "am": "⏳ ደረሰኝዎን በማረጋገጥ ላይ ነን... (Verifying receipt...)",
+        "en": "⏳ Verifying your payment receipt...",
+        "ti": "⏳ ደረሰኝኩም እናረጋገጽና ኢና... (Verifying receipt...)",
+        "om": "⏳ Nagahee kaffaltii keessan mirkaneessaa jirra..."
+    },
+    "receipt_used": {
+        "am": "❌ ይህ የክፍያ ደረሰኝ ከዚህ በፊት ጥቅም ላይ ውሏል! እባክዎ አዲስ የክፍያ ደረሰኝ ይላኩ።",
+        "en": "❌ This payment receipt has already been used! Please send a new receipt screenshot.",
+        "ti": "❌ እዚ ናይ ክፍሊት ደረሰኝ ኣቐዲሙ ተጠቒምኩምሉ ኢኹም! በጃኹም ሓድሽ ደረሰኝ ስደዱ።",
+        "om": "❌ Nagaheen kaffaltii kun kanaan dura itti fayyadameera! Maaloo nagahee haaraa ergaa."
+    },
+    "receipt_forwarded_to_admin": {
+        "am": "📩 <b>ደረሰኝዎ ደርሶናል!</b>\n━━━━━━━━━━━━━━━━━━━━\nየክፍያ ደረሰኝዎ ለፈጣን ማረጋገጫ በቀጥታ ለአስተዳዳሪ ተልኳል። በጥቂት ደቂቃዎች ውስጥ ተረጋግጦ ይከፈትልዎታል! 🙏",
+        "en": "📩 <b>Receipt Received!</b>\n━━━━━━━━━━━━━━━━━━━━\nYour payment receipt has been forwarded to our admin team for verification. It will be reviewed and activated shortly! 🙏",
+        "ti": "📩 <b>ደረሰኝኩም በጺሑና ኣሎ!</b>\n━━━━━━━━━━━━━━━━━━━━\nናይ ክፍሊት ደረሰኝኩም ብቕልጡፍ ንምርግጋጽ ናብ ኣመሓዳሪ ተላኢኹ ኣሎ። ኣብ ውሽጢ ሒደት ደቓይቕ ተረጋጊጹ ክኽፈተልኩም እዩ! 🙏",
+        "om": "📩 <b>Nagaheen keessan nu gaheera!</b>\n━━━━━━━━━━━━━━━━━━━━\nNagaheen kaffaltii keessan akka mirkanaa'uuf gara maanaajeriitti ergamera. Daqiiqaa muraasa keessatti mirkanaa'ee isiniif banama! 🙏"
+    },
+    "receipt_rejected_user": {
+        "am": "❌ <b>የክፍያ ደረሰኝዎ አልተረጋገጠም።</b>\n━━━━━━━━━━━━━━━━━━━━\nያስገቡት ደረሰኝ ግልጽ ስላልሆነ ወይም መጠኑ ስለማይዛመድ አልተቀበልነውም። እባክዎ ትክክለኛውን ደረሰኝ በድጋሚ ይላኩ ወይም አስተዳዳሪን ያነጋግሩ።",
+        "en": "❌ <b>Receipt Not Verified</b>\n━━━━━━━━━━━━━━━━━━━━\nThe receipt image was unclear or the details did not match. Please send a clearer screenshot of your payment receipt or contact our admin.",
+        "ti": "❌ <b>ናይ ክፍሊት ደረሰኝኩም ኣይተረጋገጸን።</b>\n━━━━━━━━━━━━━━━━━━━━\nእቲ ዝለኣኽኩምዎ ደረሰኝ ንጹር ስለዘይኮነ ወይ መጠን ገንዘብ ስለዘይተዛመደ ኣይተቐበልናዮን። በጃኹም ንጹር ደረሰኝ ዳግማይ ስደዱ።",
+        "om": "❌ <b>Nagaheen kaffaltii hin mirkanoofne.</b>\n━━━━━━━━━━━━━━━━━━━━\nNagaheen ergitan ifa waan hin taaneef ykn guddinni kaffaltii waan wal hin simneef hin fudhatamne. Maaloo nagahee ifa ta'e irra deebi'aa ergaa."
+    },
     "tip_received": {
         "am": "💖 <b>ስጦታዎ ደርሶናል!</b>\nከልብ እናመሰግናለን! ቡድናችንን በጣም አበረታተውታል።",
         "en": "💖 <b>We received your gift!</b>\nThank you from the bottom of our hearts! You have greatly encouraged our team.",

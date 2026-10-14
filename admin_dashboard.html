@@ -3,231 +3,547 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baya Psychology AI — Admin Dashboard</title>
+    <title>Baya Books — Admin & Rental Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #0f172a; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', 'Noto Sans Ethiopic', sans-serif; background: #0f172a; }
         .card { background: #1e293b; border-radius: 16px; border: 1px solid #334155; }
         .card-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.05); }
         .stat-value { font-variant-numeric: tabular-nums; }
         .pulse-dot { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 6px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .toast { animation: toastIn 0.3s ease-out forwards; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
 </head>
-<body class="text-gray-200 min-h-screen">
+<body class="text-gray-200 min-h-screen pb-12">
+
+    <!-- Toast Notification Container -->
+    <div id="toast_container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Top Bar -->
-    <header class="sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-xl border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <i class="fa-solid fa-brain text-white text-sm"></i>
+    <header class="sticky top-0 z-50 bg-[#0f172a]/90 backdrop-blur-xl border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <!-- Brand -->
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                    <i class="fa-solid fa-book-open text-white text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-white">Baya AI</h1>
-                    <p class="text-xs text-slate-500 -mt-0.5">Admin Dashboard</p>
+                    <h1 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        Baya Books
+                        <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">Admin</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 -mt-0.5 hidden sm:block">Management Console</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="last_updated" class="text-xs text-slate-500 hidden sm:block"></span>
-                <button onclick="fetchData()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-rotate-right text-xs"></i> Refresh
+
+            <!-- Tab Switcher Navigation -->
+            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+                <button id="btn_tab_overview" onclick="switchTab('overview')" class="px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-chart-pie text-[11px]"></i>
+                    <span class="hidden sm:inline">Overview &</span> Revenue
+                </button>
+                <button id="btn_tab_rentals" onclick="switchTab('rentals')" class="px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-bookmark text-[11px]"></i>
+                    <span>Rented Books</span>
+                    <span id="tab_active_rentals_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">0</span>
+                </button>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 shrink-0">
+                <span id="last_updated" class="text-xs text-slate-500 hidden md:block"></span>
+                <button onclick="refreshCurrentTab()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 border border-slate-700">
+                    <i class="fa-solid fa-rotate-right text-[11px]" id="refresh_icon"></i>
+                    <span class="hidden sm:inline">Refresh</span>
+                </button>
+                <button id="top_grant_btn" onclick="openGrantModal()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-orange-500/10">
+                    <i class="fa-solid fa-plus text-[11px]"></i>
+                    <span class="hidden sm:inline">Grant Book</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 fade-in">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
-        <!-- Stats Row 1: Users -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="card card-glow p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Users</span>
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-users text-blue-400 text-sm"></i>
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- VIEW 1: OVERVIEW & REVENUE                                       -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div id="view_overview" class="space-y-6 fade-in">
+            <!-- Stats Row 1: Users -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card card-glow p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Users</span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-users text-blue-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-white stat-value" id="total_users">—</p>
+                    <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle text-green-400 text-[6px] pulse-dot mr-1"></i> <span id="new_today">0</span> new today</p>
+                </div>
+
+                <div class="card card-glow p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Left / Blocked</span>
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-user-slash text-red-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-white stat-value" id="blocked_users">—</p>
+                    <p class="text-xs text-slate-500 mt-2">Stopped using bot</p>
+                </div>
+
+                <div class="card card-glow p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">New This Week</span>
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-user-plus text-cyan-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-white stat-value" id="new_this_week">—</p>
+                    <p class="text-xs text-slate-500 mt-2">Last 7 days</p>
+                </div>
+
+                <div class="card card-glow p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Chatting Users</span>
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-comments text-purple-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-white stat-value" id="active_advice_users">—</p>
+                    <p class="text-xs text-slate-500 mt-2">🔥 <span id="trial_exhausted_users" class="text-amber-400 font-semibold">0</span> finished 5 free msgs</p>
+                </div>
+            </div>
+
+            <!-- Stats Row 2: Revenue -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card p-5 border-emerald-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Today</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-day text-emerald-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="today_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                </div>
+
+                <div class="card p-5 border-emerald-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">This Week</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-week text-emerald-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="weekly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                </div>
+
+                <div class="card p-5 border-emerald-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">This Month</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar text-emerald-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="monthly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                </div>
+
+                <div class="card p-5 border-yellow-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">All-Time Revenue</span>
+                        <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-coins text-yellow-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-yellow-400 stat-value"><span id="total_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
+                    <p class="text-xs text-slate-500 mt-1"><span id="total_transactions">0</span> transactions</p>
+                </div>
+            </div>
+
+            <!-- Charts + Tables Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Gender Chart -->
+                <div class="card p-6">
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">User Demographics</h3>
+                    <div class="relative h-56 w-full flex items-center justify-center">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                    <div class="flex justify-center gap-6 mt-4 text-sm">
+                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Male <span id="male_pct" class="text-slate-500"></span></span>
+                        <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Female <span id="female_pct" class="text-slate-500"></span></span>
                     </div>
                 </div>
-                <p class="text-3xl font-bold text-white stat-value" id="total_users">—</p>
-                <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle text-green-400 text-[6px] pulse-dot mr-1"></i> <span id="new_today">0</span> new today</p>
-            </div>
 
-            <div class="card card-glow p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Left / Blocked</span>
-                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-user-slash text-red-400 text-sm"></i>
+                <!-- Recent Payments -->
+                <div class="card overflow-hidden lg:col-span-2 flex flex-col">
+                    <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Payments</h3>
+                        <span class="text-xs text-slate-500"><span id="total_transactions_2">0</span> total</span>
+                    </div>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="text-xs text-slate-500 uppercase tracking-wider">
+                                    <th class="px-6 py-3 text-left font-medium">User</th>
+                                    <th class="px-6 py-3 text-left font-medium">Type</th>
+                                    <th class="px-6 py-3 text-right font-medium">Amount</th>
+                                    <th class="px-6 py-3 text-right font-medium">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payments_table" class="divide-y divide-slate-800 text-sm">
+                                <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <p class="text-3xl font-bold text-white stat-value" id="blocked_users">—</p>
-                <p class="text-xs text-slate-500 mt-2">Stopped using bot</p>
             </div>
 
-            <div class="card card-glow p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">New This Week</span>
-                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-user-plus text-cyan-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-3xl font-bold text-white stat-value" id="new_this_week">—</p>
-                <p class="text-xs text-slate-500 mt-2">Last 7 days</p>
-            </div>
-
-            <div class="card card-glow p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Chatting Users</span>
-                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-comments text-purple-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-3xl font-bold text-white stat-value" id="active_advice_users">—</p>
-                <p class="text-xs text-slate-500 mt-2">🔥 <span id="trial_exhausted_users" class="text-amber-400 font-semibold">0</span> finished 5 free msgs</p>
-            </div>
-        </div>
-
-        <!-- Stats Row 2: Revenue -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="card p-5 border-emerald-500/20">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Today</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-calendar-day text-emerald-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="today_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
-            </div>
-
-            <div class="card p-5 border-emerald-500/20">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">This Week</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-calendar-week text-emerald-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="weekly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
-            </div>
-
-            <div class="card p-5 border-emerald-500/20">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">This Month</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-calendar text-emerald-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-emerald-400 stat-value"><span id="monthly_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
-            </div>
-
-            <div class="card p-5 border-yellow-500/20">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">All-Time Revenue</span>
-                    <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                        <i class="fa-solid fa-coins text-yellow-400 text-sm"></i>
-                    </div>
-                </div>
-                <p class="text-2xl font-bold text-yellow-400 stat-value"><span id="total_revenue">0</span> <span class="text-sm font-normal text-slate-500">ETB</span></p>
-                <p class="text-xs text-slate-500 mt-1"><span id="total_transactions">0</span> transactions</p>
-            </div>
-        </div>
-
-        <!-- Charts + Tables Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Gender Chart -->
-            <div class="card p-6">
-                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">User Demographics</h3>
-                <div class="relative h-56 w-full flex items-center justify-center">
-                    <canvas id="genderChart"></canvas>
-                </div>
-                <div class="flex justify-center gap-6 mt-4 text-sm">
-                    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Male <span id="male_pct" class="text-slate-500"></span></span>
-                    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-pink-500"></span> Female <span id="female_pct" class="text-slate-500"></span></span>
-                </div>
-            </div>
-
-            <!-- Recent Payments -->
-            <div class="card overflow-hidden lg:col-span-2 flex flex-col">
+            <!-- Recent Users -->
+            <div class="card overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
-                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Payments</h3>
-                    <span class="text-xs text-slate-500"><span id="total_transactions_2">0</span> total</span>
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Users (Active)</h3>
+                    <span class="text-xs text-slate-500">Excludes blocked</span>
                 </div>
-                <div class="overflow-x-auto flex-1">
+                <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="text-xs text-slate-500 uppercase tracking-wider">
-                                <th class="px-6 py-3 text-left font-medium">User</th>
-                                <th class="px-6 py-3 text-left font-medium">Type</th>
-                                <th class="px-6 py-3 text-right font-medium">Amount</th>
-                                <th class="px-6 py-3 text-right font-medium">Date</th>
+                                <th class="px-6 py-3 text-left font-medium">Name</th>
+                                <th class="px-6 py-3 text-left font-medium">Username</th>
+                                <th class="px-6 py-3 text-right font-medium">Joined</th>
                             </tr>
                         </thead>
-                        <tbody id="payments_table" class="divide-y divide-slate-800 text-sm">
-                            <tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
+                        <tbody id="users_table" class="divide-y divide-slate-800 text-sm">
+                            <tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Users -->
-        <div class="card overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
-                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Users (Active)</h3>
-                <span class="text-xs text-slate-500">Excludes blocked</span>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- VIEW 2: RENTED BOOKS MANAGEMENT CONSOLE                          -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div id="view_rentals" class="space-y-6 fade-in hidden">
+            
+            <!-- Rental KPI Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card p-5 border-blue-500/30 bg-gradient-to-br from-blue-900/20 to-slate-900 cursor-pointer hover:border-blue-400 transition-all" onclick="setFilterStatus('active')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Active Rentals</span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-book-open-reader text-blue-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-3xl font-extrabold text-white stat-value" id="kpi_active_rentals">0</p>
+                        <span class="text-xs text-emerald-400 font-medium flex items-center"><i class="fa-solid fa-circle text-[6px] pulse-dot mr-1"></i> Valid</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Readers with active reading time</p>
+                </div>
+
+                <div class="card p-5 border-amber-500/30 bg-gradient-to-br from-amber-900/20 to-slate-900 cursor-pointer hover:border-amber-400 transition-all" onclick="setFilterStatus('expiring_soon')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Expiring Soon</span>
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-hourglass-half text-amber-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-3xl font-extrabold text-amber-400 stat-value" id="kpi_expiring_soon">0</p>
+                        <span class="text-xs text-amber-300 font-medium">≤ 48 hours</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Prime candidates for extension</p>
+                </div>
+
+                <div class="card p-5 border-rose-500/30 bg-gradient-to-br from-rose-900/20 to-slate-900 cursor-pointer hover:border-rose-400 transition-all" onclick="setFilterStatus('expired')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-rose-400 uppercase tracking-wider">Expired Rentals</span>
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-clock-rotate-left text-rose-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-3xl font-extrabold text-rose-400 stat-value" id="kpi_expired_rentals">0</p>
+                        <span class="text-xs text-slate-500 font-medium">Overdue</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Rental period ended</p>
+                </div>
+
+                <div class="card p-5 border-purple-500/30 bg-gradient-to-br from-purple-900/20 to-slate-900 cursor-pointer hover:border-purple-400 transition-all" onclick="setFilterStatus('lifetime')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Lifetime Buys</span>
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-crown text-purple-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-3xl font-extrabold text-purple-400 stat-value" id="kpi_lifetime_buys">0</p>
+                        <span class="text-xs text-purple-300 font-medium">Permanent</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Full purchases with lifetime access</p>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="text-xs text-slate-500 uppercase tracking-wider">
-                            <th class="px-6 py-3 text-left font-medium">Name</th>
-                            <th class="px-6 py-3 text-left font-medium">Username</th>
-                            <th class="px-6 py-3 text-right font-medium">Joined</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users_table" class="divide-y divide-slate-800 text-sm">
-                        <tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">Loading...</td></tr>
-                    </tbody>
-                </table>
+
+            <!-- Toolbar: Search, Filters & Grant Button -->
+            <div class="card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/90">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 max-w-md">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="rentals_search_input" oninput="onSearchChange()" placeholder="Search reader name, @username, or user ID..." 
+                            class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors">
+                    </div>
+
+                    <!-- Book Filter Dropdown -->
+                    <select id="rentals_book_filter" onchange="onFilterChange()" 
+                        class="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="all">📚 All Books</option>
+                        <option value="boundaries">ድንበርህን አብጅ (Boundaries)</option>
+                        <option value="narcissist">የናርስሲስቶች ወጥመድ</option>
+                        <option value="buyback">ጊዜህን አስመልስ (Buy Back)</option>
+                        <option value="meaning">የህይወት ትርጉም (Meaning)</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter Pills -->
+                <div class="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all whitespace-nowrap" data-status="all" onclick="setFilterStatus('all')">All (<span id="count_pill_all">0</span>)</button>
+                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="active" onclick="setFilterStatus('active')">🟢 Active</button>
+                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="expiring_soon" onclick="setFilterStatus('expiring_soon')">⏳ Expiring</button>
+                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="expired" onclick="setFilterStatus('expired')">⌛ Expired</button>
+                    <button class="status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap" data-status="lifetime" onclick="setFilterStatus('lifetime')">👑 Lifetime</button>
+                </div>
+            </div>
+
+            <!-- Rentals Table Card -->
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-900/40">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <span>Reader Book Library & Rentals</span>
+                            <span id="filtered_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 found</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Manage access, extend durations, convert to lifetime, or notify readers.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportRentalsCSV()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-csv text-slate-400"></i> Export CSV
+                        </button>
+                        <button onclick="openGrantModal()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Grant Access
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800">
+                                <th class="px-5 py-3 font-semibold">Reader</th>
+                                <th class="px-5 py-3 font-semibold">Book Title</th>
+                                <th class="px-5 py-3 font-semibold">Status & Remaining</th>
+                                <th class="px-5 py-3 font-semibold">Purchased On</th>
+                                <th class="px-5 py-3 font-semibold">Expires At</th>
+                                <th class="px-5 py-3 text-right font-semibold">Manage Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rentals_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-blue-500"></i>
+                                    <p>Loading rental records...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state placeholder -->
+                <div id="rentals_empty_state" class="hidden p-12 text-center">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-500">
+                        <i class="fa-solid fa-book-open text-xl"></i>
+                    </div>
+                    <h4 class="text-sm font-semibold text-slate-300">No matching book records found</h4>
+                    <p class="text-xs text-slate-500 mt-1">Try adjusting your search query or filter tags.</p>
+                </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="text-center text-xs text-slate-600 pb-4">
-            Baya Psychology AI — Admin Dashboard v3.0
+        <div class="text-center text-xs text-slate-600 mt-12 pb-4">
+            Baya Books & Psychology AI — Admin & Rental Management Console v3.5
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- MODAL: GRANT BOOK / RENTAL                                       -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <div id="grant_modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-md border-slate-700 bg-[#1e293b] shadow-2xl space-y-4 fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                        <i class="fa-solid fa-book-bookmark text-xs"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Grant Book / Rental</h3>
+                </div>
+                <button onclick="closeGrantModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Telegram User ID <span class="text-red-400">*</span></label>
+                    <input type="number" id="grant_uid" placeholder="e.g. 524189021" 
+                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                    <p class="text-[11px] text-slate-500 mt-1">Numeric Telegram ID of the reader.</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Select Book <span class="text-red-400">*</span></label>
+                    <select id="grant_book" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="boundaries">ድንበርህን አብጅ (Boundaries)</option>
+                        <option value="narcissist">የናርስሲስቶች ወጥመድ</option>
+                        <option value="buyback">ጊዜህን አስመልስ (Buy Back Your Time)</option>
+                        <option value="meaning">የህይወት ትርጉም (Man's Search for Meaning)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Access Duration <span class="text-red-400">*</span></label>
+                    <select id="grant_duration" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="10">⏳ 10 Days Rental (Standard Book Rent)</option>
+                        <option value="5">⏳ 5 Days Rental (Short Trial / Ext)</option>
+                        <option value="30">⏳ 30 Days Rental (Extended)</option>
+                        <option value="0">👑 Permanent Full Access (Lifetime Buy)</option>
+                    </select>
+                </div>
+
+                <div class="pt-2">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="grant_notify" checked class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                        <span class="text-slate-300">Send Telegram unlock notification with Mini App button</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
+                <button onclick="closeGrantModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-colors">
+                    Cancel
+                </button>
+                <button onclick="submitGrantBook()" id="btn_submit_grant" class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-check"></i> Grant Access
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- JAVASCRIPT LOGIC                                                 -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
     <script>
+        // State
+        let currentTab = 'overview';
+        let rawRentalsData = [];
+        let rentalSummary = {};
+        let activeStatusFilter = 'all';
         let genderChartInstance = null;
+        
+        // Admin Token from URL query
+        const urlParams = new URLSearchParams(window.location.search);
+        const adminToken = urlParams.get('token') || '';
 
         function fmt(n) { return (n || 0).toLocaleString(); }
         function setTxt(id, val) { const el = document.getElementById(id); if (el) el.innerText = val; }
 
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast_container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600 border-emerald-500 text-white' : 
+                            type === 'error' ? 'bg-rose-600 border-rose-500 text-white' : 
+                            'bg-blue-600 border-blue-500 text-white';
+            const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            
+            toast.className = `toast pointer-events-auto px-4 py-3 rounded-xl border shadow-xl flex items-center gap-2.5 text-xs font-semibold ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            currentTab = tab;
+            const btnOver = document.getElementById('btn_tab_overview');
+            const btnRent = document.getElementById('btn_tab_rentals');
+            const viewOver = document.getElementById('view_overview');
+            const viewRent = document.getElementById('view_rentals');
+
+            if (tab === 'rentals') {
+                btnOver.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5";
+                btnRent.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5";
+                viewOver.classList.add('hidden');
+                viewRent.classList.remove('hidden');
+                fetchRentalsData();
+                history.replaceState(null, '', '#rentals' + window.location.search);
+            } else {
+                btnOver.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all flex items-center gap-1.5";
+                btnRent.className = "px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-1.5";
+                viewRent.classList.add('hidden');
+                viewOver.classList.remove('hidden');
+                fetchOverviewData();
+                history.replaceState(null, '', '#overview' + window.location.search);
+            }
+        }
+
+        function refreshCurrentTab() {
+            const icon = document.getElementById('refresh_icon');
+            if (icon) icon.classList.add('fa-spin');
+            if (currentTab === 'rentals') {
+                fetchRentalsData().finally(() => icon && icon.classList.remove('fa-spin'));
+            } else {
+                fetchOverviewData().finally(() => icon && icon.classList.remove('fa-spin'));
+            }
+        }
+
+        // ── Overview Data Fetch ──────────────────────────────────────────
         const TYPE_BADGES = {
-            'Advice': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">🧠 Advice</span>',
-            'Book':   '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">📚 Book</span>',
-            'Tip':    '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400">☕ Tip</span>',
-            'Other':  '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400">📦 Other</span>',
+            'Advice': '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">🧠 Advice</span>',
+            'Book':   '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">📚 Book</span>',
+            'Tip':    '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">☕ Tip</span>',
+            'Other':  '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">📦 Other</span>',
         };
 
-        async function fetchData() {
+        async function fetchOverviewData() {
             try {
                 const response = await fetch('/admin/data' + window.location.search);
                 if (response.status === 403) {
-                    document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl">🔒 Access Denied</div>';
+                    document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl font-bold">🔒 Access Denied</div>';
                     return;
                 }
                 const d = await response.json();
 
-                // Stats
                 setTxt('total_users', fmt(d.total_users));
                 setTxt('blocked_users', fmt(d.blocked_users));
                 setTxt('new_today', fmt(d.new_today));
@@ -241,13 +557,11 @@
                 setTxt('total_transactions', fmt(d.total_transactions));
                 setTxt('total_transactions_2', fmt(d.total_transactions));
 
-                // Gender
                 const total = (d.male_count || 0) + (d.female_count || 0);
                 setTxt('male_pct', total > 0 ? `(${Math.round(d.male_count/total*100)}%)` : '');
                 setTxt('female_pct', total > 0 ? `(${Math.round(d.female_count/total*100)}%)` : '');
                 renderGenderChart(d.male_count || 0, d.female_count || 0);
 
-                // Payments table
                 const ptb = document.getElementById('payments_table');
                 if (!d.recent_payments || d.recent_payments.length === 0) {
                     ptb.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-600">No payments yet</td></tr>';
@@ -262,7 +576,6 @@
                     `).join('');
                 }
 
-                // Users table
                 const utb = document.getElementById('users_table');
                 if (!d.recent_users || d.recent_users.length === 0) {
                     utb.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-600">No users yet</td></tr>';
@@ -276,11 +589,9 @@
                     `).join('');
                 }
 
-                // Timestamp
                 setTxt('last_updated', 'Updated: ' + new Date().toLocaleTimeString());
-
-            } catch (error) {
-                console.error("Dashboard fetch error:", error);
+            } catch (err) {
+                console.error("Overview fetch error:", err);
             }
         }
 
@@ -305,15 +616,348 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '72%',
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        document.addEventListener('DOMContentLoaded', fetchData);
-        setInterval(fetchData, 30000);
+
+        // ── Rented Books Management Logic ───────────────────────────────
+        async function fetchRentalsData() {
+            try {
+                const response = await fetch('/admin/rentals_data' + window.location.search);
+                if (response.status === 403) {
+                    document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-red-400 text-xl font-bold">🔒 Access Denied</div>';
+                    return;
+                }
+                const data = await response.json();
+                rawRentalsData = data.rentals || [];
+                rentalSummary = data.summary || {};
+
+                // Update KPI Cards
+                setTxt('kpi_active_rentals', fmt(rentalSummary.active_rentals));
+                setTxt('kpi_expiring_soon', fmt(rentalSummary.expiring_soon_rentals));
+                setTxt('kpi_expired_rentals', fmt(rentalSummary.expired_rentals));
+                setTxt('kpi_lifetime_buys', fmt(rentalSummary.lifetime_purchases));
+                setTxt('tab_active_rentals_badge', fmt(rentalSummary.active_rentals));
+                setTxt('count_pill_all', fmt(rentalSummary.total_records));
+
+                renderRentalsTable();
+                setTxt('last_updated', 'Updated: ' + new Date().toLocaleTimeString());
+            } catch (err) {
+                console.error("Rentals fetch error:", err);
+                showToast("Failed to fetch rental records", "error");
+            }
+        }
+
+        function setFilterStatus(status) {
+            activeStatusFilter = status;
+            document.querySelectorAll('.status-pill').forEach(btn => {
+                if (btn.getAttribute('data-status') === status) {
+                    btn.className = "status-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all whitespace-nowrap shadow";
+                } else {
+                    btn.className = "status-pill px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all whitespace-nowrap";
+                }
+            });
+            renderRentalsTable();
+        }
+
+        function onSearchChange() { renderRentalsTable(); }
+        function onFilterChange() { renderRentalsTable(); }
+
+        function renderRentalsTable() {
+            const query = (document.getElementById('rentals_search_input')?.value || '').toLowerCase().trim();
+            const bookFilter = document.getElementById('rentals_book_filter')?.value || 'all';
+
+            const filtered = rawRentalsData.filter(item => {
+                // Status match
+                if (activeStatusFilter !== 'all') {
+                    if (item.status !== activeStatusFilter) return false;
+                }
+                // Book match
+                if (bookFilter !== 'all') {
+                    if (item.book_key !== bookFilter) return false;
+                }
+                // Search match
+                if (query) {
+                    const nameMatch = (item.first_name || '').toLowerCase().includes(query);
+                    const unameMatch = (item.username || '').toLowerCase().includes(query);
+                    const uidMatch = String(item.user_id || '').includes(query);
+                    const btitleMatch = (item.book_title || '').toLowerCase().includes(query);
+                    if (!nameMatch && !unameMatch && !uidMatch && !btitleMatch) return false;
+                }
+                return true;
+            });
+
+            setTxt('filtered_count_badge', `${filtered.length} found`);
+            const tbody = document.getElementById('rentals_table_body');
+            const emptyState = document.getElementById('rentals_empty_state');
+
+            if (!filtered.length) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = filtered.map(r => {
+                // Status Badge
+                let statusBadge = '';
+                if (r.status === 'lifetime') {
+                    statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30"><i class="fa-solid fa-crown text-[10px]"></i> Lifetime</span>';
+                } else if (r.status === 'expiring_soon') {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"><i class="fa-solid fa-hourglass-half text-[10px]"></i> ${r.hours_left}h left</span>`;
+                } else if (r.status === 'active') {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-circle text-[6px]"></i> ${r.days_left}d left</span>`;
+                } else {
+                    statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i> Expired</span>';
+                }
+
+                // Telegram profile link
+                const unameDisplay = r.username ? 
+                    `<a href="https://t.me/${r.username}" target="_blank" class="text-blue-400 hover:underline flex items-center gap-1 font-mono text-[11px]"><i class="fa-brands fa-telegram text-blue-400"></i>@${r.username}</a>` : 
+                    '<span class="text-slate-500 text-[11px]">—</span>';
+
+                const blockedBadge = r.bot_blocked ? 
+                    '<span class="px-1.5 py-0.2 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 ml-1">Blocked Bot</span>' : '';
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <!-- Reader -->
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center font-bold text-slate-300 text-xs shrink-0 border border-slate-700">
+                                    ${(r.first_name || 'U').charAt(0)}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-200 flex items-center">
+                                        <span>${r.first_name || 'User'}</span>
+                                        ${blockedBadge}
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        ${unameDisplay}
+                                        <span class="text-[10px] text-slate-500 font-mono bg-slate-800 px-1 rounded">ID: ${r.user_id}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Book -->
+                        <td class="px-5 py-3">
+                            <div class="font-medium text-slate-200">${r.book_title}</div>
+                            <span class="text-[10px] text-slate-500 font-mono">${r.book_key}</span>
+                        </td>
+
+                        <!-- Status & Remaining -->
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            ${statusBadge}
+                        </td>
+
+                        <!-- Purchased On -->
+                        <td class="px-5 py-3 text-slate-400 font-mono text-xs whitespace-nowrap">
+                            ${(r.purchased_at || '—').substring(0, 10)}
+                        </td>
+
+                        <!-- Expires At -->
+                        <td class="px-5 py-3 text-slate-300 font-mono text-xs whitespace-nowrap">
+                            ${r.expires_at ? r.expires_at.substring(0, 16) : '<span class="text-purple-400 font-semibold">Never (Lifetime)</span>'}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-5 py-3 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 5)" title="Extend +5 Days" 
+                                    class="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold text-xs border border-blue-500/30 transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[9px]"></i>5d
+                                </button>
+                                <button onclick="triggerRentalAction('extend', ${r.user_id}, '${r.book_key}', 10)" title="Extend +10 Days" 
+                                    class="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs border border-emerald-500/30 transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[9px]"></i>10d
+                                </button>
+                                ${r.status !== 'lifetime' ? `
+                                    <button onclick="triggerRentalAction('lifetime', ${r.user_id}, '${r.book_key}')" title="Upgrade to Lifetime Ownership" 
+                                        class="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-semibold text-xs border border-purple-500/30 transition-all flex items-center gap-1">
+                                        <i class="fa-solid fa-crown text-[9px]"></i>Full
+                                    </button>
+                                    <button onclick="triggerRentalAction('nudge', ${r.user_id}, '${r.book_key}', 0, ${r.days_left || 0})" title="Send Expiry Nudge in Telegram" 
+                                        class="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-xs border border-amber-500/30 transition-all flex items-center gap-1">
+                                        <i class="fa-solid fa-bell text-[9px]"></i>
+                                    </button>
+                                ` : ''}
+
+                                <!-- More menu dropdown trigger -->
+                                <button onclick="showMoreActionsMenu(event, ${r.user_id}, '${r.book_key}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs transition-colors">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // More Actions Contextual Menu
+        function showMoreActionsMenu(event, uid, bkey) {
+            event.stopPropagation();
+            const existing = document.getElementById('context_actions_menu');
+            if (existing) existing.remove();
+
+            const menu = document.createElement('div');
+            menu.id = 'context_actions_menu';
+            menu.className = 'fixed z-[99] bg-[#1e293b] border border-slate-700 rounded-xl shadow-2xl p-1.5 text-xs text-slate-300 w-36 fade-in';
+            
+            // Positioning
+            menu.style.top = `${event.clientY + 5}px`;
+            menu.style.left = `${Math.min(event.clientX - 100, window.innerWidth - 160)}px`;
+
+            menu.innerHTML = `
+                <button onclick="triggerRentalAction('expire', ${uid}, '${bkey}')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-rose-500/20 hover:text-rose-300 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-ban text-[10px] text-rose-400"></i> Expire Now
+                </button>
+                <button onclick="triggerRentalAction('revoke', ${uid}, '${bkey}')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-red-500/20 hover:text-red-300 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-trash-can text-[10px] text-red-400"></i> Revoke / Delete
+                </button>
+            `;
+
+            document.body.appendChild(menu);
+            const closeHandler = () => { menu.remove(); document.removeEventListener('click', closeHandler); };
+            setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        }
+
+        // Action Trigger
+        async function triggerRentalAction(action, uid, bkey, days = 0, daysLeft = 0) {
+            if (action === 'revoke') {
+                if (!confirm(`Are you sure you want to permanently revoke this book from user ${uid}?`)) return;
+            } else if (action === 'expire') {
+                if (!confirm(`Expire this rental immediately for user ${uid}?`)) return;
+            }
+
+            try {
+                const response = await fetch('/admin/rentals/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: adminToken,
+                        action: action,
+                        user_id: uid,
+                        book_key: bkey,
+                        days: days,
+                        days_left: daysLeft,
+                        notify: true
+                    })
+                });
+                const res = await response.json();
+                if (res.ok) {
+                    showToast(res.message || "Action executed successfully!");
+                    fetchRentalsData();
+                } else {
+                    showToast(res.error || "Action failed", "error");
+                }
+            } catch (err) {
+                console.error("Action error:", err);
+                showToast("Network error executing action", "error");
+            }
+        }
+
+        // Grant Modal Logic
+        function openGrantModal() {
+            document.getElementById('grant_modal').classList.remove('hidden');
+            document.getElementById('grant_uid').focus();
+        }
+
+        function closeGrantModal() {
+            document.getElementById('grant_modal').classList.add('hidden');
+        }
+
+        async function submitGrantBook() {
+            const uidInput = document.getElementById('grant_uid').value.trim();
+            const bookKey = document.getElementById('grant_book').value;
+            const duration = document.getElementById('grant_duration').value;
+            const notify = document.getElementById('grant_notify').checked;
+
+            if (!uidInput) {
+                showToast("Please enter a valid Telegram User ID", "error");
+                document.getElementById('grant_uid').focus();
+                return;
+            }
+
+            const btn = document.getElementById('btn_submit_grant');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Granting...';
+
+            try {
+                const daysVal = duration === '0' ? null : parseInt(duration);
+                const response = await fetch('/admin/rentals/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: adminToken,
+                        action: 'grant',
+                        user_id: parseInt(uidInput),
+                        book_key: bookKey,
+                        days: daysVal,
+                        notify: notify
+                    })
+                });
+                const res = await response.json();
+                if (res.ok) {
+                    showToast(res.message || "Book access granted successfully!");
+                    closeGrantModal();
+                    document.getElementById('grant_uid').value = '';
+                    fetchRentalsData();
+                } else {
+                    showToast(res.error || "Failed to grant access", "error");
+                }
+            } catch (err) {
+                console.error("Grant error:", err);
+                showToast("Network error granting access", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Grant Access';
+            }
+        }
+
+        // CSV Export
+        function exportRentalsCSV() {
+            if (!rawRentalsData.length) {
+                showToast("No records available to export", "error");
+                return;
+            }
+            let csv = "User ID,First Name,Username,Book Key,Book Title,Status,Purchased On,Expires At,Remaining Days\n";
+            rawRentalsData.forEach(r => {
+                const uname = (r.username || '').replace(/,/g, '');
+                const fname = (r.first_name || '').replace(/,/g, '');
+                const btitle = (r.book_title || '').replace(/,/g, '');
+                csv += `${r.user_id},"${fname}","${uname}","${r.book_key}","${btitle}","${r.status}","${r.purchased_at}","${r.expires_at || 'Permanent'}","${r.days_left || 0}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `baya_books_rentals_${new Date().toISOString().substring(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Exported rentals CSV!");
+        }
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.location.hash === '#rentals') {
+                switchTab('rentals');
+            } else {
+                fetchOverviewData();
+            }
+        });
+
+        // Periodic auto-refresh every 30s
+        setInterval(() => {
+            if (currentTab === 'rentals') {
+                fetchRentalsData();
+            } else {
+                fetchOverviewData();
+            }
+        }, 30000);
     </script>
 </body>
 </html>

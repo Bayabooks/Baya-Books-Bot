@@ -235,6 +235,7 @@ ADMIN_MENU_COMMANDS = [
     BotCommand("getlogs", "📋 View recent server logs"),
     BotCommand("reset_advice", "🔄 Reset my conversation history"),
     BotCommand("refresh_menus", "🔄 Push new menu to all users"),
+    BotCommand("rentals", "📚 Manage rented books & extensions"),
     BotCommand("bayacontrol", "⚙️ Admin Control Panel"),
 ]
 
@@ -1316,6 +1317,178 @@ def cmd_refresh_menus(message):
         return
     run_refresh_all_menus(message.chat.id)
 
+@bot.message_handler(commands=["rentals", "manage_rentals", "book_rentals"])
+def cmd_manage_rentals(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    send_rentals_admin_dashboard(message.chat.id, user=message.from_user)
+
+def send_rentals_admin_dashboard(chat_id, user=None, call=None):
+    data = database.get_all_rentals_management_data()
+    s = data["summary"]
+    
+    text = (
+        f"📚 <b>RENTED BOOKS MANAGEMENT</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📖 <b>Active Rentals:</b> <code>{s['active_rentals']}</code>\n"
+        f"⏳ <b>Expiring Soon (≤48h):</b> <code>{s['expiring_soon_rentals']}</code>\n"
+        f"⌛ <b>Expired Rentals:</b> <code>{s['expired_rentals']}</code>\n"
+        f"👑 <b>Lifetime Purchases:</b> <code>{s['lifetime_purchases']}</code>\n"
+        f"📊 <b>Total Book Records:</b> <code>{s['total_records']}</code>\n\n"
+        f"<i>Select a category to view readers, extend days, or grant access:</i>"
+    )
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton(f"🟢 Active ({s['active_rentals']})", callback_data="adm_rent_list_active_0"),
+        InlineKeyboardButton(f"⏳ Expiring ({s['expiring_soon_rentals']})", callback_data="adm_rent_list_expiring_soon_0"),
+    )
+    markup.add(
+        InlineKeyboardButton(f"⌛ Expired ({s['expired_rentals']})", callback_data="adm_rent_list_expired_0"),
+        InlineKeyboardButton(f"👑 Lifetime ({s['lifetime_purchases']})", callback_data="adm_rent_list_lifetime_0"),
+    )
+    markup.add(
+        InlineKeyboardButton("➕ Grant Book / Rental", callback_data="adm_rent_grant_start"),
+    )
+    markup.add(
+        InlineKeyboardButton(
+            "🌐 Open Web Rentals Dashboard",
+            web_app=WebAppInfo(url=f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_USERNAME}#rentals")
+        )
+    )
+    markup.add(
+        InlineKeyboardButton("🔄 Refresh", callback_data="adm_rentals_menu"),
+        InlineKeyboardButton("🔙 Admin Menu", callback_data="adm_back")
+    )
+    
+    if call:
+        try:
+            bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            return
+        except Exception:
+            pass
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+
+def send_rentals_list_page(chat_id, category, page, call=None):
+    data = database.get_all_rentals_management_data()
+    all_rentals = data["rentals"]
+    
+    filtered = [r for r in all_rentals if r["status"] == category]
+    total_items = len(filtered)
+    page_size = 6
+    total_pages = max(1, (total_items + page_size - 1) // page_size)
+    page = max(0, min(page, total_pages - 1))
+    
+    cat_titles = {
+        "active": "🟢 Active Rentals",
+        "expiring_soon": "⏳ Expiring Soon (≤48h)",
+        "expired": "⌛ Expired Rentals",
+        "lifetime": "👑 Lifetime Purchases"
+    }
+    header_title = cat_titles.get(category, "Books")
+    
+    text = (
+        f"📚 <b>{header_title}</b> (Page {page + 1}/{total_pages})\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"Total: <b>{total_items}</b> records\n\n"
+        f"<i>Tap any reader below to extend days, convert to lifetime, or manage:</i>"
+    )
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    page_items = filtered[page * page_size : (page + 1) * page_size]
+    
+    for r in page_items:
+        uid = r["user_id"]
+        bkey = r["book_key"]
+        fname = r["first_name"] or "User"
+        btitle = r["book_title"].split("(")[0].strip()
+        
+        if r["status"] == "lifetime":
+            badge = "👑 Full"
+        elif r["status"] == "expiring_soon":
+            badge = f"⏳ {r['hours_left']}h left"
+        elif r["status"] == "active":
+            badge = f"🟢 {r['days_left']}d left"
+        else:
+            badge = "⌛ Expired"
+            
+        btn_text = f"{fname} — {btitle} ({badge})"
+        markup.add(InlineKeyboardButton(btn_text[:55], callback_data=f"adm_rent_det_{uid}_{bkey}"))
+        
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("◀️ Prev", callback_data=f"adm_rent_list_{category}_{page - 1}"))
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("Next ▶️", callback_data=f"adm_rent_list_{category}_{page + 1}"))
+    if nav_buttons:
+        markup.row(*nav_buttons)
+        
+    markup.add(InlineKeyboardButton("🔙 Back to Rentals Menu", callback_data="adm_rentals_menu"))
+    
+    if call:
+        try:
+            bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            return
+        except Exception:
+            pass
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+
+def send_rental_detail_card(chat_id, target_uid, bkey, call=None):
+    data = database.get_all_rentals_management_data()
+    match = None
+    for r in data["rentals"]:
+        if r["user_id"] == target_uid and r["book_key"] == bkey:
+            match = r
+            break
+            
+    if not match:
+        bot.send_message(chat_id, "❌ Rental record not found or already revoked.")
+        return
+        
+    uname_str = f"@{match['username']}" if match['username'] else "No username"
+    blocked_str = " (⚠️ User blocked bot)" if match['bot_blocked'] else ""
+    
+    text = (
+        f"📖 <b>Reader Rental Details</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 Reader: <b>{html.escape(match['first_name'])}</b> ({uname_str})\n"
+        f"🆔 User ID: <code>{target_uid}</code>{blocked_str}\n"
+        f"📚 Book: <b>{match['book_title']}</b>\n"
+        f"🏷️ Status: <b>{match['status_label']}</b>\n"
+        f"📅 Started On: <code>{match['purchased_at'][:16] if match['purchased_at'] else 'N/A'}</code>\n"
+        f"⏳ Expiration: <code>{match['expires_at'][:16] if match['expires_at'] else 'Permanent (Lifetime)'}</code>\n\n"
+        f"<i>Select an action below:</i>"
+    )
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("➕ +5 Days Ext", callback_data=f"adm_rent_act_{target_uid}_{bkey}_ext5"),
+        InlineKeyboardButton("➕ +10 Days Ext", callback_data=f"adm_rent_act_{target_uid}_{bkey}_ext10"),
+    )
+    if match["status"] != "lifetime":
+        markup.add(
+            InlineKeyboardButton("👑 Make Lifetime (Full)", callback_data=f"adm_rent_act_{target_uid}_{bkey}_life"),
+            InlineKeyboardButton("🔔 Send Reminder", callback_data=f"adm_rent_act_{target_uid}_{bkey}_nudge"),
+        )
+        markup.add(
+            InlineKeyboardButton("⌛ Expire Now", callback_data=f"adm_rent_act_{target_uid}_{bkey}_exp"),
+            InlineKeyboardButton("🗑️ Revoke Book", callback_data=f"adm_rent_act_{target_uid}_{bkey}_rev"),
+        )
+    else:
+        markup.add(
+            InlineKeyboardButton("🗑️ Revoke Book", callback_data=f"adm_rent_act_{target_uid}_{bkey}_rev"),
+        )
+    markup.add(InlineKeyboardButton("🔙 Back to Rentals", callback_data="adm_rentals_menu"))
+    
+    if call:
+        try:
+            bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            return
+        except Exception:
+            pass
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+
 def show_admin_menu(chat_id, user):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -1333,6 +1506,9 @@ def show_admin_menu(chat_id, user):
     markup.add(
         InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
         InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
+    )
+    markup.add(
+        InlineKeyboardButton("📚 Manage Rented Books", callback_data="adm_rentals_menu"),
     )
     markup.add(
         InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
@@ -1746,6 +1922,146 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "🔄 Starting refresh...", show_alert=False)
         run_refresh_all_menus(chat_id)
+        return
+
+    # ── Admin: Rented Books Management ────────
+    if data == "adm_rentals_menu":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        send_rentals_admin_dashboard(chat_id, call=call)
+        return
+
+    if data.startswith("adm_rent_list_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        cat = parts[3]
+        page = int(parts[4])
+        bot.answer_callback_query(call.id)
+        send_rentals_list_page(chat_id, cat, page, call=call)
+        return
+
+    if data.startswith("adm_rent_det_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        bkey = parts[4]
+        bot.answer_callback_query(call.id)
+        send_rental_detail_card(chat_id, target_uid, bkey, call=call)
+        return
+
+    if data.startswith("adm_rent_act_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        bkey = parts[4]
+        act = parts[5]
+        b_title = BOOK_TITLES.get(bkey, bkey)
+        
+        if act == "ext5":
+            new_exp = database.extend_rental_days(target_uid, bkey, 5)
+            bot.answer_callback_query(call.id, f"✅ Extended +5 days (Expires: {new_exp[:10] if new_exp else 'N/A'})", show_alert=True)
+            try:
+                bot.send_message(target_uid, f"🎉 <b>የንባብ ጊዜ ተራዝሟል!</b>\n\n📖 የ <b>«{b_title}»</b> የኪራይ ጊዜዎ በ <b>+5 ቀናት</b> ተራዝሟል!\nመልካም ንባብ! 📚✨", parse_mode="HTML")
+            except Exception: pass
+            send_rental_detail_card(chat_id, target_uid, bkey, call=call)
+            return
+        elif act == "ext10":
+            new_exp = database.extend_rental_days(target_uid, bkey, 10)
+            bot.answer_callback_query(call.id, f"✅ Extended +10 days (Expires: {new_exp[:10] if new_exp else 'N/A'})", show_alert=True)
+            try:
+                bot.send_message(target_uid, f"🎉 <b>የንባብ ጊዜ ተራዝሟል!</b>\n\n📖 የ <b>«{b_title}»</b> የኪራይ ጊዜዎ በ <b>+10 ቀናት</b> ተራዝሟል!\nመልካም ንባብ! 📚✨", parse_mode="HTML")
+            except Exception: pass
+            send_rental_detail_card(chat_id, target_uid, bkey, call=call)
+            return
+        elif act == "life":
+            database.convert_book_to_lifetime(target_uid, bkey)
+            bot.answer_callback_query(call.id, f"👑 Converted to Lifetime!", show_alert=True)
+            try:
+                bot.send_message(target_uid, f"👑 <b>የቋሚ ባለቤትነት ስጦታ!</b>\n\n📖 የ <b>«{b_title}»</b> መጽሐፍ <b>ለዘላለም በቋሚነት (Lifetime)</b> ተከፍቶልዎታል!\nበማንኛውም ጊዜ ገብተው ሙሉውን መጽሐፍ ማንበብ ይችላሉ! 📚✨", parse_mode="HTML")
+            except Exception: pass
+            send_rental_detail_card(chat_id, target_uid, bkey, call=call)
+            return
+        elif act == "nudge":
+            try:
+                nudge_txt = (
+                    f"⏳ <b>የመጽሐፍ ኪራይ ማሳሰቢያ</b>\n\n"
+                    f"ውድ አንባቢ፣ የ <b>«{b_title}»</b> መጽሐፍ የኪራይ ጊዜዎ በቅርቡ ያበቃል!\n\n"
+                    f"ንባብዎን ሳይቋረጥ ለመቀጠል ወይም በቋሚነት ለመግዛት ቦቱን ይጠቀሙ ወይም አስተዳዳሪውን ያነጋግሩ። 📚"
+                )
+                bot.send_message(target_uid, nudge_txt, parse_mode="HTML")
+                bot.answer_callback_query(call.id, "🔔 Reminder sent to reader!", show_alert=True)
+            except Exception as e:
+                bot.answer_callback_query(call.id, f"❌ Failed to send (User blocked): {e}", show_alert=True)
+            return
+        elif act == "exp":
+            database.expire_book_rental_now(target_uid, bkey)
+            bot.answer_callback_query(call.id, "⌛ Rental marked as expired!", show_alert=True)
+            send_rental_detail_card(chat_id, target_uid, bkey, call=call)
+            return
+        elif act == "rev":
+            database.remove_user_book(target_uid, bkey)
+            bot.answer_callback_query(call.id, "🗑️ Book access revoked!", show_alert=True)
+            send_rentals_admin_dashboard(chat_id, call=call)
+            return
+
+    if data == "adm_rent_grant_start":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_RENT_GRANT_UID")
+        bot.send_message(chat_id, "➕ <b>Grant Book / Rental</b>\n\nEnter the <b>Telegram User ID</b> of the reader:\n\n<i>(/cancel to abort)</i>", parse_mode="HTML")
+        return
+
+    if data.startswith("adm_rent_gbook_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        bkey = parts[4]
+        b_title = BOOK_TITLES.get(bkey, bkey)
+        
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("⏳ 10 Days (Standard)", callback_data=f"adm_rent_gdur_{target_uid}_{bkey}_10"),
+            InlineKeyboardButton("⏳ 5 Days (Short)", callback_data=f"adm_rent_gdur_{target_uid}_{bkey}_5"),
+        )
+        markup.add(
+            InlineKeyboardButton("📅 30 Days (Extended)", callback_data=f"adm_rent_gdur_{target_uid}_{bkey}_30"),
+            InlineKeyboardButton("👑 Lifetime (Permanent)", callback_data=f"adm_rent_gdur_{target_uid}_{bkey}_0"),
+        )
+        markup.add(InlineKeyboardButton("🔙 Back to Rentals", callback_data="adm_rentals_menu"))
+        
+        bot.answer_callback_query(call.id)
+        bot.send_message(
+            chat_id,
+            f"📚 Book: <b>{b_title}</b>\n"
+            f"👤 Target: <code>{target_uid}</code>\n\n"
+            f"Choose duration:",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data.startswith("adm_rent_gdur_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        target_uid = int(parts[3])
+        bkey = parts[4]
+        days = int(parts[5])
+        b_title = BOOK_TITLES.get(bkey, bkey)
+        
+        rent_days = days if days > 0 else None
+        database.unlock_book(target_uid, bkey, days=rent_days)
+        mode_label = f"{days}-Day Rental" if rent_days else "Full Permanent (Lifetime)"
+        
+        bot.answer_callback_query(call.id, f"✅ Granted {b_title} ({mode_label})!", show_alert=True)
+        bot.send_message(
+            chat_id,
+            f"✅ <b>Access Granted Successfully!</b>\n\n"
+            f"📖 Book: <b>{b_title}</b>\n"
+            f"⏳ Access: <b>{mode_label}</b>\n"
+            f"👤 Reader ID: <code>{target_uid}</code>",
+            parse_mode="HTML"
+        )
+        notify_user_book_unlocked(target_uid, bkey, days=rent_days)
         return
     
     # ── Admin: User Search ────────────────────
@@ -2183,6 +2499,32 @@ def handle_messages(message):
             clear_state(uid)
         return
     
+    # ── Admin: Grant Book User ID Prompt ─────
+    if state == "ADMIN_RENT_GRANT_UID" and is_admin(message.from_user):
+        if message.text and message.text.strip() == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ Cancelled."); return
+        try:
+            target_uid = int(message.text.strip())
+            target = database.get_user(target_uid)
+            target_name = target['first_name'] if target else f"User {target_uid}"
+            
+            markup = InlineKeyboardMarkup(row_width=1)
+            for bkey, btitle in BOOK_TITLES.items():
+                markup.add(InlineKeyboardButton(f"📚 {btitle}", callback_data=f"adm_rent_gbook_{target_uid}_{bkey}"))
+            markup.add(InlineKeyboardButton("❌ Cancel", callback_data="adm_rentals_menu"))
+            
+            bot.send_message(
+                chat_id,
+                f"👤 Reader: <b>{html.escape(target_name)}</b> (<code>{target_uid}</code>)\n\n"
+                f"Select the book to grant:",
+                parse_mode="HTML",
+                reply_markup=markup
+            )
+            clear_state(uid)
+        except ValueError:
+            bot.send_message(chat_id, "❌ Please enter a valid numeric User ID (or /cancel).")
+        return
+
     # ── Admin: Record Manual Payment ─────────
     if str(state).startswith("ADMIN_RECORD_PAY_") and is_admin(message.from_user):
         if message.text == "/cancel":
@@ -2923,6 +3265,23 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(stats).encode('utf-8'))
             return
 
+        if self.path.startswith('/admin/rentals_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if token != config.ADMIN_USERNAME:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b'Forbidden')
+                return
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            rentals_data = database.get_all_rentals_management_data()
+            self.wfile.write(json.dumps(rentals_data).encode('utf-8'))
+            return
+
         if self.path.startswith('/admin/advice_history'):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -3129,6 +3488,92 @@ class DummyHandler(BaseHTTPRequestHandler):
                 }).encode('utf-8'))
             except Exception as e:
                 logging.error(f"/api/quote_card error: {e}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        if self.path.startswith('/admin/rentals/action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                if token != config.ADMIN_USERNAME:
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b'Forbidden')
+                    return
+                
+                action = data.get('action')
+                uid = int(data.get('user_id'))
+                bkey = data.get('book_key')
+                b_title = BOOK_TITLES.get(bkey, bkey)
+                notify = data.get('notify', True)
+                
+                result_msg = ""
+                if action == 'extend':
+                    days = int(data.get('days', 5))
+                    new_exp = database.extend_rental_days(uid, bkey, additional_days=days)
+                    result_msg = f"Extended {b_title} by {days} days (Expires: {new_exp[:10] if new_exp else 'N/A'})"
+                    if notify:
+                        try:
+                            bot.send_message(
+                                uid,
+                                f"🎉 <b>የንባብ ጊዜ ተራዝሟል!</b>\n\n"
+                                f"📖 የ <b>«{b_title}»</b> የኪራይ ጊዜዎ በ <b>+{days} ቀናት</b> ተራዝሟል!\n"
+                                f"መልካም ንባብ! 📚✨",
+                                parse_mode="HTML"
+                            )
+                        except Exception: pass
+                elif action == 'lifetime':
+                    database.convert_book_to_lifetime(uid, bkey)
+                    result_msg = f"Converted {b_title} to Lifetime access!"
+                    if notify:
+                        try:
+                            bot.send_message(
+                                uid,
+                                f"👑 <b>የቋሚ ባለቤትነት ስጦታ!</b>\n\n"
+                                f"📖 የ <b>«{b_title}»</b> መጽሐፍ <b>ለዘላለም በቋሚነት (Lifetime)</b> ተከፍቶልዎታል!\n"
+                                f"በማንኛውም ጊዜ ገብተው ሙሉውን መጽሐፍ ማንበብ ይችላሉ! 📚✨",
+                                parse_mode="HTML"
+                            )
+                        except Exception: pass
+                elif action == 'expire':
+                    database.expire_book_rental_now(uid, bkey)
+                    result_msg = f"Expired {b_title} rental now."
+                elif action == 'revoke':
+                    database.remove_user_book(uid, bkey)
+                    result_msg = f"Revoked {b_title} from user {uid}."
+                elif action == 'grant':
+                    days = data.get('days')
+                    rent_days = int(days) if days is not None and int(days) > 0 else None
+                    database.unlock_book(uid, bkey, days=rent_days)
+                    mode_label = f"{days}-Day Rental" if rent_days else "Full Permanent (Lifetime)"
+                    result_msg = f"Granted {b_title} ({mode_label}) to user {uid}."
+                    if notify:
+                        notify_user_book_unlocked(uid, bkey, days=rent_days)
+                elif action == 'nudge':
+                    days_left = data.get('days_left')
+                    days_msg = f"በ {days_left} ቀናት ውስጥ ያበቃል" if days_left else "በቅርቡ ያበቃል"
+                    nudge_txt = (
+                        f"⏳ <b>የመጽሐፍ ኪራይ ማሳሰቢያ</b>\n\n"
+                        f"ውድ አንባቢ፣ የ <b>«{b_title}»</b> መጽሐፍ የኪራይ ጊዜዎ <b>{days_msg}</b>!\n\n"
+                        f"ንባብዎን ሳይቋረጥ ለመቀጠል ወይም በቋሚነት ለመግዛት ቦቱን ይጠቀሙ ወይም አስተዳዳሪውን ያነጋግሩ። 📚"
+                    )
+                    try:
+                        bot.send_message(uid, nudge_txt, parse_mode="HTML")
+                        result_msg = f"Reminder sent to user {uid}."
+                    except Exception as e:
+                        result_msg = f"Could not send reminder (user may have blocked bot): {e}"
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "message": result_msg}).encode('utf-8'))
+            except Exception as e:
+                logging.error(f"/admin/rentals/action error: {e}")
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()

@@ -205,6 +205,201 @@ def get_user_books_with_meta(user_id):
 def get_user_books(user_id):
     return get_user_books_state(user_id)[0]
 
+def get_all_rentals_management_data():
+    """
+    Returns structured data for the Rented Books Management Dashboard:
+    - Summary metrics (total rentals, active rentals, expiring soon <= 48h, expired, lifetime purchases)
+    - Full list of all records with user details, book info, time remaining, and status.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT book_key, expires_at FROM user_books LIMIT 1")
+    except Exception:
+        try:
+            c.execute("ALTER TABLE user_books ADD COLUMN expires_at TEXT DEFAULT NULL")
+            conn.commit()
+        except Exception:
+            pass
+
+    query = """
+        SELECT 
+            ub.user_id,
+            ub.book_key,
+            ub.purchased_at,
+            ub.expires_at,
+            u.username,
+            u.first_name,
+            u.bot_blocked
+        FROM user_books ub
+        LEFT JOIN users u ON ub.user_id = u.user_id
+        ORDER BY 
+            CASE 
+                WHEN ub.expires_at IS NOT NULL AND ub.expires_at > datetime('now') THEN 1
+                WHEN ub.expires_at IS NULL THEN 2
+                ELSE 3
+            END,
+            ub.expires_at DESC,
+            ub.purchased_at DESC
+    """
+    c.execute(query)
+    rows = c.fetchall()
+    conn.close()
+
+    now_dt = datetime.now()
+    rentals_list = []
+    
+    active_count = 0
+    expiring_soon_count = 0
+    expired_count = 0
+    lifetime_count = 0
+
+    BOOK_NAMES = {
+        "narcissist": "የናርስሲስቶች ወጥመድ",
+        "boundaries": "ድንበርህን አብጅ",
+        "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
+        "meaning": "የህይወት ትርጉም"
+    }
+
+    for r in rows:
+        uid = r['user_id']
+        bkey = r['book_key']
+        p_at = r['purchased_at'] or ''
+        e_at = r['expires_at']
+        uname = r['username'] or ''
+        fname = r['first_name'] or 'User'
+        blocked = bool(r['bot_blocked'])
+        
+        btitle = BOOK_NAMES.get(bkey, bkey)
+
+        is_rental = bool(e_at)
+        status = 'lifetime'
+        days_left = None
+        hours_left = None
+        status_label = 'Permanent (Lifetime)'
+        
+        if is_rental:
+            try:
+                exp_dt = datetime.strptime(e_at[:19], "%Y-%m-%d %H:%M:%S")
+                diff = exp_dt - now_dt
+                total_seconds = int(diff.total_seconds())
+                
+                if total_seconds > 0:
+                    hours_left = total_seconds // 3600
+                    days_left = max(1, diff.days + (1 if diff.seconds > 0 else 0))
+                    if total_seconds <= 48 * 3600:
+                        status = 'expiring_soon'
+                        expiring_soon_count += 1
+                        status_label = f"Expiring Soon ({hours_left}h left)"
+                    else:
+                        status = 'active'
+                        active_count += 1
+                        status_label = f"Active ({days_left}d left)"
+                else:
+                    status = 'expired'
+                    expired_count += 1
+                    ago_days = abs(diff.days)
+                    status_label = f"Expired ({ago_days}d ago)"
+            except Exception:
+                status = 'active'
+                active_count += 1
+                status_label = 'Active Rental'
+        else:
+            lifetime_count += 1
+
+        rentals_list.append({
+            "user_id": uid,
+            "username": uname,
+            "first_name": fname,
+            "bot_blocked": blocked,
+            "book_key": bkey,
+            "book_title": btitle,
+            "purchased_at": p_at,
+            "expires_at": e_at,
+            "is_rental": is_rental,
+            "status": status,
+            "status_label": status_label,
+            "days_left": days_left,
+            "hours_left": hours_left
+        })
+
+    return {
+        "summary": {
+            "total_records": len(rentals_list),
+            "total_rentals": active_count + expiring_soon_count + expired_count,
+            "active_rentals": active_count,
+            "expiring_soon_rentals": expiring_soon_count,
+            "expired_rentals": expired_count,
+            "lifetime_purchases": lifetime_count
+        },
+        "rentals": rentals_list
+    }
+
+def extend_rental_days(user_id, book_key, additional_days=5):
+    """Extends a user's book rental by additional_days. Returns the new expiration string."""
+    try:
+        user_id = int(user_id)
+        additional_days = int(additional_days)
+    except (ValueError, TypeError):
+        return None
+        
+    now_dt = datetime.now()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT expires_at FROM user_books WHERE user_id = ? AND book_key = ?", (user_id, book_key))
+    row = c.fetchone()
+    
+    base_dt = now_dt
+    if row and row['expires_at']:
+        try:
+            curr_exp = datetime.strptime(row['expires_at'][:19], "%Y-%m-%d %H:%M:%S")
+            if curr_exp > now_dt:
+                base_dt = curr_exp
+        except Exception:
+            pass
+            
+    new_exp_dt = base_dt + timedelta(days=additional_days)
+    new_exp_str = new_exp_dt.strftime("%Y-%m-%d %H:%M:%S")
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+    
+    c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at, expires_at)
+        VALUES (?, ?, COALESCE((SELECT purchased_at FROM user_books WHERE user_id = ? AND book_key = ?), ?), ?)
+    ''', (user_id, book_key, user_id, book_key, now_str, new_exp_str))
+    conn.commit()
+    conn.close()
+    return new_exp_str
+
+def convert_book_to_lifetime(user_id, book_key):
+    """Converts a rental into permanent lifetime ownership."""
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return False
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''INSERT OR REPLACE INTO user_books (user_id, book_key, purchased_at, expires_at)
+        VALUES (?, ?, COALESCE((SELECT purchased_at FROM user_books WHERE user_id = ? AND book_key = ?), ?), NULL)
+    ''', (user_id, book_key, user_id, book_key, now_str))
+    conn.commit()
+    conn.close()
+    return True
+
+def expire_book_rental_now(user_id, book_key):
+    """Immediately expires a rental."""
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return False
+    exp_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE user_books SET expires_at = ? WHERE user_id = ? AND book_key = ?", (exp_str, user_id, book_key))
+    conn.commit()
+    conn.close()
+    return True
+
+
 # ─── User Functions ────────────────────────
 
 def add_user(user_id, username, first_name, referred_by=None):

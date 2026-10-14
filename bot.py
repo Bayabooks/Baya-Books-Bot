@@ -2445,19 +2445,45 @@ def handle_callback(call):
                 import requests
                 import re
                 # Facebook uses plain text, so strip HTML tags
-                clean_content = re.sub('<[^<]+>', '', content)
-                fb_msg = f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n{clean_content}"
+                clean_content = re.sub('<[^<]+>', '', content).strip()
+                fb_msg = (
+                    f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n"
+                    f"{clean_content}\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"📚 ሙሉ የስነ-ልቦና መመሪያዎችን እና ምክሮችን ለማግኘት ቦቱን በነጻ ይቀላቀሉ፦\n"
+                    f"👉 https://t.me/bayabooks_bot\n\n"
+                    f"#BayaBooks #ሳይኮሎጂ #ስነልቦና #ምክር #ህይወት"
+                )
                 
-                fb_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/feed"
-                payload = {
-                    "message": fb_msg,
-                    "access_token": fb_token
-                }
-                res = requests.post(fb_url, data=payload, timeout=10)
+                try:
+                    import quote_card
+                    card_bytes = quote_card.generate_quote_card(clean_content)
+                except Exception as ce:
+                    import logging
+                    logging.error(f"Failed to generate quote card: {ce}")
+                    card_bytes = None
+
+                if card_bytes:
+                    fb_photo_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/photos"
+                    files = {
+                        "source": ("baya_quote_card.png", card_bytes, "image/png")
+                    }
+                    payload = {
+                        "caption": fb_msg,
+                        "access_token": fb_token
+                    }
+                    res = requests.post(fb_photo_url, files=files, data=payload, timeout=25)
+                else:
+                    fb_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/feed"
+                    payload = {
+                        "message": fb_msg,
+                        "access_token": fb_token
+                    }
+                    res = requests.post(fb_url, data=payload, timeout=15)
                 if res.status_code != 200:
                     bot.send_message(chat_id, f"⚠️ <b>Facebook Post Failed:</b>\n<code>{res.text}</code>", parse_mode="HTML")
                 else:
-                    bot.send_message(chat_id, "✅ Successfully posted to Facebook Page!")
+                    bot.send_message(chat_id, "✅ <b>Successfully posted Photo Card to Facebook Page!</b> 📸", parse_mode="HTML")
         except Exception as e:
             bot.send_message(chat_id, f"⚠️ <b>Facebook Error:</b> {str(e)}")
             import logging

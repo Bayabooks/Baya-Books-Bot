@@ -227,6 +227,8 @@ def get_admin_id():
         return None
 
 ADMIN_MENU_COMMANDS = [
+    BotCommand("dashboard", "🌐 Unified Web Admin Dashboard"),
+    BotCommand("rentals", "📚 Manage rented books & extensions"),
     BotCommand("lookup", "🔍 Look up user (Profile, Books, Balance)"),
     BotCommand("investigate", "🕵️ Audit report of last 20 users"),
     BotCommand("clean", "🧹 Purge ghost & blocked users"),
@@ -235,7 +237,6 @@ ADMIN_MENU_COMMANDS = [
     BotCommand("getlogs", "📋 View recent server logs"),
     BotCommand("reset_advice", "🔄 Reset my conversation history"),
     BotCommand("refresh_menus", "🔄 Push new menu to all users"),
-    BotCommand("rentals", "📚 Manage rented books & extensions"),
     BotCommand("bayacontrol", "⚙️ Admin Control Panel"),
 ]
 
@@ -1316,6 +1317,34 @@ def cmd_refresh_menus(message):
         bot.reply_to(message, "❌ Admin only!")
         return
     run_refresh_all_menus(message.chat.id)
+
+@bot.message_handler(commands=["dashboard", "admin_dashboard"])
+def cmd_open_admin_dashboard(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    dash_url = f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_USERNAME}"
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("🚀 Open Admin Dashboard", web_app=WebAppInfo(url=dash_url)),
+        InlineKeyboardButton("🌐 Open in Web Browser", url=dash_url),
+        InlineKeyboardButton("📚 Rentals Manager", callback_data="adm_rentals_menu")
+    )
+    bot.send_message(
+        message.chat.id,
+        "👑 <b>BAYA SUITE UNIFIED ADMIN DASHBOARD</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Tap below to launch the all-in-one web management suite:\n\n"
+        "• <b>Analytics & Finance:</b> Real-time revenue & KPIs\n"
+        "• <b>Rentals Manager:</b> Extend, convert, or revoke\n"
+        "• <b>User Directory:</b> Inspect profiles & advice quota\n"
+        "• <b>Payments Audit:</b> Search, verify, or delete logs\n"
+        "• <b>Cart Recovery:</b> Automated customer nudges\n"
+        "• <b>Broadcast Center:</b> HTML editor with live preview\n"
+        "• <b>System Maintenance:</b> Server logs & ghost cleanup",
+        parse_mode="HTML",
+        reply_markup=markup
+    )
 
 @bot.message_handler(commands=["rentals", "manage_rentals", "book_rentals"])
 def cmd_manage_rentals(message):

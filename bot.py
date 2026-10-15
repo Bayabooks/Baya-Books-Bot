@@ -2741,7 +2741,11 @@ def handle_callback(call):
         # 1. Send to Channel if requested
         if data in ["adm_gift_bc_channel", "adm_gift_bc_both"]:
             try:
-                bot.send_photo(f"@{config.CHANNEL_USERNAME}", card_bytes, caption=caption_text)
+                if len(caption_text) <= 1024:
+                    bot.send_photo(f"@{config.CHANNEL_USERNAME}", card_bytes, caption=caption_text)
+                else:
+                    bot.send_photo(f"@{config.CHANNEL_USERNAME}", card_bytes)
+                    bot.send_message(f"@{config.CHANNEL_USERNAME}", caption_text)
             except Exception as e:
                 logging.error(f"Error sending winners post to channel: {e}")
                 
@@ -2752,7 +2756,11 @@ def handle_callback(call):
                 u_ids = database.get_all_user_ids()
                 for uid_target in u_ids:
                     try:
-                        bot.send_photo(uid_target, card_bytes, caption=caption_text, disable_notification=True)
+                        if len(caption_text) <= 1024:
+                            bot.send_photo(uid_target, card_bytes, caption=caption_text, disable_notification=True)
+                        else:
+                            bot.send_photo(uid_target, card_bytes, disable_notification=True)
+                            bot.send_message(uid_target, caption_text, disable_notification=True)
                     except Exception:
                         pass
                     time.sleep(0.08)
@@ -3351,71 +3359,86 @@ def handle_callback(call):
         return
 
 def send_winners_post_preview(chat_id, theme_index=1, style_index=0):
-    cycle_date = tiktok_gift.get_game_cycle_date()
-    secret_word = tiktok_gift.get_today_secret_word()
-    word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
-    tiktok_name = tiktok_gift.get_tiktok_channel_name()
-    
-    # Get today's winners
-    raw_winners = database.get_daily_gift_winners(cycle_date)
-    winners = []
-    for rw in raw_winners:
-        w_dict = dict(rw)
-        w_dict['book_title'] = BOOK_TITLES.get(w_dict.get('book_chosen'), w_dict.get('book_chosen'))
-        winners.append(w_dict)
+    try:
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        secret_word = tiktok_gift.get_today_secret_word()
+        word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
+        tiktok_name = tiktok_gift.get_tiktok_channel_name()
         
-    # Check for custom amended caption
-    custom_caption = database.get_setting(f"daily_gift_custom_caption_{cycle_date}")
-    
-    if custom_caption:
-        caption_text = custom_caption
-    else:
-        caption_text = tiktok_gift.format_winners_caption(
+        # Get today's winners
+        raw_winners = database.get_daily_gift_winners(cycle_date)
+        winners = []
+        for rw in raw_winners:
+            w_dict = dict(rw)
+            w_dict['book_title'] = BOOK_TITLES.get(w_dict.get('book_chosen'), w_dict.get('book_chosen'))
+            winners.append(w_dict)
+            
+        # Check for custom amended caption
+        custom_caption = database.get_setting(f"daily_gift_custom_caption_{cycle_date}")
+        
+        if custom_caption:
+            caption_text = custom_caption
+        else:
+            caption_text = tiktok_gift.format_winners_caption(
+                secret_word=secret_word,
+                word_title=word_title,
+                word_body=word_body,
+                winners=winners,
+                tiktok_name=tiktok_name,
+                style_idx=style_index
+            )
+            
+        # Generate 1:1 Card
+        card_bytes = quote_card.generate_winners_card_1_1(
             secret_word=secret_word,
             word_title=word_title,
             word_body=word_body,
             winners=winners,
+            cycle_date=cycle_date,
             tiktok_name=tiktok_name,
-            style_idx=style_index
+            theme_index=theme_index
         )
         
-    # Generate 1:1 Card
-    card_bytes = quote_card.generate_winners_card_1_1(
-        secret_word=secret_word,
-        word_title=word_title,
-        word_body=word_body,
-        winners=winners,
-        cycle_date=cycle_date,
-        tiktok_name=tiktok_name,
-        theme_index=theme_index
-    )
-    
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("📢 አጽድቅና አሰራጭ (Approve & Broadcast)", callback_data="adm_gift_approve_prompt"),
-        InlineKeyboardButton("✨ በ AI አዲስ ፈጠራ አፍልቅ (AI Rewrite)", callback_data=f"adm_gift_ai_rewrite_{theme_index}")
-    )
-    next_style = (style_index + 1) % 3
-    next_theme = (theme_index + 1) % len(quote_card.THEMES)
-    markup.add(
-        InlineKeyboardButton("🎲 የፈጠራ ስልት ቀይር (Change Hook)", callback_data=f"adm_gift_style_{next_style}_{theme_index}"),
-        InlineKeyboardButton("🎨 ቀለሙን ቀይር (Change Theme)", callback_data=f"adm_gift_regen_{next_theme}_{style_index}")
-    )
-    markup.add(
-        InlineKeyboardButton("✏️ ፅሁፉን አሻሽል (Amend Caption)", callback_data="adm_gift_amend_caption"),
-        InlineKeyboardButton("🔙 ወደ ስጦታ ማኔጀር (Back)", callback_data="adm_gift_menu")
-    )
-    
-    escaped_cap = html.escape(caption_text)
-    msg_caption = (
-        f"🏆 <b>የዛሬ አሸናፊዎች የቲክቶክ ፖስት (1:1 Square Card)</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"📋 <b>TikTok Caption (Tap to Copy):</b>\n"
-        f"<code>{escaped_cap}</code>\n\n"
-        f"💡 <i>ፎቶውን ከላይ Save አድርገው ፅሁፉን ኮፒ በማድረግ በቀጥታ ቲክቶክ ላይ በ Photo Mode መፖሰት ይችላሉ!</i>"
-    )
-    
-    bot.send_photo(chat_id, card_bytes, caption=msg_caption, parse_mode="HTML", reply_markup=markup)
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("📢 አጽድቅና አሰራጭ (Approve & Broadcast)", callback_data="adm_gift_approve_prompt"),
+            InlineKeyboardButton("✨ በ AI አዲስ ፈጠራ አፍልቅ (AI Rewrite)", callback_data=f"adm_gift_ai_rewrite_{theme_index}")
+        )
+        next_style = (style_index + 1) % 3
+        next_theme = (theme_index + 1) % len(quote_card.THEMES)
+        markup.add(
+            InlineKeyboardButton("🎲 የፈጠራ ስልት ቀይር (Change Hook)", callback_data=f"adm_gift_style_{next_style}_{theme_index}"),
+            InlineKeyboardButton("🎨 ቀለሙን ቀይር (Change Theme)", callback_data=f"adm_gift_regen_{next_theme}_{style_index}")
+        )
+        markup.add(
+            InlineKeyboardButton("✏️ ፅሁፉን አሻሽል (Amend Caption)", callback_data="adm_gift_amend_caption"),
+            InlineKeyboardButton("🔙 ወደ ስጦታ ማኔጀር (Back)", callback_data="adm_gift_menu")
+        )
+        
+        # 1. Clean up old preview photo if existing
+        old_photo_id = database.get_setting(f"last_preview_photo_{chat_id}")
+        if old_photo_id:
+            try:
+                safe_delete_message(chat_id, int(old_photo_id))
+            except Exception:
+                pass
+
+        # 2. Send 1:1 Photo with clean, short caption (< 100 chars, always safe under Telegram's 1024 limit)
+        photo_label = f"🏆 <b>የዛሬ አሸናፊዎች የቲክቶክ ፖስት (1:1 Square Card)</b> — «{secret_word}»"
+        photo_msg = bot.send_photo(chat_id, card_bytes, caption=photo_label, parse_mode="HTML")
+        database.set_setting(f"last_preview_photo_{chat_id}", str(photo_msg.message_id))
+        
+        # 3. Send full copyable TikTok caption in a text message (limit is 4096 chars, zero overflow risk)
+        escaped_cap = html.escape(caption_text)
+        caption_body = (
+            f"📋 <b>TikTok Caption (Tap to Copy):</b>\n\n"
+            f"<code>{escaped_cap}</code>\n\n"
+            f"💡 <i>ፎቶውን ከላይ Save አድርገው ፅሁፉን ኮፒ በማድረግ በቀጥታ ቲክቶክ ላይ በ Photo Mode መፖሰት ይችላሉ!</i>"
+        )
+        bot.send_message(chat_id, caption_body, parse_mode="HTML", reply_markup=markup)
+    except Exception as e:
+        logging.error(f"Error in send_winners_post_preview: {e}", exc_info=True)
+        bot.send_message(chat_id, f"⚠️ <b>Error preparing post:</b> {html.escape(str(e))}", parse_mode="HTML")
     return
 
 def show_daily_gift_game(chat_id, uid):

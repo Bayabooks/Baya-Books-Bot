@@ -2501,7 +2501,7 @@ def handle_callback(call):
         set_state(uid, "ADMIN_GIFT_SECRET_WORD")
         markup = InlineKeyboardMarkup(row_width=2)
         btn_list = []
-        for k, v in list(tiktok_gift.WORD_AFFIRMATIONS.items())[:12]:
+        for k, v in list(tiktok_gift.WORD_AFFIRMATIONS.items())[:24]:
             btn_list.append(InlineKeyboardButton(v["word"], callback_data=f"adm_gift_pick_{k}"))
         for i in range(0, len(btn_list), 2):
             if i + 1 < len(btn_list):
@@ -3225,7 +3225,7 @@ def show_daily_gift_game(chat_id, uid):
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return
 
-    # 3. New daily participant: Show the 4 choices
+    # 3. New daily participant: Show the choices (8 options)
     choices = tiktok_gift.get_today_choices()
     winners_today = database.get_today_gift_winners_count(cycle_date)
     remaining_spots = max(0, 5 - winners_today)
@@ -3235,8 +3235,12 @@ def show_daily_gift_game(chat_id, uid):
     for key, word_text in choices:
         row_btns.append(InlineKeyboardButton(f"✨ {word_text}", callback_data=f"gift_choice_{key}"))
     
-    markup.add(row_btns[0], row_btns[1])
-    markup.add(row_btns[2], row_btns[3])
+    for i in range(0, len(row_btns), 2):
+        if i + 1 < len(row_btns):
+            markup.add(row_btns[i], row_btns[i+1])
+        else:
+            markup.add(row_btns[i])
+
     markup.add(
         InlineKeyboardButton(f"📱 የዛሬውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
     )

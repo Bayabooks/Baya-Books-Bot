@@ -390,10 +390,10 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
     card_bg = (15, 23, 42)
     draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=card_bg, outline=theme["border"], width=1)
     
-    # Badge: የዕለቱ ሚስጥራዊ ቃል
+    # Badge: የዕለቱ ሚስጥራዊ ቃል • የአዕምሮ ምግብ
     badge_font = get_ethiopic_font(20)
-    badge_text = "የዕለቱ ሚስጥራዊ ቃል (Secret Word)"
-    draw.rectangle([(img_w // 2 - 170, box_y1 - 15), (img_w // 2 + 170, box_y1 + 17)], fill=theme["accent_line"])
+    badge_text = "✨ የዕለቱ ሚስጥራዊ ቃል • የአዕምሮ ምግብ ✨"
+    draw.rectangle([(img_w // 2 - 200, box_y1 - 15), (img_w // 2 + 200, box_y1 + 17)], fill=theme["accent_line"])
     draw.text((img_w // 2, box_y1 + 1), badge_text, font=badge_font, fill="#ffffff", anchor="mm")
 
     # Big Word
@@ -410,8 +410,9 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
             f"«{clean_word_raw}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
             f"አዕምሮአችንን በምንመግበው አዎንታዊ አስተሳሰብ ልክ ህይወታችን ይለወጣል።"
         )
-        
-    wrapped_lines = wrap_text(insight_text, body_font, 920, draw)
+    
+    framed_insight = f"“ {insight_text} ”"
+    wrapped_lines = wrap_text(framed_insight, body_font, 920, draw)
     text_y = box_y1 + 122
     for wline in wrapped_lines[:3]:
         draw.text((img_w // 2, text_y), wline, font=body_font, fill=theme["text_color"], anchor="mm")
@@ -427,9 +428,17 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
     start_row_y = 470
     win_by_rank = {w.get("rank"): w for w in (winners or [])}
     
-    row_font_rank = get_ethiopic_font(24)
+    row_font_rank = get_ethiopic_font(23)
     row_font_name = get_ethiopic_font(25)
     row_font_book = get_ethiopic_font(23)
+    
+    rank_pills = {
+        1: ((217, 119, 6), "#ffffff", "🥇 1ኛ"),   # Gold
+        2: ((100, 116, 139), "#ffffff", "🥈 2ኛ"), # Silver
+        3: ((180, 83, 9), "#ffffff", "🥉 3ኛ"),   # Bronze
+        4: (theme["inner_border"], theme["header_color"], "🏅 4ኛ"),
+        5: (theme["inner_border"], theme["header_color"], "🏅 5ኛ"),
+    }
     
     for r in range(1, 6):
         ry = start_row_y + (r - 1) * row_h
@@ -437,9 +446,9 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
         draw.rectangle([(70, ry), (img_w - 70, ry + 62)], fill=r_bg, outline=theme["inner_border"], width=1)
         
         # Rank pill on left
-        pill_color = theme["accent_line"] if r == 1 else theme["inner_border"]
-        draw.rectangle([(80, ry + 12), (180, ry + 50)], fill=pill_color, outline=theme["border"] if r == 1 else None)
-        draw.text((130, ry + 31), f"{r}ኛ", font=row_font_rank, fill="#ffffff" if r == 1 else theme["header_color"], anchor="mm")
+        p_bg, p_fg, p_label = rank_pills[r]
+        draw.rectangle([(80, ry + 12), (185, ry + 50)], fill=p_bg, outline=theme["border"] if r == 1 else None)
+        draw.text((132, ry + 31), p_label, font=row_font_rank, fill=p_fg, anchor="mm")
         
         w_entry = win_by_rank.get(r)
         if w_entry:

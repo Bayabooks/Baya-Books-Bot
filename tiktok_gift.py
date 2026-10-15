@@ -632,11 +632,12 @@ def restart_game(cycle_date=None, reset_lifetime=True):
     database.set_setting("daily_gift_secret_word_date", curr_cycle)
     return new_word, curr_cycle
 
-def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_name="የአዕምሮ ምግቦች", custom_note=None):
-    """Formats a clean, engaging caption for TikTok Photo Mode and Telegram post."""
+def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_name="የአዕምሮ ምግቦች", custom_note=None, style_idx=0):
+    """Formats a deeply creative, engaging caption for TikTok Photo Mode and Telegram post."""
     clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
+    clean_channel = tiktok_name.replace("@", "").strip() or "yeaemromgboch"
     
-    # Prepare full, insightful psychological content about the word
+    # 1. Prepare full, insightful psychological content about the word
     insight_content = (word_body or "").strip()
     if not insight_content:
         insight_content = (
@@ -645,6 +646,7 @@ def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_n
             f"ይህንን ቃል የዕለት ተዕለት መመሪያዎ በማድረግ ውስጣዊ ሰላምዎን እና ስኬትዎን ያሳድጉ።"
         )
     
+    # 2. Format winners with podium medals
     w_lines = []
     medals = {1: "🥇 1ኛ", 2: "🥈 2ኛ", 3: "🥉 3ኛ", 4: "🏅 4ኛ", 5: "🏅 5ኛ"}
     win_by_rank = {w.get("rank"): w for w in (winners or [])}
@@ -656,24 +658,49 @@ def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_n
             btitle = w.get('book_title') or w.get('book_chosen') or "የነፃ መጽሐፍ"
             w_lines.append(f"{m}፦ {uname} («{btitle}»)")
         else:
-            w_lines.append(f"{m}፦ ክፍት ቦታ (Open Spot)")
+            w_lines.append(f"{m}፦ ክፍት ቦታ (Open Spot) — አሁኑኑ ተሳተፉ!")
             
     winners_block = "\n".join(w_lines)
     
+    # 3. Creative hooks and engagement challenges for TikTok virality
+    creative_hooks = [
+        (
+            f"✨ <b>የአዕምሮ ምግብ | የዕለቱ ሚስጥራዊ ቃል እና አሸናፊዎች</b> 🏆\n"
+            f"<i>«አዕምሮህን በየቀኑ በምትመግበው አዎንታዊ ቃል ልክ የህይወትህ እጣ-ፈንታ ይለወጣል...»</i>",
+            f"💬 <b>የዛሬው ፈተና (Challenge)፦</b>\n"
+            f"እስኪ ራስዎን በክብር ለማስታወስ በኮሜንት ላይ <b>«{clean_w}»</b> ብለው ጽፈው ለራስዎ ቃል ግቡ! አዕምሮዎ በደጋገሙት እና ባመኑበት ልክ እውነት ያደርገዋል! 👇"
+        ),
+        (
+            f"🧠 <b>የስነ-ልቦና ሚስጥር፦ በዛሬው ቪዲዮችን ላይ የተላለፈው ቃል ምን ያስተምረናል?</b> 🌟\n"
+            f"<i>«በራስህ ላይ ያለህን እምነት የሚቀይረው ውጫዊ ሁኔታ ሳይሆን በውስጥህ የምታስተጋባው ድምፅ ነው።»</i>",
+            f"💬 <b>የውይይት ጥያቄ፦</b>\n"
+            f"እርስዎስ <b>«{clean_w}»</b> የሚለው ቃል በህይወትዎ ውስጥ ምን ትርጉም አለው? አስተያየትዎን በኮሜንት ያጋሩን! 👇"
+        ),
+        (
+            f"🔥 <b>የዕለቱ የለውጥ ኃይል እና የ5ቱ ፈጣን አሸናፊዎች ሽልማት!</b> 🎁\n"
+            f"<i>«ዛሬ ለራስህ የምትነግረው አዎንታዊ እውነት የነገው ታላቅ ድልህ መጀመሪያ ነው።»</i>",
+            f"💬 <b>ኮሜንት ያድርጉ፦</b>\n"
+            f"ዛሬ በህይወትዎ ውስጥ <b>«{clean_w}»</b> መሆንዎን የሚያረጋግጥልዎትን አንድ ምክንያት በኮሜንት ላይ ያስቀምጡ! 👇"
+        )
+    ]
+    
+    hook_header, comment_challenge = creative_hooks[style_idx % len(creative_hooks)]
+    
     caption = (
-        f"🏆 የዛሬው ሚስጥራዊ ቃል እና የ5ቱ ፈጣን አሸናፊዎች!\n"
+        f"{hook_header}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"🎯 የዛሬው ሚስጥራዊ ቃል፦ «{clean_w}» ነበር።\n\n"
-        f"🧠 ስለ ቃሉ ጥልቅ የስነ-ልቦና ትምህርት (የአዕምሮ ምግብ)፦\n"
+        f"🎯 <b>የዛሬው የቲክቶክ ሚስጥራዊ ቃል፦</b> «{clean_w}» ነበር።\n\n"
+        f"📖 <b>ስለ ቃሉ ጥልቅ የስነ-ልቦና ትንታኔ (የአዕምሮ ምግብ)፦</b>\n"
         f"{insight_content}\n\n"
+        f"{comment_challenge}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"🎉 እንኳን ደስ አላችሁ! ዛሬ ቀድመው በመመለስ ነፃ መጽሐፍ ያሸነፉ 5 ፈጣኖች፦\n\n"
+        f"🎉 <b>እንኳን ደስ አላችሁ! ዛሬ ቀድመው በመመለስ ነፃ መጽሐፍ ያሸነፉ 5 ፈጣኖች፦</b>\n\n"
         f"{winners_block}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"⏰ የነገው አዲስ ዙር ነገ ጠዋት 4:00 ሰዓት (10:00 AM) ላይ ይጀመራል! የነገውን ቃል እንዳያመልጥዎ ቻናላችንን @yeaemromgboch ፎሎው ያድርጉ!\n\n"
+        f"⏰ <b>የነገው አዲስ ዙር፦</b> ነገ ጠዋት 4:00 ሰዓት (10:00 AM) ላይ ይጀመራል! የነገውን ቃል እንዳያመልጥዎ ቻናላችንን <b>@{clean_channel}</b> አሁኑኑ Follow ያድርጉ!\n\n"
         f"🎁 በውድድሩ ለመሳተፍ እና የነፃ መጽሐፍ አሸናፊ ለመሆን በቴሌግራም ቦት ያግኙን (ሊንኩ ባዮ ላይ አለ)፦\n"
-        f"👉 @bayabooks_bot\n\n"
-        f"#yeaemromgboch #bayabooks #ethiopia #habesha #giveaway #ሳይኮሎጂ #የአዕምሮምግቦች"
+        f"👉 <b>@bayabooks_bot</b>\n\n"
+        f"#yeaemromgboch #bayabooks #የአዕምሮምግቦች #ስነልቦና #ሳይኮሎጂ #ethiopia #habesha #giveaway #fyp"
     )
     if custom_note:
         caption = f"{custom_note}\n\n" + caption

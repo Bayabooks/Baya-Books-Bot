@@ -2603,13 +2603,71 @@ def handle_callback(call):
     if data == "adm_gift_gen_post":
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "🎨 ፖስቱ እየተዘጋጀ ነው...")
-        send_winners_post_preview(chat_id, theme_index=1)
+        send_winners_post_preview(chat_id, theme_index=1, style_index=0)
         return
 
     if data.startswith("adm_gift_regen_"):
         if not is_admin(call.from_user): return
-        t_idx = int(data.split("_")[-1])
+        parts = data.split("_")
+        t_idx = int(parts[3])
+        s_idx = int(parts[4]) if len(parts) > 4 else 0
         bot.answer_callback_query(call.id, "🎨 ቀለሙ እየተቀየረ ነው...")
+        safe_delete_message(chat_id, call.message.message_id)
+        send_winners_post_preview(chat_id, theme_index=t_idx, style_index=s_idx)
+        return
+
+    if data.startswith("adm_gift_style_"):
+        if not is_admin(call.from_user): return
+        parts = data.split("_")
+        s_idx = int(parts[3])
+        t_idx = int(parts[4]) if len(parts) > 4 else 1
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        database.set_setting(f"daily_gift_custom_caption_{cycle_date}", None)
+        bot.answer_callback_query(call.id, f"🎲 የፈጠራ ስልት #{s_idx + 1} ተመርጧል...")
+        safe_delete_message(chat_id, call.message.message_id)
+        send_winners_post_preview(chat_id, theme_index=t_idx, style_index=s_idx)
+        return
+
+    if data.startswith("adm_gift_ai_rewrite"):
+        if not is_admin(call.from_user): return
+        t_idx = 1
+        try:
+            parts = data.split("_")
+            if len(parts) > 4 and parts[4].isdigit():
+                t_idx = int(parts[4])
+        except Exception:
+            pass
+        bot.answer_callback_query(call.id, "✨ AI አዲስ ማራኪ የቲክቶክ ፅሁፍ እያዘጋጀ ነው...")
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        secret_word = tiktok_gift.get_today_secret_word()
+        word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
+        tiktok_name = tiktok_gift.get_tiktok_channel_name()
+        
+        raw_winners = database.get_daily_gift_winners(cycle_date)
+        winners = []
+        for rw in raw_winners:
+            w_dict = dict(rw)
+            w_dict['book_title'] = BOOK_TITLES.get(w_dict.get('book_chosen'), w_dict.get('book_chosen'))
+            winners.append(w_dict)
+            
+        w_lines = []
+        medals = {1: "🥇 1ኛ", 2: "🥈 2ኛ", 3: "🥉 3ኛ", 4: "🏅 4ኛ", 5: "🏅 5ኛ"}
+        win_by_rank = {w.get("rank"): w for w in (winners or [])}
+        for r in range(1, 6):
+            w = win_by_rank.get(r)
+            m = medals[r]
+            if w:
+                uname = f"@{w.get('username')}" if w.get('username') else (w.get('first_name') or f"User {w.get('user_id')}")
+                btitle = w.get('book_title') or w.get('book_chosen') or "የነፃ መጽሐፍ"
+                w_lines.append(f"{m}፦ {uname} («{btitle}»)")
+            else:
+                w_lines.append(f"{m}፦ ክፍት ቦታ (Open Spot)")
+        winners_block = "\n".join(w_lines)
+        
+        ai_caption = ai_engine.generate_creative_giveaway_caption(secret_word, word_body, winners_block, tiktok_name)
+        if ai_caption:
+            database.set_setting(f"daily_gift_custom_caption_{cycle_date}", ai_caption)
+            
         safe_delete_message(chat_id, call.message.message_id)
         send_winners_post_preview(chat_id, theme_index=t_idx)
         return
@@ -3292,7 +3350,7 @@ def handle_callback(call):
         bot.send_message(chat_id, "💳 <b>ክሬዲት ጨምር</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
         return
 
-def send_winners_post_preview(chat_id, theme_index=1):
+def send_winners_post_preview(chat_id, theme_index=1, style_index=0):
     cycle_date = tiktok_gift.get_game_cycle_date()
     secret_word = tiktok_gift.get_today_secret_word()
     word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
@@ -3317,7 +3375,8 @@ def send_winners_post_preview(chat_id, theme_index=1):
             word_title=word_title,
             word_body=word_body,
             winners=winners,
-            tiktok_name=tiktok_name
+            tiktok_name=tiktok_name,
+            style_idx=style_index
         )
         
     # Generate 1:1 Card
@@ -3334,11 +3393,16 @@ def send_winners_post_preview(chat_id, theme_index=1):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
         InlineKeyboardButton("📢 አጽድቅና አሰራጭ (Approve & Broadcast)", callback_data="adm_gift_approve_prompt"),
-        InlineKeyboardButton("✏️ ፅሁፉን አሻሽል (Amend Caption)", callback_data="adm_gift_amend_caption")
+        InlineKeyboardButton("✨ በ AI አዲስ ፈጠራ አፍልቅ (AI Rewrite)", callback_data=f"adm_gift_ai_rewrite_{theme_index}")
     )
+    next_style = (style_index + 1) % 3
     next_theme = (theme_index + 1) % len(quote_card.THEMES)
     markup.add(
-        InlineKeyboardButton("🎨 ቀለሙን ቀይር (Change Theme)", callback_data=f"adm_gift_regen_{next_theme}"),
+        InlineKeyboardButton("🎲 የፈጠራ ስልት ቀይር (Change Hook)", callback_data=f"adm_gift_style_{next_style}_{theme_index}"),
+        InlineKeyboardButton("🎨 ቀለሙን ቀይር (Change Theme)", callback_data=f"adm_gift_regen_{next_theme}_{style_index}")
+    )
+    markup.add(
+        InlineKeyboardButton("✏️ ፅሁፉን አሻሽል (Amend Caption)", callback_data="adm_gift_amend_caption"),
         InlineKeyboardButton("🔙 ወደ ስጦታ ማኔጀር (Back)", callback_data="adm_gift_menu")
     )
     

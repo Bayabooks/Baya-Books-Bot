@@ -627,3 +627,39 @@ def verify_receipt(image_bytes, expected_amount, telebirr_name=None, telebirr_ph
     except Exception as e:
         logging.error(f"Receipt verification error: {e}")
         return {"auto_approved": False, "error": str(e), "reason": f"Verification error: {str(e)}"}
+
+
+def generate_creative_giveaway_caption(secret_word, word_insight, winners_block, tiktok_name="የአዕምሮ ምግቦች"):
+    """
+    Uses Gemini AI to generate a creative, viral, captivating Amharic TikTok post caption
+    for the daily secret word giveaway announcement.
+    """
+    clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
+    prompt = (
+        f"You are a master Ethiopian TikTok content creator, psychologist, and viral copywriter for 'የአዕምሮ ምግቦች' and 'Baya Books'.\n\n"
+        f"Context:\n"
+        f"- Daily Secret Positive Word: «{clean_w}»\n"
+        f"- Core Psychological Insight: {word_insight}\n"
+        f"- Top 5 Winners List:\n{winners_block}\n\n"
+        f"Write an extraordinarily creative, inspiring, and engaging Amharic TikTok/Telegram caption.\n"
+        f"Structure required:\n"
+        f"1. A powerful, curiosity-inducing hook headline (e.g. ✨ የአዕምሮ ምግብ | የዕለቱ ሚስጥራዊ ቃል እና አሸናፊዎች 🏆).\n"
+        f"2. Reveal today's secret word with excitement: 🎯 የዛሬው ሚስጥራዊ ቃል፦ «{clean_w}» ነበር።\n"
+        f"3. 🧠 ስለ ቃሉ ጥልቅ የስነ-ልቦና ትምህርት (የአዕምሮ ምግብ): Write 2-3 deep, wise, emotionally resonant sentences explaining why this word transforms human psychology, self-worth, and inner peace. DO NOT just say 'አዎ አንተ ... ነህ'. Give real wisdom that touches the heart.\n"
+        f"4. 💬 Interactive Challenge: An engaging call-to-action asking viewers to comment «{clean_w}» or answer an introspective question (this drives TikTok algorithm comments).\n"
+        f"5. Celebrate the 5 winners warmly using the provided winners list.\n"
+        f"6. Announcement: Next round starts tomorrow morning at 10:00 AM (ጠዋት 4:00)! Follow @{tiktok_name.replace('@','')} so you don't miss tomorrow's word.\n"
+        f"7. Call-to-action to play in Telegram bot: @bayabooks_bot (Link in Bio).\n"
+        f"8. 5-7 popular Ethiopian hashtags: #yeaemromgboch #bayabooks #የአዕምሮምግቦች #ስነልቦና #ሳይኮሎጂ #ethiopia #habesha #fyp\n\n"
+        f"Output ONLY the final Amharic text ready to copy. No markdown code blocks, no English explanations."
+    )
+    try:
+        model = genai.GenerativeModel(MODEL_TEXT)
+        response = model.generate_content(prompt, request_options={"timeout": 20})
+        text = response.text.strip()
+        if text and len(text) > 120:
+            return text
+    except Exception as e:
+        logging.error(f"Error generating creative giveaway caption: {e}")
+    return None
+

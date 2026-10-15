@@ -29,6 +29,7 @@ import receipt_verifier
 import lang
 from lang import S
 import tiktok_gift
+import quote_card
 
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
@@ -526,7 +527,7 @@ def send_welcome(chat_id, first_name, lang=None, uid=None):
 
 def get_bottom_markup(lang='am', uid=None):
     """Build the localized bottom keyboard."""
-    m = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
+    m = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True, one_time_keyboard=False)
     # Big prominent row on top: Today's Free Book Gift (TikTok Giveaway)
     m.add(
         KeyboardButton(S(lang, 'menu_daily_gift'))
@@ -1431,8 +1432,8 @@ def run_refresh_all_menus(chat_id_to_report):
     total = len(users)
     bot.send_message(
         chat_id_to_report,
-        f"🔄 <b>Starting Silent Menu Refresh for all {total} users...</b>\n"
-        f"Keyboards will be updated silently without sending announcement messages.",
+        f"🔄 <b>Starting Menu Refresh for all {total} users...</b>\n"
+        f"Keyboards will be refreshed and kept permanently visible on all devices.",
         parse_mode="HTML"
     )
 
@@ -1440,20 +1441,23 @@ def run_refresh_all_menus(chat_id_to_report):
         import time
         from telebot.apihelper import ApiTelegramException
         success, failed = 0, 0
+        notice_texts = {
+            'am': "✨ <b>የቦቱ አማራጮች ተዘምነዋል!</b> ከታች ባለው ሜኑ አገልግሎቱን መቀጠል ይችላሉ።",
+            'en': "✨ <b>Bot menu updated!</b> You can continue using the options below.",
+            'ti': "✨ <b>ናይ ቦትና ሜኑ ተሓዲሱ!</b> ብታሕቲ ዘለዉ መማረጺታት ክትቅጽሉ ትኽእሉ ኢኹም።",
+            'om': "✨ <b>Meeun botiin haaromfameera!</b> Filannoowwan armaan gadii fayyadamuun itti fufaa."
+        }
         for u in users:
             try:
                 u_lang = database.get_bot_language(u) or 'am'
-                # Silently deliver updated persistent reply keyboard and delete temporary message immediately
-                sent = bot.send_message(
+                msg_txt = notice_texts.get(u_lang, notice_texts['am'])
+                bot.send_message(
                     u,
-                    "🔄",
+                    msg_txt,
+                    parse_mode="HTML",
                     reply_markup=get_bottom_markup(u_lang, u),
                     disable_notification=True
                 )
-                try:
-                    bot.delete_message(u, sent.message_id)
-                except Exception:
-                    pass
                 success += 1
                 database.mark_user_blocked(u, 0)
             except ApiTelegramException as ate:
@@ -1461,16 +1465,15 @@ def run_refresh_all_menus(chat_id_to_report):
                     retry_after = getattr(ate, 'result_json', {}).get('parameters', {}).get('retry_after', 3)
                     time.sleep(retry_after)
                     try:
-                        sent = bot.send_message(
+                        u_lang = database.get_bot_language(u) or 'am'
+                        msg_txt = notice_texts.get(u_lang, notice_texts['am'])
+                        bot.send_message(
                             u,
-                            "🔄",
+                            msg_txt,
+                            parse_mode="HTML",
                             reply_markup=get_bottom_markup(u_lang, u),
                             disable_notification=True
                         )
-                        try:
-                            bot.delete_message(u, sent.message_id)
-                        except Exception:
-                            pass
                         success += 1
                         database.mark_user_blocked(u, 0)
                     except Exception:
@@ -1486,10 +1489,9 @@ def run_refresh_all_menus(chat_id_to_report):
         try:
             bot.send_message(
                 chat_id_to_report,
-                f"✅ <b>All Keyboards Refreshed Silently!</b>\n\n"
-                f"✔️ <b>{success}</b> users refreshed\n"
-                f"❌ <b>{failed}</b> users skipped (blocked/inactive)\n\n"
-                f"<i>No messages or notifications were sent to users.</i>",
+                f"✅ <b>All Keyboards Refreshed!</b>\n\n"
+                f"✔️ <b>{success}</b> users updated (bottom menu is active & visible)\n"
+                f"❌ <b>{failed}</b> users skipped (blocked/inactive)",
                 parse_mode="HTML"
             )
         except Exception:
@@ -2443,6 +2445,71 @@ def handle_callback(call):
         bot.send_message(chat_id, celebration_text, parse_mode="HTML", reply_markup=markup)
         return
 
+def send_winners_post_preview(chat_id, theme_index=1):
+    cycle_date = tiktok_gift.get_game_cycle_date()
+    secret_word = tiktok_gift.get_today_secret_word()
+    skey = tiktok_gift.find_key_by_word(secret_word)
+    witem = tiktok_gift.get_word_by_key(skey) if skey else None
+    
+    word_title = witem["title"] if witem else f"«{secret_word}»"
+    word_body = witem["body"] if witem else ""
+    tiktok_name = tiktok_gift.get_tiktok_channel_name()
+    
+    # Get today's winners
+    raw_winners = database.get_daily_gift_winners(cycle_date)
+    winners = []
+    for rw in raw_winners:
+        w_dict = dict(rw)
+        w_dict['book_title'] = BOOK_TITLES.get(w_dict.get('book_chosen'), w_dict.get('book_chosen'))
+        winners.append(w_dict)
+        
+    # Check for custom amended caption
+    custom_caption = database.get_setting(f"daily_gift_custom_caption_{cycle_date}")
+    
+    if custom_caption:
+        caption_text = custom_caption
+    else:
+        caption_text = tiktok_gift.format_winners_caption(
+            secret_word=secret_word,
+            word_title=word_title,
+            word_body=word_body,
+            winners=winners,
+            tiktok_name=tiktok_name
+        )
+        
+    # Generate 1:1 Card
+    card_bytes = quote_card.generate_winners_card_1_1(
+        secret_word=secret_word,
+        word_title=word_title,
+        word_body=word_body,
+        winners=winners,
+        cycle_date=cycle_date,
+        tiktok_name=tiktok_name,
+        theme_index=theme_index
+    )
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("📢 አጽድቅና አሰራጭ (Approve & Broadcast)", callback_data="adm_gift_approve_prompt"),
+        InlineKeyboardButton("✏️ ፅሁፉን አሻሽል (Amend Caption)", callback_data="adm_gift_amend_caption")
+    )
+    next_theme = (theme_index + 1) % len(quote_card.THEMES)
+    markup.add(
+        InlineKeyboardButton("🎨 ቀለሙን ቀይር (Change Theme)", callback_data=f"adm_gift_regen_{next_theme}"),
+        InlineKeyboardButton("🔙 ወደ ስጦታ ማኔጀር (Back)", callback_data="adm_gift_menu")
+    )
+    
+    escaped_cap = html.escape(caption_text)
+    msg_caption = (
+        f"🏆 <b>የዛሬ አሸናፊዎች የቲክቶክ ፖስት (1:1 Square Card)</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📋 <b>TikTok Caption (Tap to Copy):</b>\n"
+        f"<code>{escaped_cap}</code>\n\n"
+        f"💡 <i>ፎቶውን ከላይ Save አድርገው ፅሁፉን ኮፒ በማድረግ በቀጥታ ቲክቶክ ላይ በ Photo Mode መፖሰት ይችላሉ!</i>"
+    )
+    
+    bot.send_photo(chat_id, card_bytes, caption=msg_caption, parse_mode="HTML", reply_markup=markup)
+
     # ── Admin: TikTok Giveaway Management ──────
     if data == "adm_gift_menu":
         if not is_admin(call.from_user): return
@@ -2478,6 +2545,7 @@ def handle_callback(call):
             InlineKeyboardButton("🎯 የዕለቱን ቃል ቀይር (Set Secret Word)", callback_data="adm_gift_set_word"),
             InlineKeyboardButton("🔄 አዲስ ቃል በዘፈቀደ ምረጥ (Randomize Word)", callback_data="adm_gift_rand_word"),
             InlineKeyboardButton("📱 የቲክቶክ ሊንክ ቀይር (Edit TikTok URL)", callback_data="adm_gift_set_url"),
+            InlineKeyboardButton("🏆 የዛሬ አሸናፊዎች ፖስት አዘጋጅ (1:1 Card)", callback_data="adm_gift_gen_post"),
             InlineKeyboardButton("♻️ ዛሬን እንደ አዲስ ጀምር (Restart Game)", callback_data="adm_gift_restart_confirm"),
             InlineKeyboardButton("🔙 Back to Admin", callback_data="adm_back")
         )
@@ -2580,6 +2648,117 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "✅ የእርስዎ ሙከራ ተሰርዟል! አሁን መጫወት ይችላሉ።", show_alert=True)
         safe_delete_message(chat_id, call.message.message_id)
         show_daily_gift_game(chat_id, uid)
+        return
+
+    if data == "adm_gift_gen_post":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "🎨 ፖስቱ እየተዘጋጀ ነው...")
+        send_winners_post_preview(chat_id, theme_index=1)
+        return
+
+    if data.startswith("adm_gift_regen_"):
+        if not is_admin(call.from_user): return
+        t_idx = int(data.split("_")[-1])
+        bot.answer_callback_query(call.id, "🎨 ቀለሙ እየተቀየረ ነው...")
+        safe_delete_message(chat_id, call.message.message_id)
+        send_winners_post_preview(chat_id, theme_index=t_idx)
+        return
+
+    if data == "adm_gift_amend_caption":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_GIFT_AMEND_TEXT")
+        bot.send_message(
+            chat_id,
+            "✏️ <b>የፖስቱን ፅሁፍ (Caption) ማስተካከያ</b>\n\n"
+            "እባክዎ አዲሱን የተስተካከለ ሙሉ ፅሁፍ ወይም ማሻሻያ በቻቱ ላይ ይፃፉልኝ (/cancel ለመሰረዝ)፦",
+            parse_mode="HTML"
+        )
+        return
+
+    if data == "adm_gift_approve_prompt":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("📢 ወደ ቴሌግራም ቻናል ብቻ ላክ (Channel Only)", callback_data="adm_gift_bc_channel"),
+            InlineKeyboardButton("👥 ለሁሉም የቦቱ ተጠቃሚዎች ላክ (All Bot Users)", callback_data="adm_gift_bc_users"),
+            InlineKeyboardButton("🌐 ለሁለቱም ላክ (Channel + Users)", callback_data="adm_gift_bc_both"),
+            InlineKeyboardButton("✅ ለቲክቶክ ብቻ ይበቃል (Done / Just TikTok)", callback_data="adm_gift_menu")
+        )
+        bot.send_message(
+            chat_id,
+            "📢 <b>ፖስቱ ፀድቋል! ወዴት ማሰራጨት ይፈልጋሉ?</b>\n\n"
+            "ይህንን 1:1 ፎቶ እና የአሸናፊዎች መግለጫ ወዴት ማሰራጨት (Broadcast) ይፈልጋሉ?",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data in ["adm_gift_bc_channel", "adm_gift_bc_users", "adm_gift_bc_both"]:
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "🚀 ማሰራጨት ተጀምሯል...", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        secret_word = tiktok_gift.get_today_secret_word()
+        skey = tiktok_gift.find_key_by_word(secret_word)
+        witem = tiktok_gift.get_word_by_key(skey) if skey else None
+        word_title = witem["title"] if witem else f"«{secret_word}»"
+        word_body = witem["body"] if witem else ""
+        tiktok_name = tiktok_gift.get_tiktok_channel_name()
+        
+        raw_winners = database.get_daily_gift_winners(cycle_date)
+        winners = []
+        for rw in raw_winners:
+            w_dict = dict(rw)
+            w_dict['book_title'] = BOOK_TITLES.get(w_dict.get('book_chosen'), w_dict.get('book_chosen'))
+            winners.append(w_dict)
+            
+        custom_caption = database.get_setting(f"daily_gift_custom_caption_{cycle_date}")
+        caption_text = custom_caption or tiktok_gift.format_winners_caption(
+            secret_word=secret_word,
+            word_title=word_title,
+            word_body=word_body,
+            winners=winners,
+            tiktok_name=tiktok_name
+        )
+        
+        card_bytes = quote_card.generate_winners_card_1_1(
+            secret_word=secret_word,
+            word_title=word_title,
+            word_body=word_body,
+            winners=winners,
+            cycle_date=cycle_date,
+            tiktok_name=tiktok_name
+        )
+        
+        # 1. Send to Channel if requested
+        if data in ["adm_gift_bc_channel", "adm_gift_bc_both"]:
+            try:
+                bot.send_photo(f"@{config.CHANNEL_USERNAME}", card_bytes, caption=caption_text)
+            except Exception as e:
+                logging.error(f"Error sending winners post to channel: {e}")
+                
+        # 2. Send to Bot Users if requested
+        if data in ["adm_gift_bc_users", "adm_gift_bc_both"]:
+            def bc_worker():
+                import time
+                u_ids = database.get_all_user_ids()
+                for uid_target in u_ids:
+                    try:
+                        bot.send_photo(uid_target, card_bytes, caption=caption_text, disable_notification=True)
+                    except Exception:
+                        pass
+                    time.sleep(0.08)
+            threading.Thread(target=bc_worker, daemon=True).start()
+            
+        bot.send_message(
+            chat_id,
+            "✅ <b>የአሸናፊዎች ፖስት በስኬት ተሰራጭቷል!</b>\n\n"
+            "ፎቶውንና ፅሁፉን ቲክቶክ ላይም በነፃነት መፖሰት ይችላሉ።",
+            parse_mode="HTML"
+        )
         return
 
     if data == "adm_refresh_menus":
@@ -3688,6 +3867,17 @@ def handle_messages(message):
         database.set_setting("daily_gift_tiktok_url", new_url)
         clear_state(uid)
         bot.send_message(chat_id, f"✅ <b>TikTok URL updated to:</b> <code>{new_url}</code>", parse_mode="HTML")
+        return
+
+    if state == "ADMIN_GIFT_AMEND_TEXT" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
+        new_caption = message.text.strip()
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        database.set_setting(f"daily_gift_custom_caption_{cycle_date}", new_caption)
+        clear_state(uid)
+        bot.send_message(chat_id, "✅ <b>ፅሁፉ ተሻሽሏል! የተሻሻለው ፖስት፦</b>", parse_mode="HTML")
+        send_winners_post_preview(chat_id)
         return
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):

@@ -333,3 +333,143 @@ def generate_tiktok_card(quote_text, hook_title=None, header_title="የዕለቱ
     buf.seek(0)
     return buf.getvalue()
 
+def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle_date=None, tiktok_name="የአዕምሮ ምግቦች", theme_index=None, format="JPEG"):
+    """
+    Renders an elegant 1080x1080 (1:1 Square) card celebrating today's giveaway:
+    - Today's secret word
+    - About the word (psychological insight)
+    - Today's 5 winners (or open spots)
+    - Partner branding (የአዕምሮ ምግቦች × Baya Books)
+    """
+    theme = THEMES[theme_index % len(THEMES)] if theme_index is not None else random.choice(THEMES)
+    img_w, img_h = 1080, 1080
+    img = Image.new("RGB", (img_w, img_h), color=theme["top_color"])
+    draw = ImageDraw.Draw(img)
+
+    # 1. Gradient Background
+    t_r, t_g, t_b = theme["top_color"]
+    b_r, b_g, b_b = theme["bottom_color"]
+    for y in range(img_h):
+        ratio = y / img_h
+        r = int(t_r * (1 - ratio) + b_r * ratio)
+        g = int(t_g * (1 - ratio) + b_g * ratio)
+        b = int(t_b * (1 - ratio) + b_b * ratio)
+        draw.line([(0, y), (img_w, y)], fill=(r, g, b))
+
+    # 2. Modern Double Border
+    margin = 36
+    draw.rectangle([(margin, margin), (img_w - margin, img_h - margin)], outline=theme["border"], width=2)
+    draw.rectangle([(margin + 6, margin + 6), (img_w - margin - 6, img_h - margin - 6)], outline=theme["inner_border"], width=1)
+
+    # 3. Logo integration (Top Left)
+    logo_path = os.path.join(os.path.dirname(__file__), "static", "covers", "baya_logo.jpg")
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo_size = 72
+            logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
+            mask = Image.new("L", (logo_size, logo_size), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.ellipse((0, 0, logo_size, logo_size), fill=255)
+            img.paste(logo, (58, 52), mask)
+            draw.ellipse([55, 49, 58 + logo_size + 3, 52 + logo_size + 3], outline=theme["border"], width=2)
+        except Exception:
+            pass
+
+    # 4. Header Banner
+    header_font = get_ethiopic_font(28)
+    sub_header_font = get_ethiopic_font(22)
+    
+    draw.text((img_w // 2, 68), f"{tiktok_name}  ×  BAYA BOOKS", font=header_font, fill=theme["header_color"], anchor="mm")
+    draw.text((img_w // 2, 104), "የዕለቱ የነፃ መጽሐፍ ስጦታ አሸናፊዎች", font=sub_header_font, fill=theme["footer_sub"], anchor="mm")
+    draw.line([(140, 132), (img_w - 140, 132)], fill=theme["accent_line"], width=2)
+
+    # 5. Secret Word Card Box (y = 150 .. 395)
+    box_x1, box_y1 = 60, 150
+    box_x2, box_y2 = img_w - 60, 395
+    card_bg = (15, 23, 42)
+    draw.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=card_bg, outline=theme["border"], width=1)
+    
+    # Badge: የዕለቱ ሚስጥራዊ ቃል
+    badge_font = get_ethiopic_font(20)
+    badge_text = "የዕለቱ ሚስጥራዊ ቃል (Secret Word)"
+    draw.rectangle([(img_w // 2 - 170, box_y1 - 15), (img_w // 2 + 170, box_y1 + 17)], fill=theme["accent_line"])
+    draw.text((img_w // 2, box_y1 + 1), badge_text, font=badge_font, fill="#ffffff", anchor="mm")
+
+    # Big Word
+    word_font = get_ethiopic_font(52)
+    clean_word = f"«{secret_word}»"
+    draw.text((img_w // 2, box_y1 + 68), clean_word, font=word_font, fill=theme["header_color"], anchor="mm")
+
+    # About the word (Short insight)
+    body_font = get_ethiopic_font(22)
+    short_insight = word_title.replace("✨", "").strip() if word_title else ""
+    if word_body:
+        first_sentence = word_body.split("።")[0] + "።"
+        if len(first_sentence) < 130:
+            short_insight += " " + first_sentence
+        else:
+            short_insight += " " + first_sentence[:125] + "..."
+            
+    wrapped_lines = wrap_text(short_insight, body_font, 920, draw)
+    text_y = box_y1 + 124
+    for wline in wrapped_lines[:3]:
+        draw.text((img_w // 2, text_y), wline, font=body_font, fill=theme["text_color"], anchor="mm")
+        text_y += 34
+
+    # 6. Winners Section Header (y = 415)
+    win_header_font = get_ethiopic_font(28)
+    draw.text((img_w // 2, 428), "—  የዛሬ 5ቱ ፈጣን አሸናፊዎች (Top 5 Winners)  —", font=win_header_font, fill=theme["header_color"], anchor="mm")
+    draw.line([(img_w // 2 - 200, 452), (img_w // 2 + 200, 452)], fill=theme["accent_line"], width=2)
+
+    # 7. Winners List Rows (y = 470 .. 885)
+    row_h = 75
+    start_row_y = 470
+    win_by_rank = {w.get("rank"): w for w in (winners or [])}
+    
+    row_font_rank = get_ethiopic_font(24)
+    row_font_name = get_ethiopic_font(25)
+    row_font_book = get_ethiopic_font(23)
+    
+    for r in range(1, 6):
+        ry = start_row_y + (r - 1) * row_h
+        r_bg = (20, 27, 48) if r % 2 == 1 else (16, 22, 40)
+        draw.rectangle([(70, ry), (img_w - 70, ry + 62)], fill=r_bg, outline=theme["inner_border"], width=1)
+        
+        # Rank pill on left
+        pill_color = theme["accent_line"] if r == 1 else theme["inner_border"]
+        draw.rectangle([(80, ry + 12), (180, ry + 50)], fill=pill_color, outline=theme["border"] if r == 1 else None)
+        draw.text((130, ry + 31), f"{r}ኛ", font=row_font_rank, fill="#ffffff" if r == 1 else theme["header_color"], anchor="mm")
+        
+        w_entry = win_by_rank.get(r)
+        if w_entry:
+            uname = f"@{w_entry.get('username')}" if w_entry.get('username') else (w_entry.get('first_name') or f"User {w_entry.get('user_id')}")
+            btitle = w_entry.get('book_title') or w_entry.get('book_chosen') or "የነፃ መጽሐፍ"
+            
+            draw.text((205, ry + 31), uname, font=row_font_name, fill="#ffffff", anchor="lm")
+            book_str = f"«{btitle}»"
+            draw.text((img_w - 95, ry + 31), book_str, font=row_font_book, fill=theme["border"], anchor="rm")
+        else:
+            open_msg = "ክፍት ቦታ — አሁኑኑ በቦቱ ተሳትፈው ያሸንፉ!"
+            draw.text((205, ry + 31), open_msg, font=row_font_name, fill="#94a3b8", anchor="lm")
+
+    # 8. Footer (y = 905 .. 1040)
+    draw.line([(100, 915), (img_w - 100, 915)], fill="#334155", width=1)
+    
+    f_sub = get_ethiopic_font(24)
+    f_cta = get_ethiopic_font(26)
+    f_brand = get_ethiopic_font(22)
+    
+    draw.text((img_w // 2, 945), f"የነገውን ሚስጥራዊ ቃል በቲክቶክ @yeaemromgboch ይከታተሉ!", font=f_sub, fill=theme["footer_sub"], anchor="mm")
+    draw.text((img_w // 2, 982), "በየቀኑ በነፃ ለመሸለም፦ ቴሌግራም ላይ @bayabooks_bot (Link in Bio)", font=f_cta, fill=theme["footer_link"], anchor="mm")
+    draw.text((img_w // 2, 1018), "BAYA BOOKS — በኢትዮጵያ የመጀመሪያው የኤአይ የስነ-ልቦና ማማከሪያ", font=f_brand, fill="#64748b", anchor="mm")
+
+    buf = io.BytesIO()
+    if format.upper() == "PNG":
+        img.save(buf, format="PNG", optimize=True)
+    else:
+        img.save(buf, format="JPEG", quality=95, optimize=True)
+    buf.seek(0)
+    return buf.getvalue()
+
+

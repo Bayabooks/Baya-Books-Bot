@@ -602,3 +602,42 @@ def restart_game(cycle_date=None, reset_lifetime=True):
     database.set_setting("daily_gift_secret_word_date", curr_cycle)
     return new_word, curr_cycle
 
+def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_name="የአዕምሮ ምግቦች", custom_note=None):
+    """Formats a clean, engaging caption for TikTok Photo Mode and Telegram post."""
+    clean_title = word_title.replace("✨", "").strip() if word_title else ""
+    first_sentence = word_body.split("።")[0] + "።" if word_body else ""
+    
+    w_lines = []
+    medals = {1: "🥇 1ኛ", 2: "🥈 2ኛ", 3: "🥉 3ኛ", 4: "🏅 4ኛ", 5: "🏅 5ኛ"}
+    win_by_rank = {w.get("rank"): w for w in (winners or [])}
+    for r in range(1, 6):
+        w = win_by_rank.get(r)
+        m = medals[r]
+        if w:
+            uname = f"@{w.get('username')}" if w.get('username') else (w.get('first_name') or f"User {w.get('user_id')}")
+            btitle = w.get('book_title') or w.get('book_chosen') or "የነፃ መጽሐፍ"
+            w_lines.append(f"{m}፦ {uname} («{btitle}»)")
+        else:
+            w_lines.append(f"{m}፦ ክፍት ቦታ (Open Spot)")
+            
+    winners_block = "\n".join(w_lines)
+    
+    caption = (
+        f"🏆 የዛሬው ሚስጥራዊ ቃል እና የ5ቱ ፈጣን አሸናፊዎች!\n\n"
+        f"በዛሬው የቲክቶክ ቪዲዮችን ላይ የተላለፈው ሚስጥራዊ ቃል «{secret_word}» ነበር።\n\n"
+        f"💡 {clean_title}\n"
+        f"{first_sentence}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"🎉 እንኳን ደስ አላችሁ! ዛሬ ቀድመው በመመለስ ነፃ መጽሐፍ ያሸነፉ 5 ፈጣኖች፦\n\n"
+        f"{winners_block}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"⏰ የነገው አዲስ ዙር ነገ ጠዋት 4:00 ሰዓት (10:00 AM) ላይ ይጀመራል! የነገውን ቃል እንዳያመልጥዎ ቻናላችንን @yeaemromgboch ፎሎው ያድርጉ!\n\n"
+        f"🎁 በውድድሩ ለመሳተፍ እና የነፃ መጽሐፍ አሸናፊ ለመሆን በቴሌግራም ቦት ያግኙን (ሊንኩ ባዮ ላይ አለ)፦\n"
+        f"👉 @bayabooks_bot\n\n"
+        f"#yeaemromgboch #bayabooks #ethiopia #habesha #giveaway"
+    )
+    if custom_note:
+        caption = f"{custom_note}\n\n" + caption
+    return caption
+
+

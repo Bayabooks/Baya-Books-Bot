@@ -334,17 +334,33 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
             system_instruction=system_prompt
         )
         
-        # Sanitize history: ensure parts are lists of strings
-        clean_history = []
+        # Sanitize history: ensure alternating roles and clean strings
+        raw_turns = []
         for h in history:
             role = h.get("role", "user")
             parts = h.get("parts", [])
             if isinstance(parts, str):
                 parts = [parts]
-            clean_history.append({"role": role, "parts": [str(p) for p in parts]})
+            text_part = "\n".join(str(p) for p in parts if str(p).strip())
+            if text_part:
+                raw_turns.append({"role": role, "parts": [text_part]})
+                
+        # Append current user message
+        if user_message and str(user_message).strip():
+            raw_turns.append({"role": "user", "parts": [str(user_message).strip()]})
         
-        # Append current user message to history
-        clean_history.append({"role": "user", "parts": [str(user_message)]})
+        # Merge consecutive turns of same role and ensure first turn is user
+        clean_history = []
+        for turn in raw_turns:
+            role = turn["role"]
+            text_content = turn["parts"][0]
+            if clean_history and clean_history[-1]["role"] == role:
+                clean_history[-1]["parts"] = [clean_history[-1]["parts"][0] + "\n\n" + text_content]
+            else:
+                clean_history.append({"role": role, "parts": [text_content]})
+                
+        if clean_history and clean_history[0]["role"] == "model":
+            clean_history.insert(0, {"role": "user", "parts": ["[የዕለቱ የጋራ መልዕክት / Daily Broadcast]"]})
             
         response = model.generate_content(
             contents=clean_history,

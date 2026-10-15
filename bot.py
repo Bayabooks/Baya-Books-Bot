@@ -651,6 +651,7 @@ def cmd_new(message):
 def cmd_reset_advice(message):
     if is_admin(message.from_user):
         database.save_advice_history(message.from_user.id, '[]')
+        database.set_last_mentor_message(message.from_user.id, None)
         bot.reply_to(message, "🔄 <b>Advice Chat History Reset successfully.</b>", parse_mode="HTML")
     else:
         bot.reply_to(message, "❌ Admin only command.")
@@ -2766,8 +2767,8 @@ def handle_callback(call):
                     else:
                         bot.send_message(u, user_caption, parse_mode="HTML")
                         bot.send_message(u, "​", reply_markup=u_markup)
-                        
-                    database.append_bot_message_to_history(u, clean_quote)
+                    broadcast_entry = f"✨ {clean_title}\n\n{clean_quote}"
+                    database.append_bot_message_to_history(u, broadcast_entry, is_broadcast=True)
                     database.mark_user_blocked(u, 0)
                     success += 1
                 except Exception:
@@ -3232,7 +3233,7 @@ def handle_messages(message):
                         bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
                         # Append the broadcast to history
                         if broadcast_text:
-                            database.append_bot_message_to_history(u, broadcast_text)
+                            database.append_bot_message_to_history(u, broadcast_text, is_broadcast=True)
                     except Exception:
                         pass
                     database.mark_user_blocked(u, 0)
@@ -3314,17 +3315,36 @@ def handle_messages(message):
             send_welcome(chat_id, message.from_user.first_name, get_lang(uid))
             return
             
-        history_str = database.get_advice_history(uid)
-        last_ai_msg = None
-        if history_str:
-            try:
-                history = json.loads(history_str)
-                for item in reversed(history):
-                    if item.get("role") == "model":
-                        last_ai_msg = item.get("parts", [""])[0]
-                        break
-            except Exception:
-                pass
+        # 1. First check dedicated last_mentor_message (only written by 1-on-1 advice chat, never by broadcasts)
+        last_ai_msg = database.get_last_mentor_message(uid)
+        
+        # 2. Fallback to scanning advice_history if not yet recorded in the dedicated column
+        if not last_ai_msg:
+            history_str = database.get_advice_history(uid)
+            if history_str:
+                try:
+                    history = json.loads(history_str)
+                    for idx in range(len(history) - 1, -1, -1):
+                        item = history[idx]
+                        if item.get("role") == "model":
+                            if item.get("is_broadcast"):
+                                continue
+                            prev_item = history[idx - 1] if idx > 0 else None
+                            if not prev_item or prev_item.get("role") != "user":
+                                continue
+                            
+                            part_text = item.get("parts", [""])[0]
+                            if database.is_broadcast_or_nudge_text(part_text):
+                                continue
+                                
+                            last_ai_msg = part_text
+                            try:
+                                database.set_last_mentor_message(uid, last_ai_msg)
+                            except Exception:
+                                pass
+                            break
+                except Exception:
+                    pass
                 
         if last_ai_msg:
             try:
@@ -3557,6 +3577,7 @@ def handle_messages(message):
                 history.append({"role": "model", "parts": [ai_response]})
                 try:
                     database.save_advice_history(uid, json.dumps(history, ensure_ascii=False))
+                    database.set_last_mentor_message(uid, ai_response)
                 except Exception as e:
                     logging.error(f"Failed to save advice history: {e}")
                 

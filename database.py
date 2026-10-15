@@ -45,6 +45,7 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN bot_blocked INTEGER DEFAULT 0",
         "ALTER TABLE users ADD COLUMN last_paywall_nudge TEXT",
         "ALTER TABLE users ADD COLUMN last_nudge_at TEXT",
+        "ALTER TABLE users ADD COLUMN last_mentor_message TEXT",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -1585,6 +1586,23 @@ def save_advice_history(user_id, history_json):
     conn.commit()
     conn.close()
 
+def get_last_mentor_message(user_id):
+    """Retrieves the last actual 1-on-1 advice message sent by the AI mentor."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT last_mentor_message FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row['last_mentor_message'] if row and row['last_mentor_message'] else None
+
+def set_last_mentor_message(user_id, text):
+    """Saves the last actual 1-on-1 advice message from the AI mentor (never overwritten by broadcasts)."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET last_mentor_message = ? WHERE user_id = ?", (text, user_id))
+    conn.commit()
+    conn.close()
+
 def set_user_gender(user_id, gender):
     conn = get_connection()
     c = conn.cursor()
@@ -1612,7 +1630,7 @@ def get_onboarding_status(user_id):
 def reset_user_onboarding(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE users SET age_verified = 0, gender = NULL, advice_history = '[]' WHERE user_id = ?", (user_id,))
+    c.execute("UPDATE users SET age_verified = 0, gender = NULL, advice_history = '[]', last_mentor_message = NULL WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
 
@@ -1788,8 +1806,8 @@ def get_trial_ended_users():
 import json
 import re
 
-def append_bot_message_to_history(user_id, text):
-    """Appends a message sent by the bot to the user's AI history so the AI has context."""
+def append_bot_message_to_history(user_id, text, is_broadcast=True):
+    """Appends a message sent by the bot to the user's AI history so the AI has context, tagged as broadcast."""
     try:
         history_str = get_advice_history(user_id)
         history = json.loads(history_str) if history_str else []
@@ -1797,19 +1815,51 @@ def append_bot_message_to_history(user_id, text):
         history = []
     
     # Strip HTML tags so the AI sees clean text
-    clean_text = re.sub(r'<[^>]+>', '', text)
+    clean_text = re.sub(r'<[^>]+>', '', text).strip()
+    if not clean_text:
+        return
     
     # Avoid appending duplicate consecutive bot messages
     if history and history[-1].get("role") == "model" and history[-1].get("parts") == [clean_text]:
         return
         
-    history.append({"role": "model", "parts": [clean_text]})
+    entry = {"role": "model", "parts": [clean_text]}
+    if is_broadcast:
+        entry["is_broadcast"] = True
+    history.append(entry)
     
     # Keep only the last 20 messages to prevent blob from growing too large
     if len(history) > 20:
         history = history[-20:]
         
     save_advice_history(user_id, json.dumps(history, ensure_ascii=False))
+
+def is_broadcast_or_nudge_text(text):
+    """Helper to detect if a message text is an automated nudge or broadcast rather than 1-on-1 mentor advice."""
+    if not text:
+        return True
+    t = str(text).strip()
+    nudge_signatures = [
+        "በሩን ከፍተው ገብተዋል ግን ዝምታን መርጠዋል",
+        "opened the door but stayed silent",
+        "ማዕጾ ኸፊጥካ ኣቲኻ ግን ስቕታ መሪጽካ",
+        "balbala banteet seente garuu cal'isuu filatte",
+        "ስለተወያየንበት ጉዳይ አንድ ያልነገርኩዎት ትልቅ ነገር አለ",
+        "one major thing I haven't told you",
+        "ሓደ ዘይነገርኩኻ ዓቢ ነገር ኣሎ",
+        "wanta guddaa tokko kanin sitti hin himin jira",
+        "እባክዎ ጾታዎን ይምረጡ",
+        "Please select your gender",
+        "ጾታዎን ይምረጡ",
+        "የዕለቱ የስነ-ልቦና ማስታወሻ",
+        "የዕለቱ የሳይኮሎጂ ማስታወሻ",
+        "የዕለቱ የስነልቦና ማስታወሻ",
+        "[BROADCAST]",
+    ]
+    for sig in nudge_signatures:
+        if sig in t:
+            return True
+    return False
 
 def get_setting(key, default=None):
     conn = get_connection()

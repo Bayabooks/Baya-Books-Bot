@@ -96,7 +96,7 @@ def wrap_text(text, font, max_width, draw):
         lines.append(" ".join(curr))
     return lines
 
-def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦና ማስታወሻ", theme_index=None):
+def generate_quote_card(quote_text, hook_title=None, header_title="የዕለቱ የስነ-ልቦና ማስታወሻ", theme_index=None):
     """
     Renders an elegant, high-resolution 1080x1080 branded social card.
     Returns bytes of the PNG image ready for multipart upload.
@@ -141,7 +141,7 @@ def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦ�
             mask_draw.ellipse((0, 0, logo_size, logo_size), fill=255)
 
             logo_x = (img_w - logo_size) // 2
-            logo_y = 85
+            logo_y = 75
             img.paste(logo, (logo_x, logo_y), mask)
 
             draw.ellipse([logo_x - 3, logo_y - 3, logo_x + logo_size + 3, logo_y + logo_size + 3], outline=theme["border"], width=2)
@@ -149,16 +149,29 @@ def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦ�
         except Exception:
             logo_drawn = False
 
-    header_y = 240 if logo_drawn else 140
-
-    # 4. Header title
-    header_font = get_ethiopic_font(34)
-    draw.text((img_w // 2, header_y), header_title, font=header_font, fill=theme["header_color"], anchor="mm")
-    draw.line([(img_w // 2 - 80, header_y + 30), (img_w // 2 + 80, header_y + 30)], fill=theme["accent_line"], width=2)
+    # 4. Header title & Hook title
+    if hook_title:
+        header_font = get_ethiopic_font(24)
+        draw.text((img_w // 2, 215), header_title, font=header_font, fill=theme["footer_sub"], anchor="mm")
+        
+        hook_font = get_ethiopic_font(34)
+        hook_lines = wrap_text(hook_title.strip(), hook_font, 780, draw)
+        hook_y = 255
+        for hline in hook_lines[:2]:
+            draw.text((img_w // 2, hook_y), hline, font=hook_font, fill=theme["header_color"], anchor="mm")
+            hook_y += 42
+        line_y = hook_y + 4
+        draw.line([(img_w // 2 - 100, line_y), (img_w // 2 + 100, line_y)], fill=theme["accent_line"], width=2)
+        center_y = (line_y + (img_h - 170)) // 2
+    else:
+        header_y = 240 if logo_drawn else 140
+        header_font = get_ethiopic_font(34)
+        draw.text((img_w // 2, header_y), header_title, font=header_font, fill=theme["header_color"], anchor="mm")
+        draw.line([(img_w // 2 - 80, header_y + 30), (img_w // 2 + 80, header_y + 30)], fill=theme["accent_line"], width=2)
+        center_y = 525 if logo_drawn else 510
 
     # 5. Adaptive font sizing & wrapping for the quote
     max_text_width = img_w - 220
-    # Determine best font size based on text length
     text_len = len(clean_text)
     if text_len < 80:
         base_size = 46
@@ -178,7 +191,6 @@ def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦ�
 
     # Center the quote block vertically in the middle area
     total_text_h = len(lines) * line_spacing
-    center_y = 525 if logo_drawn else 510
     start_y = center_y - (total_text_h // 2)
 
     for i, line in enumerate(lines):
@@ -201,7 +213,7 @@ def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦ�
     return buf.getvalue()
 
 
-def generate_tiktok_card(quote_text, header_title="የዕለቱ የስነ-ልቦና ማስታወሻ", theme_index=None, format="JPEG"):
+def generate_tiktok_card(quote_text, hook_title=None, header_title="የዕለቱ የስነ-ልቦና ማስታወሻ", theme_index=None, format="JPEG"):
     """
     Renders a stunning, full-screen 1080x1920 (9:16) vertical card optimized for TikTok & Reels.
     Respects TikTok UI safe zones (top navigation, right interaction icons, bottom captions).
@@ -232,13 +244,13 @@ def generate_tiktok_card(quote_text, header_title="የዕለቱ የስነ-ልቦ
     draw.rectangle([(m_x, m_y), (img_w - m_x, img_h - m_y)], outline=theme["border"], width=2)
     draw.rectangle([(m_x + 8, m_y + 8), (img_w - m_x - 8, img_h - m_y - 8)], outline=theme["inner_border"], width=1)
 
-    # 3. Logo integration (Top safe area, centered around y = 230)
+    # 3. Logo integration (Top safe area, centered around y = 210)
     logo_path = os.path.join(os.path.dirname(__file__), "static", "covers", "baya_logo.jpg")
     logo_drawn = False
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
-            logo_size = 140
+            logo_size = 130
             logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
 
             mask = Image.new("L", (logo_size, logo_size), 0)
@@ -246,7 +258,7 @@ def generate_tiktok_card(quote_text, header_title="የዕለቱ የስነ-ልቦ
             mask_draw.ellipse((0, 0, logo_size, logo_size), fill=255)
 
             logo_x = (img_w - logo_size) // 2
-            logo_y = 230
+            logo_y = 210
             img.paste(logo, (logo_x, logo_y), mask)
 
             draw.ellipse([logo_x - 4, logo_y - 4, logo_x + logo_size + 4, logo_y + logo_size + 4], outline=theme["border"], width=2)
@@ -254,12 +266,26 @@ def generate_tiktok_card(quote_text, header_title="የዕለቱ የስነ-ልቦ
         except Exception:
             logo_drawn = False
 
-    header_y = 440 if logo_drawn else 320
+    # 4. Header title & Hook Title
+    if hook_title:
+        header_font = get_ethiopic_font(28)
+        draw.text((img_w // 2, 375), header_title, font=header_font, fill=theme["footer_sub"], anchor="mm")
 
-    # 4. Header title
-    header_font = get_ethiopic_font(44)
-    draw.text((img_w // 2, header_y), header_title, font=header_font, fill=theme["header_color"], anchor="mm")
-    draw.line([(img_w // 2 - 120, header_y + 36), (img_w // 2 + 120, header_y + 36)], fill=theme["accent_line"], width=3)
+        hook_font = get_ethiopic_font(42)
+        hook_lines = wrap_text(hook_title.strip(), hook_font, 820, draw)
+        hook_y = 425
+        for hline in hook_lines[:2]:
+            draw.text((img_w // 2, hook_y), hline, font=hook_font, fill=theme["header_color"], anchor="mm")
+            hook_y += 54
+        line_y = hook_y + 8
+        draw.line([(img_w // 2 - 120, line_y), (img_w // 2 + 120, line_y)], fill=theme["accent_line"], width=3)
+        center_y = (line_y + 1420) // 2
+    else:
+        header_y = 440 if logo_drawn else 320
+        header_font = get_ethiopic_font(44)
+        draw.text((img_w // 2, header_y), header_title, font=header_font, fill=theme["header_color"], anchor="mm")
+        draw.line([(img_w // 2 - 120, header_y + 36), (img_w // 2 + 120, header_y + 36)], fill=theme["accent_line"], width=3)
+        center_y = 960
 
     # 5. Adaptive font sizing & wrapping for the quote (Max width 820px to stay clear of TikTok right buttons)
     max_text_width = 820

@@ -2575,15 +2575,28 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id, "🧠 Generating visual quote card...", show_alert=False)
         bot.send_chat_action(chat_id, 'typing')
-        psych_text = ai_engine.generate_psych_broadcast()
+        psych_obj = ai_engine.generate_psych_broadcast()
         
+        hook_title = getattr(psych_obj, "title", "የዕለቱ የስነ-ልቦና ማስታወሻ")
+        quote_text = getattr(psych_obj, "quote", str(psych_obj))
+        tiktok_desc = getattr(psych_obj, "tiktok_desc", "")
+
         # Clean text for quote card
-        clean_psych = re.sub(r'<[^<]+>', '', psych_text).strip()
-        ADMIN_PREVIEW_QUOTE[chat_id] = clean_psych
+        clean_title = re.sub(r'<[^<]+>', '', hook_title).strip()
+        clean_quote = re.sub(r'<[^<]+>', '', quote_text).strip()
+        clean_tiktok_desc = re.sub(r'<[^<]+>', '', tiktok_desc).strip()
+
+        ADMIN_PREVIEW_QUOTE[chat_id] = {
+            "title": clean_title,
+            "quote": clean_quote,
+            "tiktok_desc": clean_tiktok_desc,
+            "full_text": str(psych_obj)
+        }
+        
         card_bytes = None
         try:
             import quote_card
-            card_bytes = quote_card.generate_quote_card(clean_psych)
+            card_bytes = quote_card.generate_quote_card(clean_quote, hook_title=clean_title)
         except Exception as e:
             logging.error(f"Failed to generate quote card in preview: {e}")
 
@@ -2595,7 +2608,7 @@ def handle_callback(call):
         )
         markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_back"))
         
-        caption_text = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{psych_text}\n\n<i>(This visual quote card will be broadcasted to the Channel, Bot users, and Facebook!)</i>"
+        caption_text = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b>{clean_title}</b>\n\n{clean_quote}\n\n<i>(This visual quote card will be broadcasted to the Channel, Bot users, and Facebook!)</i>"
         
         if data == "adm_auto_refresh":
             safe_delete_message(chat_id, call.message.message_id)
@@ -2629,7 +2642,14 @@ def handle_callback(call):
             content = original
 
         clean_content = re.sub(r'<[^<]+>', '', content).strip()
-        ADMIN_PREVIEW_QUOTE[chat_id] = clean_content
+        
+        preview_data = ADMIN_PREVIEW_QUOTE.get(chat_id)
+        if isinstance(preview_data, dict):
+            clean_title = preview_data.get("title", "የዕለቱ የስነ-ልቦና ማስታወሻ")
+            clean_quote = preview_data.get("quote", clean_content)
+        else:
+            clean_title = "የዕለቱ የስነ-ልቦና ማስታወሻ"
+            clean_quote = clean_content
 
         # Check if we already have the photo file_id from the preview message
         broadcast_file_id = None
@@ -2641,7 +2661,7 @@ def handle_callback(call):
         if not broadcast_file_id:
             try:
                 import quote_card
-                card_bytes = quote_card.generate_quote_card(clean_content)
+                card_bytes = quote_card.generate_quote_card(clean_quote, hook_title=clean_title)
             except Exception as ce:
                 logging.error(f"Failed to generate quote card for broadcast: {ce}")
 
@@ -2652,8 +2672,8 @@ def handle_callback(call):
         channel_name = getattr(config, "CHANNEL_USERNAME", "BAYABOOKS1").lstrip('@')
         channel_target = f"@{channel_name}"
         channel_caption = (
-            f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n"
-            f"{content}\n\n"
+            f"✨ <b>{clean_title}</b>\n\n"
+            f"{clean_quote}\n\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
             f"🧠 <b>የራስዎን የስነ-ልቦና እና የህይወት መመሪያ በነጻ በ AI ለመመርመር ቦቱን ይቀላቀሉ፦</b>\n"
             f"👉 @{bot_uname}"
@@ -2690,12 +2710,12 @@ def handle_callback(call):
             if fb_token and fb_page_id:
                 import requests
                 fb_msg = (
-                    f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n"
-                    f"{clean_content}\n\n"
+                    f"✨ {clean_title}\n\n"
+                    f"{clean_quote}\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"📚 ሙሉ የስነ-ልቦና መመሪያዎችን እና ምክሮችን ለማግኘት ቦቱን በነጻ ይቀላቀሉ፦\n"
                     f"👉 https://t.me/{bot_uname}\n\n"
-                    f"#BayaBooks #ሳይኮሎጂ #ስነልቦና #ምክር #ህይወት"
+                    f"#bayabooks #ሳይኮሎጂ #ስነልቦና #ህይወት #fyp"
                 )
                 
                 fb_bytes = card_bytes
@@ -2733,7 +2753,7 @@ def handle_callback(call):
             logging.error(f"Failed to post to Facebook: {e}")
 
         # 3. Broadcast to All Bot Users (Using Visual Photo Card file_id!)
-        user_caption = f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}"
+        user_caption = f"✨ <b>{clean_title}</b>\n\n{clean_quote}"
         
         def background_broadcast():
             success = 0
@@ -2749,7 +2769,7 @@ def handle_callback(call):
                         bot.send_message(u, user_caption, parse_mode="HTML")
                         bot.send_message(u, "​", reply_markup=u_markup)
                         
-                    database.append_bot_message_to_history(u, content)
+                    database.append_bot_message_to_history(u, clean_quote)
                     database.mark_user_blocked(u, 0)
                     success += 1
                 except Exception:
@@ -2780,8 +2800,17 @@ def handle_callback(call):
         bot.answer_callback_query(call.id, "📱 Generating TikTok 9:16 Card...", show_alert=False)
         bot.send_chat_action(chat_id, 'upload_photo')
         
-        quote_text = ADMIN_PREVIEW_QUOTE.get(chat_id)
-        if not quote_text:
+        preview_data = ADMIN_PREVIEW_QUOTE.get(chat_id)
+        if isinstance(preview_data, dict):
+            clean_title = preview_data.get("title", "የዕለቱ የስነ-ልቦና ማስታወሻ")
+            clean_quote = preview_data.get("quote", "")
+            clean_tiktok_desc = preview_data.get("tiktok_desc", "")
+        else:
+            clean_title = "የዕለቱ የስነ-ልቦና ማስታወሻ"
+            clean_quote = str(preview_data or "")
+            clean_tiktok_desc = ""
+
+        if not clean_quote:
             original = call.message.caption or call.message.text or ""
             try:
                 parts = original.split("━━━━━━━━━━━━━━━━━━━━\n\n")
@@ -2790,35 +2819,46 @@ def handle_callback(call):
                     for delim in ["\n\n<i>(This visual quote", "\n\n(This visual quote", "\n\n<i>(This is what", "\n\n(This is what"]:
                         if delim in content:
                             content = content.split(delim)[0]
-                    quote_text = content.strip()
+                    clean_quote = content.strip()
                 else:
-                    quote_text = original
+                    clean_quote = original
             except Exception:
-                quote_text = original
-                
-        clean_quote = re.sub(r'<[^<]+>', '', quote_text or "").strip()
+                clean_quote = original
+
+        clean_quote = re.sub(r'<[^<]+>', '', clean_quote).strip()
         if not clean_quote:
-            clean_quote = "የዕለቱ የስነ-ልቦና ማስታወሻ"
+            clean_quote = "ለራስህ የምትሰጠው ክብር የህይወትህን አቅጣጫ ይወስነዋል።"
+
+        if not clean_tiktok_desc:
+            clean_tiktok_desc = "ብዙዎቻችን በየቀኑ የምንወድቅበት ግን የማንመለከተው የስነ-ልቦና ወጥመድ። በካርዱ ላይ ያለውን በጥሞና አንብበው፤ አንተስ ምን ይሰማሃል? አስተያየትህን በኮሜንት አጋራን።"
 
         try:
             import quote_card
-            tiktok_bytes = quote_card.generate_tiktok_card(clean_quote)
+            tiktok_bytes = quote_card.generate_tiktok_card(clean_quote, hook_title=clean_title)
         except Exception as e:
             logging.error(f"Failed to generate TikTok card: {e}")
             bot.send_message(chat_id, f"⚠️ <b>Failed to generate TikTok card:</b> {e}", parse_mode="HTML")
             return
 
         bot_uname = getattr(config, "BOT_USERNAME", "bayabooks_bot")
+        
+        # 5 hashtags in small letters ONLY
+        hashtags = "#bayabooks #ሳይኮሎጂ #ስነልቦና #ህይወት #fyp"
+        
+        # Clean text catchy Title and description to copy (NOT exact text on the card board)
+        clean_copy_text = (
+            f"{clean_title}\n\n"
+            f"{clean_tiktok_desc}\n\n"
+            f"ሙሉውን በነጻ በ AI ለመመርመር ሊንኩ በፕሮፋይላችን (Bio) ላይ ይገኛል! 👉 @{bot_uname}\n\n"
+            f"{hashtags}"
+        )
+        
         tiktok_caption = (
             f"📱 <b>TikTok / Reels Ready Card (9:16 Vertical)</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"💡 <i>Tip: Save this photo to your gallery and post to TikTok in Photo Mode with a trending sound!</i>\n\n"
             f"📋 <b>TikTok Caption (Tap to Copy):</b>\n"
-            f"<code>{clean_quote}\n\n"
-            f"━━━━━━━━━━━━━━━━━━━\n"
-            f"🧠 የራስዎን የስነ-ልቦና ምክር በነጻ በ AI ለመመርመር ሊንኩን በፕሮፋይላችን ላይ ያግኙ!\n"
-            f"👉 Telegram: @{bot_uname}\n\n"
-            f"#BayaBooks #ሳይኮሎጂ #ስነልቦና #ምክር #ህይወት #አስተሳሰብ #ethiopian_tik_tok #habeshatiktok #fyp #viral</code>"
+            f"<code>{html.escape(clean_copy_text)}</code>"
         )
         
         import io

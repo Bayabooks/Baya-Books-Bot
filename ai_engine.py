@@ -1,3 +1,11 @@
+import os
+try:
+    import certifi
+    os.environ.setdefault("GRPC_DEFAULT_SSL_ROOTS_FILE_PATH", certifi.where())
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except Exception:
+    pass
+
 import google.generativeai as genai
 import json
 import logging
@@ -374,8 +382,25 @@ def chat_with_mentor(user_message, history, gender=None, lang='am'):
         return None
 
 
+class PsychBroadcast(str):
+    """String subclass containing structured broadcast metadata."""
+    def __new__(cls, text, title=None, quote=None, tiktok_desc=None):
+        instance = super().__new__(cls, text)
+        instance.title = title or "የዕለቱ የስነ-ልቦና ማስታወሻ"
+        instance.quote = quote or text
+        instance.tiktok_desc = tiktok_desc or ""
+        return instance
+
+    def get(self, key, default=None):
+        if key == "title": return self.title
+        if key == "quote": return self.quote
+        if key == "tiktok_desc": return self.tiktok_desc
+        if key == "text": return str(self)
+        return default
+
+
 def generate_psych_broadcast(lang='am'):
-    """Generates a short, varied, engaging psychological broadcast."""
+    """Generates a short, varied, engaging psychological broadcast with a hook title, quote, and TikTok description."""
     import random
     
     if lang == 'am':
@@ -418,42 +443,62 @@ def generate_psych_broadcast(lang='am'):
     ]
 
     chosen = random.choice(content_types)
-    
-    # Randomly vary the format too
-    formats = [
-        "Write it as 2-4 impactful sentences.",
-        "Write it as a short paragraph (3-4 sentences) with one bold key takeaway.",
-        "Write it as a numbered list of 3 short points.",
-        "Write it as a question followed by a 2-sentence answer.",
-        "Write it as a mini-story in 3 sentences.",
-    ]
-    chosen_format = random.choice(formats)
 
     prompt = (
-        f"You are a psychology content creator for a Telegram bot audience in Ethiopia.\n\n"
-        f"Generate the following type of content {lang_instruction}:\n"
-        f"→ {chosen}\n\n"
-        f"Format: {chosen_format}\n\n"
-        f"Rules:\n"
-        f"- Make it feel personal, warm, and empathetic\n"
-        f"- Use beautiful, poetic language appropriate for the culture\n"
-        f"- Do NOT use generic greetings like 'Hello' or 'Dear friend'\n"
-        f"- Do NOT start with 'Did you know' every time — vary your opening\n"
-        f"- Make it curiosity-inducing so readers want to chat with their AI therapist\n"
-        f"- Use **bold** for key phrases (1-2 max)\n"
-        f"- Keep it concise — no more than 5 sentences total\n"
-        f"- Make it completely unique and fresh, never repeat patterns"
+        f"You are a master psychological content creator and viral social media copywriter for an Ethiopian audience.\n\n"
+        f"Topic: {chosen}\n"
+        f"Output Language: {lang_instruction}\n\n"
+        f"Generate a JSON response with exactly these 3 fields:\n"
+        f"1. \"title\": A very catchy, curiosity-inducing hook title (3 to 6 words) {lang_instruction}. "
+        f"It must grab immediate attention and make people stop scrolling (e.g. 'ከራስህ ጋር የምትጣላበት ትልቁ ምክንያት' or 'ብዙዎች የማያውቁት የሰላም ሚስጥር'). "
+        f"Do NOT use generic labels like 'ምክር' or 'የስነ-ልቦና እውነት'. Make it an irresistible hook.\n"
+        f"2. \"quote\": The core profound psychological insight/quote (2 to 3 sentences) {lang_instruction} to put visually on the social card board. Make it deep, paradigm-shifting, and memorable.\n"
+        f"3. \"tiktok_desc\": A catchy, intriguing social media / TikTok description {lang_instruction} (2 to 3 sentences). "
+        f"CRITICAL RULE: DO NOT repeat the quote text from the card! Instead, hook the viewer, acknowledge an unspoken internal struggle, make them stay to read the card, and ask an engaging question that drives comments.\n\n"
+        f"Return ONLY valid JSON format:\n"
+        f"{{\n"
+        f"  \"title\": \"Catchy Hook Title\",\n"
+        f"  \"quote\": \"Profound quote for card board...\",\n"
+        f"  \"tiktok_desc\": \"Intriguing description that hooks viewers and makes them stay...\"\n"
+        f"}}"
     )
     try:
         model = genai.GenerativeModel(MODEL_TEXT)
         response = model.generate_content(prompt, request_options={"timeout": 30})
-        text = response.text
+        text = response.text.strip()
+        
+        # Extract JSON object robustly
+        data = None
+        s_idx = text.find('{')
+        e_idx = text.rfind('}')
+        if s_idx != -1 and e_idx != -1:
+            try:
+                data = json.loads(text[s_idx:e_idx+1])
+            except Exception:
+                data = None
+                
+        if data and isinstance(data, dict) and "title" in data and "quote" in data:
+            title = str(data.get("title", "")).strip()
+            quote = str(data.get("quote", "")).strip()
+            tiktok_desc = str(data.get("tiktok_desc", "")).strip()
+        else:
+            lines = [l.strip() for l in text.split("\n") if l.strip()]
+            if len(lines) > 1:
+                title = lines[0].lstrip("#* -")
+                quote = "\n\n".join(lines[1:])
+            else:
+                title = "የዕለቱ የስነ-ልቦና ማስታወሻ"
+                quote = text
+            tiktok_desc = "በካርዱ ላይ ያለውን በጥሞና አንብበው። ለአንተስ በዚህ ጉዳይ ላይ ምን ተሰማህ? አስተያየትህን በኮሜንት አጋራን።"
+
         import re
-        text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
-        return text.strip()
+        title = re.sub(r'[*_#]', '', title).strip()
+        quote = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', quote, flags=re.DOTALL).strip()
+        full_text = f"<b>{title}</b>\n\n{quote}"
+        return PsychBroadcast(full_text, title=title, quote=quote, tiktok_desc=tiktok_desc)
     except Exception as e:
         logging.error(f"Broadcast generation error: {e}")
-        return "⚠️ ይቅርታ፣ መልዕክት ማመንጨት አልተቻለም።"
+        return PsychBroadcast("⚠️ ይቅርታ፣ መልዕክት ማመንጨት አልተቻለም።", title="የዕለቱ የስነ-ልቦና ማስታወሻ", quote="⚠️ ይቅርታ፣ መልዕክት ማመንጨት አልተቻለም።", tiktok_desc="")
 
 def identify_book_cover(image_bytes):
     """Identify a book from a cover photo using Gemini Vision."""

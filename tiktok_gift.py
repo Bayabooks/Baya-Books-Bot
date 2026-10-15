@@ -1,7 +1,7 @@
 """
 tiktok_gift.py — Daily Free Book Giveaway Game in collaboration with TikTok "የአዕምሮ ምግቦች"
 Daily 5 free book winners from the library for first comers who guess the secret word announced on TikTok!
-Cycle resets every morning at 4:00 AM Ethiopian Time (UTC+3).
+Cycle resets every morning at 10:00 AM EAT (ጠዋት 4:00 ሰዓት በኢትዮጵያ አቆጣጠር / UTC+3).
 """
 
 from datetime import datetime, timezone, timedelta
@@ -9,7 +9,7 @@ import random
 import database
 
 # ══════════════════════════════════════════════════════════════════
-#  CYCLE TIME MATH (Resets at 4:00 AM EAT / UTC+3)
+#  CYCLE TIME MATH (Resets at 10:00 AM EAT / ጠዋት 4:00 ሰዓት)
 # ══════════════════════════════════════════════════════════════════
 
 def get_eat_now():
@@ -19,27 +19,28 @@ def get_eat_now():
 def get_game_cycle_date():
     """
     Returns current game cycle date string 'YYYY-MM-DD'.
-    The cycle resets daily at 4:00 AM morning Ethiopian time (UTC+3).
-    Times between 00:00 and 03:59 belong to the previous day's cycle.
+    The cycle resets daily at 10:00 AM (ጠዋት 4:00 ሰዓት በኢትዮጵያ አቆጣጠር / UTC+3).
+    Times between 00:00 and 09:59 AM belong to the previous day's cycle.
     """
     eat_now = get_eat_now()
-    if eat_now.hour < 4:
+    if eat_now.hour < 10:
         cycle_dt = eat_now - timedelta(days=1)
     else:
         cycle_dt = eat_now
     return cycle_dt.strftime("%Y-%m-%d")
 
 def get_next_reset_time_display():
-    """Returns human-readable time remaining until next 4:00 AM reset."""
+    """Returns human-readable time remaining until next 10:00 AM (ጠዋት 4:00 ሰዓት) reset."""
     eat_now = get_eat_now()
-    # Next reset is today at 4:00 AM if before 4am, else tomorrow at 4:00 AM
-    if eat_now.hour < 4:
-        next_reset = eat_now.replace(hour=4, minute=0, second=0, microsecond=0)
+    # Next reset is today at 10:00 AM if before 10am, else tomorrow at 10:00 AM
+    if eat_now.hour < 10:
+        next_reset = eat_now.replace(hour=10, minute=0, second=0, microsecond=0)
     else:
-        next_reset = (eat_now + timedelta(days=1)).replace(hour=4, minute=0, second=0, microsecond=0)
+        next_reset = (eat_now + timedelta(days=1)).replace(hour=10, minute=0, second=0, microsecond=0)
     diff = next_reset - eat_now
-    hours = diff.seconds // 3600
-    minutes = (diff.seconds % 3600) // 60
+    total_seconds = max(0, int(diff.total_seconds()))
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
     return f"{hours} ሰዓት ከ {minutes} ደቂቃ"
 
 

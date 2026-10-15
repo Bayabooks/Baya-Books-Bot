@@ -2337,7 +2337,7 @@ def handle_callback(call):
                 f"❌ <b>ነገር ግን... የዛሬው የቲክቶክ ሚስጥራዊ ቃል አልነበረም!</b>\n\n"
                 f"የዛሬው ትክክለኛ ቃል፦ <b>«{today_secret}»</b> ነበር።\n\n"
                 f"አይዞዎት! ቃልዎ ለውድድሩ ባይሆንም፣ መልዕክቱ ግን ለእርስዎ የተላከ እውነተኛ ጥንካሬ ነው።\n\n"
-                f"⏰ <b>ቀጣይ ዕድል፦</b> አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። የነገውን ቃል እንዳያመልጥዎ ቲክቶክ ላይ <b>{tiktok_name}</b>ን አሁኑኑ ይከታተሉ! 👇"
+                f"⏰ <b>ቀጣይ ዕድል፦</b> አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። የነገውን ቃል እንዳያመልጥዎ ቲክቶክ ላይ <b>{tiktok_name}</b>ን አሁኑኑ ይከታተሉ! 👇"
             )
             bot.send_message(chat_id, wrong_msg, parse_mode="HTML", reply_markup=markup)
             return
@@ -2379,7 +2379,7 @@ def handle_callback(call):
                 f"✅ <b>በትክክል መልሰዋል!</b>\n\n"
                 f"የዛሬው ሚስጥራዊ ቃል በእርግጥም <b>«{today_secret}»</b> ነበር!\n\n"
                 f"🏃‍♂️ <b>ነገር ግን...</b> የዛሬዎቹ <b>5 ፈጣን አሸናፊዎች</b> ቀድመው ቦታውን ሞልተዋል!\n\n"
-                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ! 👇"
+                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት (10:00 AM) እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ! 👇"
             )
             bot.send_message(chat_id, late_msg, parse_mode="HTML", reply_markup=markup)
         return
@@ -2449,7 +2449,7 @@ def handle_callback(call):
         text = (
             f"🎁 <b>TikTok Free Book Giveaway Manager</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"📅 <b>Today's Cycle:</b> <code>{cycle_date}</code> (Resets 4:00 AM EAT)\n"
+            f"📅 <b>Today's Cycle:</b> <code>{cycle_date}</code> (Resets 10:00 AM EAT / ጠዋት 4:00)\n"
             f"🎯 <b>Today's Secret Word:</b> <b>«{secret_word}»</b>\n"
             f"📱 <b>Partner Account:</b> {tiktok_name}\n"
             f"🔗 <b>TikTok URL:</b> {tiktok_url}\n\n"
@@ -3151,7 +3151,7 @@ def show_daily_gift_game(chat_id, uid):
             "⏳ <b>ለዛሬ ተሳትፈዋል!</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
             f"በዛሬው ዙር <b>«{attempt.get('chosen_word')}»</b> በማለት {status_txt}።\n\n"
-            "ውድድሩ በቀን አንድ ጊዜ ብቻ የሚሞከር ሲሆን፣ አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል!\n\n"
+            "ውድድሩ በቀን አንድ ጊዜ ብቻ የሚሞከር ሲሆን፣ አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል!\n\n"
             f"⏳ <b>ለቀጣዩ ዙር የቀረው ጊዜ፦</b> {reset_time_str}\n\n"
             f"💡 <b>የነገውን ሚስጥራዊ ቃል ቀድመው ለማወቅ፦</b>\n"
             f"ቲክቶክ ላይ <b>{tiktok_name}</b> ቻናላችንን ይከታተሉ! 👇"

@@ -398,21 +398,21 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
 
     # Big Word
     word_font = get_ethiopic_font(52)
-    clean_word = f"«{secret_word}»"
+    clean_word_raw = str(secret_word or "").strip().strip("«»\"' ").strip()
+    clean_word = f"«{clean_word_raw}»"
     draw.text((img_w // 2, box_y1 + 68), clean_word, font=word_font, fill=theme["header_color"], anchor="mm")
 
-    # About the word (Short insight)
+    # About the word (Pure psychological insight explaining the word, NO repetitive 'አዎ አንተ...' title)
     body_font = get_ethiopic_font(22)
-    short_insight = word_title.replace("✨", "").strip() if word_title else ""
-    if word_body:
-        first_sentence = word_body.split("።")[0] + "።"
-        if len(first_sentence) < 130:
-            short_insight += " " + first_sentence
-        else:
-            short_insight += " " + first_sentence[:125] + "..."
-            
-    wrapped_lines = wrap_text(short_insight, body_font, 920, draw)
-    text_y = box_y1 + 124
+    insight_text = (word_body or "").strip()
+    if not insight_text:
+        insight_text = (
+            f"«{clean_word_raw}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
+            f"አዕምሮአችንን በምንመግበው አዎንታዊ አስተሳሰብ ልክ ህይወታችን ይለወጣል።"
+        )
+        
+    wrapped_lines = wrap_text(insight_text, body_font, 920, draw)
+    text_y = box_y1 + 122
     for wline in wrapped_lines[:3]:
         draw.text((img_w // 2, text_y), wline, font=body_font, fill=theme["text_color"], anchor="mm")
         text_y += 34

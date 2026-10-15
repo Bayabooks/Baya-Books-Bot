@@ -2652,10 +2652,7 @@ def handle_callback(call):
         
         cycle_date = tiktok_gift.get_game_cycle_date()
         secret_word = tiktok_gift.get_today_secret_word()
-        skey = tiktok_gift.find_key_by_word(secret_word)
-        witem = tiktok_gift.get_word_by_key(skey) if skey else None
-        word_title = witem["title"] if witem else f"«{secret_word}»"
-        word_body = witem["body"] if witem else ""
+        word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
         tiktok_name = tiktok_gift.get_tiktok_channel_name()
         
         raw_winners = database.get_daily_gift_winners(cycle_date)
@@ -3298,11 +3295,7 @@ def handle_callback(call):
 def send_winners_post_preview(chat_id, theme_index=1):
     cycle_date = tiktok_gift.get_game_cycle_date()
     secret_word = tiktok_gift.get_today_secret_word()
-    skey = tiktok_gift.find_key_by_word(secret_word)
-    witem = tiktok_gift.get_word_by_key(skey) if skey else None
-    
-    word_title = witem["title"] if witem else f"«{secret_word}»"
-    word_body = witem["body"] if witem else ""
+    word_title, word_body = tiktok_gift.get_word_insight_text(secret_word)
     tiktok_name = tiktok_gift.get_tiktok_channel_name()
     
     # Get today's winners

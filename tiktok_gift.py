@@ -515,14 +515,44 @@ def get_word_by_key(key):
     return WORD_AFFIRMATIONS.get(key)
 
 def find_key_by_word(word_text):
-    """Finds word key matching word text."""
+    """Finds word key matching word text, robust to quotes, punctuation, and whitespace."""
     if not word_text:
         return None
-    wt = word_text.strip()
+    wt = str(word_text).strip().strip("«»\"' ").strip()
+    # 1. Exact match
     for k, v in WORD_AFFIRMATIONS.items():
-        if v["word"] == wt:
+        vw = v["word"].strip().strip("«»\"' ").strip()
+        if vw == wt:
+            return k
+    # 2. Substring / partial match
+    for k, v in WORD_AFFIRMATIONS.items():
+        vw = v["word"].strip().strip("«»\"' ").strip()
+        if wt and (wt in vw or vw in wt):
             return k
     return None
+
+def get_word_insight_text(secret_word):
+    """
+    Returns (word_title, word_body) for a secret word.
+    Guarantees that word_body contains a rich, multi-sentence psychological insight
+    explaining the meaning of the word rather than just repeating it.
+    """
+    clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
+    skey = find_key_by_word(clean_w)
+    if skey and skey in WORD_AFFIRMATIONS:
+        witem = WORD_AFFIRMATIONS[skey]
+        title = witem.get("title", "")
+        body = witem.get("body", "")
+        return title, body
+
+    # Fallback for custom or unmapped words:
+    title = f"✨ የ«{clean_w}» ጥልቅ የስነ-ልቦና ትርጉም"
+    body = (
+        f"«{clean_w}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
+        f"አዕምሮአችንን በየቀኑ በምንመግበው አዎንታዊ አስተሳሰብ ልክ ስሜታችን፣ ድርጊታችን እና ህይወታችን ይለወጣል። "
+        f"ይህንን ቃል የዕለት ተዕለት መመሪያዎ በማድረግ ውስጣዊ ሰላምዎን እና ስኬትዎን ያሳድጉ።"
+    )
+    return title, body
 
 def get_today_secret_word():
     """
@@ -604,8 +634,16 @@ def restart_game(cycle_date=None, reset_lifetime=True):
 
 def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_name="የአዕምሮ ምግቦች", custom_note=None):
     """Formats a clean, engaging caption for TikTok Photo Mode and Telegram post."""
-    clean_title = word_title.replace("✨", "").strip() if word_title else ""
-    first_sentence = word_body.split("።")[0] + "።" if word_body else ""
+    clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
+    
+    # Prepare full, insightful psychological content about the word
+    insight_content = (word_body or "").strip()
+    if not insight_content:
+        insight_content = (
+            f"«{clean_w}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
+            f"አዕምሮአችንን በየቀኑ በምንመግበው አዎንታዊ አስተሳሰብ ልክ ስሜታችን፣ ድርጊታችን እና ህይወታችን ይለወጣል። "
+            f"ይህንን ቃል የዕለት ተዕለት መመሪያዎ በማድረግ ውስጣዊ ሰላምዎን እና ስኬትዎን ያሳድጉ።"
+        )
     
     w_lines = []
     medals = {1: "🥇 1ኛ", 2: "🥈 2ኛ", 3: "🥉 3ኛ", 4: "🏅 4ኛ", 5: "🏅 5ኛ"}
@@ -623,10 +661,11 @@ def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_n
     winners_block = "\n".join(w_lines)
     
     caption = (
-        f"🏆 የዛሬው ሚስጥራዊ ቃል እና የ5ቱ ፈጣን አሸናፊዎች!\n\n"
-        f"በዛሬው የቲክቶክ ቪዲዮችን ላይ የተላለፈው ሚስጥራዊ ቃል «{secret_word}» ነበር።\n\n"
-        f"💡 {clean_title}\n"
-        f"{first_sentence}\n\n"
+        f"🏆 የዛሬው ሚስጥራዊ ቃል እና የ5ቱ ፈጣን አሸናፊዎች!\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🎯 የዛሬው ሚስጥራዊ ቃል፦ «{clean_w}» ነበር።\n\n"
+        f"🧠 ስለ ቃሉ ጥልቅ የስነ-ልቦና ትምህርት (የአዕምሮ ምግብ)፦\n"
+        f"{insight_content}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"🎉 እንኳን ደስ አላችሁ! ዛሬ ቀድመው በመመለስ ነፃ መጽሐፍ ያሸነፉ 5 ፈጣኖች፦\n\n"
         f"{winners_block}\n\n"
@@ -634,7 +673,7 @@ def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_n
         f"⏰ የነገው አዲስ ዙር ነገ ጠዋት 4:00 ሰዓት (10:00 AM) ላይ ይጀመራል! የነገውን ቃል እንዳያመልጥዎ ቻናላችንን @yeaemromgboch ፎሎው ያድርጉ!\n\n"
         f"🎁 በውድድሩ ለመሳተፍ እና የነፃ መጽሐፍ አሸናፊ ለመሆን በቴሌግራም ቦት ያግኙን (ሊንኩ ባዮ ላይ አለ)፦\n"
         f"👉 @bayabooks_bot\n\n"
-        f"#yeaemromgboch #bayabooks #ethiopia #habesha #giveaway"
+        f"#yeaemromgboch #bayabooks #ethiopia #habesha #giveaway #ሳይኮሎጂ #የአዕምሮምግቦች"
     )
     if custom_note:
         caption = f"{custom_note}\n\n" + caption

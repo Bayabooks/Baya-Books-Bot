@@ -1761,14 +1761,15 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("🤖 Auto Psych Broadcast", callback_data="adm_auto_broadcast_init"),
     )
     markup.add(
+        InlineKeyboardButton("📱 TikTok Card Creator (4:5)", callback_data="adm_tiktok_init"),
         InlineKeyboardButton("💳 Add Credit/Msgs", callback_data="admin_credit"),
+    )
+    markup.add(
         InlineKeyboardButton("👑 Sub-Admins", callback_data="adm_subadmin_menu"),
-    )
-    markup.add(
         InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
-        InlineKeyboardButton("🔙 VIP Manager", callback_data="adm_vip_menu"),
     )
     markup.add(
+        InlineKeyboardButton("👑 VIP Manager", callback_data="adm_vip_menu"),
         InlineKeyboardButton("📚 Manage Rented Books", callback_data="adm_rentals_menu"),
     )
     markup.add(
@@ -2602,10 +2603,7 @@ def handle_callback(call):
 
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🚀 Verify & Broadcast (Card + Post)", callback_data="adm_confirm_auto_broadcast"))
-        markup.add(
-            InlineKeyboardButton("📱 TikTok Card (9:16)", callback_data="adm_get_tiktok_card"),
-            InlineKeyboardButton("🔄 Refresh", callback_data="adm_auto_refresh")
-        )
+        markup.add(InlineKeyboardButton("🔄 Refresh (Generate New)", callback_data="adm_auto_refresh"))
         markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_back"))
         
         caption_text = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n<b>{clean_title}</b>\n\n{clean_quote}\n\n<i>(This visual quote card will be broadcasted to the Channel, Bot users, and Facebook!)</i>"
@@ -2786,7 +2784,6 @@ def handle_callback(call):
         
         confirm_msg = f"🚀 <b>Photo Card Broadcast Launched!</b>\nSending to {len(all_users)} bot users, the Telegram Channel, and Facebook in background..."
         done_markup = InlineKeyboardMarkup()
-        done_markup.add(InlineKeyboardButton("📱 Download TikTok (9:16) Card", callback_data="adm_get_tiktok_card"))
         done_markup.add(InlineKeyboardButton("🔙 Admin Panel", callback_data="adm_back"))
         if call.message.photo:
             bot.edit_message_caption(caption=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=done_markup)
@@ -2794,40 +2791,20 @@ def handle_callback(call):
             bot.edit_message_text(text=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=done_markup)
         return
 
-    # ── Admin: Get TikTok Card (9:16) ────────
-    if data == "adm_get_tiktok_card":
+    # ── Admin: Dedicated TikTok Card Creator (4:5) ──
+    if data in ["adm_tiktok_init", "adm_tiktok_refresh", "adm_get_tiktok_card"]:
         if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id, "📱 Generating TikTok 9:16 Card...", show_alert=False)
+        bot.answer_callback_query(call.id, "📱 Generating TikTok 4:5 Card...", show_alert=False)
         bot.send_chat_action(chat_id, 'upload_photo')
         
-        preview_data = ADMIN_PREVIEW_QUOTE.get(chat_id)
-        if isinstance(preview_data, dict):
-            clean_title = preview_data.get("title", "የዕለቱ የስነ-ልቦና ማስታወሻ")
-            clean_quote = preview_data.get("quote", "")
-            clean_tiktok_desc = preview_data.get("tiktok_desc", "")
-        else:
-            clean_title = "የዕለቱ የስነ-ልቦና ማስታወሻ"
-            clean_quote = str(preview_data or "")
-            clean_tiktok_desc = ""
+        psych_obj = ai_engine.generate_psych_broadcast()
+        hook_title = getattr(psych_obj, "title", "የዕለቱ የስነ-ልቦና ማስታወሻ")
+        quote_text = getattr(psych_obj, "quote", str(psych_obj))
+        tiktok_desc = getattr(psych_obj, "tiktok_desc", "")
 
-        if not clean_quote:
-            original = call.message.caption or call.message.text or ""
-            try:
-                parts = original.split("━━━━━━━━━━━━━━━━━━━━\n\n")
-                if len(parts) > 1:
-                    content = parts[1]
-                    for delim in ["\n\n<i>(This visual quote", "\n\n(This visual quote", "\n\n<i>(This is what", "\n\n(This is what"]:
-                        if delim in content:
-                            content = content.split(delim)[0]
-                    clean_quote = content.strip()
-                else:
-                    clean_quote = original
-            except Exception:
-                clean_quote = original
-
-        clean_quote = re.sub(r'<[^<]+>', '', clean_quote).strip()
-        if not clean_quote:
-            clean_quote = "ለራስህ የምትሰጠው ክብር የህይወትህን አቅጣጫ ይወስነዋል።"
+        clean_title = re.sub(r'<[^<]+>', '', hook_title).strip()
+        clean_quote = re.sub(r'<[^<]+>', '', quote_text).strip()
+        clean_tiktok_desc = re.sub(r'<[^<]+>', '', tiktok_desc).strip()
 
         if not clean_tiktok_desc:
             clean_tiktok_desc = "ብዙዎቻችን በየቀኑ የምንወድቅበት ግን የማንመለከተው የስነ-ልቦና ወጥመድ። በካርዱ ላይ ያለውን በጥሞና አንብበው፤ አንተስ ምን ይሰማሃል? አስተያየትህን በኮሜንት አጋራን።"
@@ -2845,26 +2822,25 @@ def handle_callback(call):
         # 5 hashtags in small letters ONLY
         hashtags = "#bayabooks #ሳይኮሎጂ #ስነልቦና #ህይወት #fyp"
         
-        # Clean text catchy Title and description to copy (NOT exact text on the card board)
-        clean_copy_text = (
+        # Clean text Title and description ONLY — pure text to copy directly
+        clean_caption = (
             f"{clean_title}\n\n"
             f"{clean_tiktok_desc}\n\n"
             f"ሙሉውን በነጻ በ AI ለመመርመር ሊንኩ በፕሮፋይላችን (Bio) ላይ ይገኛል! 👉 @{bot_uname}\n\n"
             f"{hashtags}"
         )
         
-        tiktok_caption = (
-            f"📱 <b>TikTok / Reels Ready Card (9:16 Vertical)</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"💡 <i>Tip: Save this photo to your gallery and post to TikTok in Photo Mode with a trending sound!</i>\n\n"
-            f"📋 <b>TikTok Caption (Tap to Copy):</b>\n"
-            f"<code>{html.escape(clean_copy_text)}</code>"
-        )
+        tiktok_markup = InlineKeyboardMarkup()
+        tiktok_markup.add(InlineKeyboardButton("🔄 Generate Another (4:5)", callback_data="adm_tiktok_refresh"))
+        tiktok_markup.add(InlineKeyboardButton("🔙 Admin Panel", callback_data="adm_back"))
         
+        if data == "adm_tiktok_refresh":
+            safe_delete_message(chat_id, call.message.message_id)
+
         import io
         bio = io.BytesIO(tiktok_bytes)
-        bio.name = "baya_tiktok_card.jpg"
-        bot.send_photo(chat_id, bio, caption=tiktok_caption, parse_mode="HTML")
+        bio.name = "baya_tiktok_4_5.jpg"
+        bot.send_photo(chat_id, bio, caption=clean_caption, reply_markup=tiktok_markup)
         return
 
 

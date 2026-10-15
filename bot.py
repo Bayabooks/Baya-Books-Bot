@@ -63,6 +63,8 @@ def clear_state(user_id):
     with session_lock:
         user_sessions[user_id] = {"state": "IDLE", "data": {}}
 
+ADMIN_PREVIEW_QUOTE = {}
+
 def get_lang(uid):
     """Get user's language, default 'am'."""
     try:
@@ -2577,6 +2579,7 @@ def handle_callback(call):
         
         # Clean text for quote card
         clean_psych = re.sub(r'<[^<]+>', '', psych_text).strip()
+        ADMIN_PREVIEW_QUOTE[chat_id] = clean_psych
         card_bytes = None
         try:
             import quote_card
@@ -2586,7 +2589,10 @@ def handle_callback(call):
 
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🚀 Verify & Broadcast (Card + Post)", callback_data="adm_confirm_auto_broadcast"))
-        markup.add(InlineKeyboardButton("🔄 Refresh (Generate New)", callback_data="adm_auto_refresh"))
+        markup.add(
+            InlineKeyboardButton("📱 TikTok Card (9:16)", callback_data="adm_get_tiktok_card"),
+            InlineKeyboardButton("🔄 Refresh", callback_data="adm_auto_refresh")
+        )
         markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_back"))
         
         caption_text = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{psych_text}\n\n<i>(This visual quote card will be broadcasted to the Channel, Bot users, and Facebook!)</i>"
@@ -2623,6 +2629,7 @@ def handle_callback(call):
             content = original
 
         clean_content = re.sub(r'<[^<]+>', '', content).strip()
+        ADMIN_PREVIEW_QUOTE[chat_id] = clean_content
 
         # Check if we already have the photo file_id from the preview message
         broadcast_file_id = None
@@ -2758,11 +2765,68 @@ def handle_callback(call):
         threading.Thread(target=background_broadcast, daemon=True).start()
         
         confirm_msg = f"🚀 <b>Photo Card Broadcast Launched!</b>\nSending to {len(all_users)} bot users, the Telegram Channel, and Facebook in background..."
+        done_markup = InlineKeyboardMarkup()
+        done_markup.add(InlineKeyboardButton("📱 Download TikTok (9:16) Card", callback_data="adm_get_tiktok_card"))
+        done_markup.add(InlineKeyboardButton("🔙 Admin Panel", callback_data="adm_back"))
         if call.message.photo:
-            bot.edit_message_caption(caption=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_caption(caption=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=done_markup)
         else:
-            bot.edit_message_text(text=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_text(text=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=done_markup)
         return
+
+    # ── Admin: Get TikTok Card (9:16) ────────
+    if data == "adm_get_tiktok_card":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id, "📱 Generating TikTok 9:16 Card...", show_alert=False)
+        bot.send_chat_action(chat_id, 'upload_photo')
+        
+        quote_text = ADMIN_PREVIEW_QUOTE.get(chat_id)
+        if not quote_text:
+            original = call.message.caption or call.message.text or ""
+            try:
+                parts = original.split("━━━━━━━━━━━━━━━━━━━━\n\n")
+                if len(parts) > 1:
+                    content = parts[1]
+                    for delim in ["\n\n<i>(This visual quote", "\n\n(This visual quote", "\n\n<i>(This is what", "\n\n(This is what"]:
+                        if delim in content:
+                            content = content.split(delim)[0]
+                    quote_text = content.strip()
+                else:
+                    quote_text = original
+            except Exception:
+                quote_text = original
+                
+        clean_quote = re.sub(r'<[^<]+>', '', quote_text or "").strip()
+        if not clean_quote:
+            clean_quote = "የዕለቱ የስነ-ልቦና ማስታወሻ"
+
+        try:
+            import quote_card
+            tiktok_bytes = quote_card.generate_tiktok_card(clean_quote)
+        except Exception as e:
+            logging.error(f"Failed to generate TikTok card: {e}")
+            bot.send_message(chat_id, f"⚠️ <b>Failed to generate TikTok card:</b> {e}", parse_mode="HTML")
+            return
+
+        bot_uname = getattr(config, "BOT_USERNAME", "bayabooks_bot")
+        tiktok_caption = (
+            f"📱 <b>TikTok / Reels Ready Card (9:16 Vertical)</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"💡 <i>Tip: Save this photo to your gallery and post to TikTok in Photo Mode with a trending sound!</i>\n\n"
+            f"📋 <b>TikTok Caption (Tap to Copy):</b>\n"
+            f"<code>{clean_quote}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"🧠 የራስዎን የስነ-ልቦና ምክር በነጻ በ AI ለመመርመር ሊንኩን በፕሮፋይላችን ላይ ያግኙ!\n"
+            f"👉 Telegram: @{bot_uname}\n\n"
+            f"#BayaBooks #ሳይኮሎጂ #ስነልቦና #ምክር #ህይወት #አስተሳሰብ #ethiopian_tik_tok #habeshatiktok #fyp #viral</code>"
+        )
+        
+        import io
+        bio = io.BytesIO(tiktok_bytes)
+        bio.name = "baya_tiktok_card.jpg"
+        bot.send_photo(chat_id, bio, caption=tiktok_caption, parse_mode="HTML")
+        return
+
 
     # ── Admin: Broadcast ─────────────────────
     if data == "admin_broadcast":

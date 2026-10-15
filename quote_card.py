@@ -199,3 +199,113 @@ def generate_quote_card(quote_text, header_title="የዕለቱ የስነ-ልቦ�
     img.save(buf, format="PNG", optimize=True)
     buf.seek(0)
     return buf.getvalue()
+
+
+def generate_tiktok_card(quote_text, header_title="የዕለቱ የስነ-ልቦና ማስታወሻ", theme_index=None, format="JPEG"):
+    """
+    Renders a stunning, full-screen 1080x1920 (9:16) vertical card optimized for TikTok & Reels.
+    Respects TikTok UI safe zones (top navigation, right interaction icons, bottom captions).
+    Returns bytes of the image (JPEG or PNG).
+    """
+    clean_text = quote_text.strip()
+    if not clean_text.startswith("«") and not clean_text.startswith('"'):
+        clean_text = f"«{clean_text}»"
+
+    theme = THEMES[theme_index % len(THEMES)] if theme_index is not None else random.choice(THEMES)
+
+    img_w, img_h = 1080, 1920
+    img = Image.new("RGB", (img_w, img_h), color=theme["top_color"])
+    draw = ImageDraw.Draw(img)
+
+    # 1. Background gradient (1080x1920)
+    t_r, t_g, t_b = theme["top_color"]
+    b_r, b_g, b_b = theme["bottom_color"]
+    for y in range(img_h):
+        ratio = y / img_h
+        r = int(t_r * (1 - ratio) + b_r * ratio)
+        g = int(t_g * (1 - ratio) + b_g * ratio)
+        b = int(t_b * (1 - ratio) + b_b * ratio)
+        draw.line([(0, y), (img_w, y)], fill=(r, g, b))
+
+    # 2. Modern double border (safe zone: margins 50px left/right, 80px top/bottom)
+    m_x, m_y = 50, 80
+    draw.rectangle([(m_x, m_y), (img_w - m_x, img_h - m_y)], outline=theme["border"], width=2)
+    draw.rectangle([(m_x + 8, m_y + 8), (img_w - m_x - 8, img_h - m_y - 8)], outline=theme["inner_border"], width=1)
+
+    # 3. Logo integration (Top safe area, centered around y = 230)
+    logo_path = os.path.join(os.path.dirname(__file__), "static", "covers", "baya_logo.jpg")
+    logo_drawn = False
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo_size = 140
+            logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
+
+            mask = Image.new("L", (logo_size, logo_size), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.ellipse((0, 0, logo_size, logo_size), fill=255)
+
+            logo_x = (img_w - logo_size) // 2
+            logo_y = 230
+            img.paste(logo, (logo_x, logo_y), mask)
+
+            draw.ellipse([logo_x - 4, logo_y - 4, logo_x + logo_size + 4, logo_y + logo_size + 4], outline=theme["border"], width=2)
+            logo_drawn = True
+        except Exception:
+            logo_drawn = False
+
+    header_y = 440 if logo_drawn else 320
+
+    # 4. Header title
+    header_font = get_ethiopic_font(44)
+    draw.text((img_w // 2, header_y), header_title, font=header_font, fill=theme["header_color"], anchor="mm")
+    draw.line([(img_w // 2 - 120, header_y + 36), (img_w // 2 + 120, header_y + 36)], fill=theme["accent_line"], width=3)
+
+    # 5. Adaptive font sizing & wrapping for the quote (Max width 820px to stay clear of TikTok right buttons)
+    max_text_width = 820
+    text_len = len(clean_text)
+    if text_len < 80:
+        base_size = 60
+        line_spacing = 98
+    elif text_len < 180:
+        base_size = 52
+        line_spacing = 86
+    elif text_len < 280:
+        base_size = 44
+        line_spacing = 76
+    else:
+        base_size = 38
+        line_spacing = 66
+
+    quote_font = get_ethiopic_font(base_size)
+    lines = wrap_text(clean_text, quote_font, max_text_width, draw)
+
+    # Center the quote block vertically in the middle area (between header ~480 and footer ~1420)
+    total_text_h = len(lines) * line_spacing
+    center_y = 960
+    start_y = center_y - (total_text_h // 2)
+
+    for i, line in enumerate(lines):
+        y = start_y + i * line_spacing
+        draw.text((img_w // 2, y), line, font=quote_font, fill=theme["text_color"], anchor="mm")
+
+    # 6. Footer branding (Safe above TikTok bottom caption zone, y=1400..1580)
+    draw.line([(img_w // 2 - 200, 1420), (img_w // 2 + 200, 1420)], fill="#334155", width=1)
+    
+    brand_font = get_ethiopic_font(32)
+    footer_font = get_ethiopic_font(30)
+    cta_font = get_ethiopic_font(34)
+    
+    draw.text((img_w // 2, 1465), "BAYA BOOKS — የስነ-ልቦና እና የህይወት መመሪያዎች", font=brand_font, fill=theme["footer_sub"], anchor="mm")
+    draw.text((img_w // 2, 1515), "የራስዎን ስነ-ልቦና በነጻ በ AI ለመመርመር፦", font=footer_font, fill=theme["text_color"], anchor="mm")
+    draw.text((img_w // 2, 1565), "ቴሌግራም ላይ ያግኙን: @bayabooks_bot (Link in Bio)", font=cta_font, fill=theme["footer_link"], anchor="mm")
+
+    # 7. Export to BytesIO
+    buf = io.BytesIO()
+    if format.upper() == "PNG":
+        img.save(buf, format="PNG", optimize=True)
+    else:
+        img.save(buf, format="JPEG", quality=95, optimize=True)
+    buf.seek(0)
+    return buf.getvalue()
+

@@ -331,3 +331,20 @@ def get_tiktok_channel_url():
 def get_tiktok_channel_name():
     """Returns the brother's TikTok account name."""
     return database.get_setting("daily_gift_tiktok_name", "የአዕምሮ ምግቦች")
+
+def restart_game(cycle_date=None, reset_lifetime=True):
+    """
+    Completely resets the giveaway game.
+    Clears attempts and winners from the database, picks a fresh random secret word,
+    and updates the cycle date.
+    """
+    curr_cycle = cycle_date or get_game_cycle_date()
+    database.reset_daily_gift_game(cycle_date=curr_cycle, reset_lifetime=reset_lifetime)
+    
+    # Pick a new random secret word
+    all_words = [v["word"] for v in WORD_AFFIRMATIONS.values()]
+    new_word = random.choice(all_words)
+    database.set_setting("daily_gift_secret_word", new_word)
+    database.set_setting("daily_gift_secret_word_date", curr_cycle)
+    return new_word, curr_cycle
+

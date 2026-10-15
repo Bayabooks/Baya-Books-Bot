@@ -1504,6 +1504,22 @@ def cmd_refresh_menus(message):
         return
     run_refresh_all_menus(message.chat.id)
 
+@bot.message_handler(commands=["restart_game", "restartgame", "reset_gift_game"])
+def cmd_restart_game(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    new_w, cycle = tiktok_gift.restart_game(reset_lifetime=True)
+    msg = (
+        f"🔄 <b>የዕለቱ ነፃ መጽሐፍ ስጦታ እንደ አዲስ ተጀምሯል!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📅 <b>Cycle:</b> <code>{cycle}</code>\n"
+        f"🎯 <b>አዲሱ ሚስጥራዊ ቃል:</b> <b>«{new_w}»</b>\n"
+        f"👥 <b>የተሳታፊዎችና አሸናፊዎች ማህደር:</b> ሙሉ በሙሉ ፀድቷል (0)\n\n"
+        f"አሁን እርስዎም ሆኑ ተጠቃሚዎች <b>🎁 የዕለቱ ነፃ መጽሐፍ ስጦታ</b>ን በመጫን እንደ አዲስ መጫወት ትችላላችሁ! 🚀"
+    )
+    bot.reply_to(message, msg, parse_mode="HTML")
+
 @bot.message_handler(commands=["dashboard", "admin_dashboard"])
 def cmd_open_admin_dashboard(message):
     if not is_admin(message.from_user):
@@ -2462,6 +2478,7 @@ def handle_callback(call):
             InlineKeyboardButton("🎯 የዕለቱን ቃል ቀይር (Set Secret Word)", callback_data="adm_gift_set_word"),
             InlineKeyboardButton("🔄 አዲስ ቃል በዘፈቀደ ምረጥ (Randomize Word)", callback_data="adm_gift_rand_word"),
             InlineKeyboardButton("📱 የቲክቶክ ሊንክ ቀይር (Edit TikTok URL)", callback_data="adm_gift_set_url"),
+            InlineKeyboardButton("♻️ ዛሬን እንደ አዲስ ጀምር (Restart Game)", callback_data="adm_gift_restart_confirm"),
             InlineKeyboardButton("🔙 Back to Admin", callback_data="adm_back")
         )
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
@@ -2524,6 +2541,45 @@ def handle_callback(call):
             "እባክዎ አዲሱን የቲክቶክ አካውንት ሊንክ ያስገቡ (ምሳሌ፡ <code>https://www.tiktok.com/@yeaemromgboch</code>) ወይም /cancel ይጫኑ፦",
             parse_mode="HTML"
         )
+        return
+
+    if data == "adm_gift_restart_confirm":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("✅ አዎ፣ ጨዋታውን እንደ አዲስ ጀምር", callback_data="adm_gift_restart_do"),
+            InlineKeyboardButton("❌ ተመለስ (Cancel)", callback_data="adm_gift_menu")
+        )
+        safe_delete_message(chat_id, call.message.message_id)
+        bot.send_message(
+            chat_id,
+            "⚠️ <b>የዕለቱን ጨዋታ እንደ አዲስ ማስጀመር ይፈልጋሉ?</b>\n\n"
+            "ይህ እርምጃ፦\n"
+            "• የዛሬ ተሳታፊዎችን ሙከራ ያጸዳል\n"
+            "• የዛሬ አሸናፊዎችን ቆጣሪ ወደ 0 ይመልሳል\n"
+            "• አዲስ ሚስጥራዊ ቃል በዘፈቀደ ይመርጣል\n\n"
+            "እርስዎም ሆኑ ተጠቃሚዎች ወዲያውኑ እንደ አዲስ መጫወት ይችላሉ።",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data == "adm_gift_restart_do":
+        if not is_admin(call.from_user): return
+        new_w, cycle = tiktok_gift.restart_game(reset_lifetime=True)
+        bot.answer_callback_query(call.id, f"✅ ጨዋታው እንደ አዲስ ተጀምሯል! አዲሱ ቃል: «{new_w}»", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data == "adm_gift_reset_me":
+        if not is_admin(call.from_user): return
+        database.reset_user_daily_gift(uid)
+        bot.answer_callback_query(call.id, "✅ የእርስዎ ሙከራ ተሰርዟል! አሁን መጫወት ይችላሉ።", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        show_daily_gift_game(chat_id, uid)
         return
 
     if data == "adm_refresh_menus":
@@ -3128,6 +3184,11 @@ def show_daily_gift_game(chat_id, uid):
         markup.add(
             InlineKeyboardButton(f"📱 {tiktok_name} (TikTok)", url=tiktok_url)
         )
+        if is_admin_uid(uid):
+            markup.add(
+                InlineKeyboardButton("🔄 [Admin] Reset My Win & Play", callback_data="adm_gift_reset_me"),
+                InlineKeyboardButton("♻️ [Admin] Restart Whole Game", callback_data="adm_gift_restart_confirm")
+            )
         text = (
             "🏆 <b>እርስዎ ቀደም ሲል የነፃ መጽሐፍ አሸናፊ ሆነዋል!</b>\n"
             "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -3146,6 +3207,11 @@ def show_daily_gift_game(chat_id, uid):
         markup.add(
             InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
         )
+        if is_admin_uid(uid):
+            markup.add(
+                InlineKeyboardButton("🔄 [Admin] Reset My Attempt & Play", callback_data="adm_gift_reset_me"),
+                InlineKeyboardButton("♻️ [Admin] Restart Whole Game", callback_data="adm_gift_restart_confirm")
+            )
         status_txt = "ትክክለኛውን ቃል መርጠው ነበር" if attempt.get("is_correct") else "የተሳሳተ ቃል መርጠው ነበር"
         text = (
             "⏳ <b>ለዛሬ ተሳትፈዋል!</b>\n"

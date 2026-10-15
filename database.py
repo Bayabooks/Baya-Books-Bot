@@ -186,6 +186,18 @@ def setup_database():
         processed_at TEXT
     )''')
 
+    try:
+        c.execute("CREATE TABLE IF NOT EXISTS settings (setting_key TEXT PRIMARY KEY, setting_value TEXT)")
+        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'giveaway_reset_request'")
+        row = c.fetchone()
+        if not row or row[0] != "done_v2":
+            c.execute("DELETE FROM daily_gift_attempts")
+            c.execute("DELETE FROM daily_gift_winners")
+            c.execute("INSERT OR REPLACE INTO settings (setting_key, setting_value) VALUES ('giveaway_reset_request', 'done_v2')")
+            c.execute("DELETE FROM settings WHERE setting_key IN ('daily_gift_secret_word', 'daily_gift_secret_word_date')")
+    except Exception as e:
+        logging.warning(f"Giveaway reset notice: {e}")
+
     conn.commit()
     conn.close()
 
@@ -2443,5 +2455,34 @@ def get_total_gift_winners_count():
     count = c.fetchone()[0]
     conn.close()
     return count
+
+def reset_daily_gift_game(cycle_date=None, reset_lifetime=False):
+    """
+    Resets the daily gift game.
+    If reset_lifetime is True or cycle_date is None, clears all attempts and winners.
+    Otherwise clears only for the specified cycle_date.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    if reset_lifetime or not cycle_date:
+        c.execute("DELETE FROM daily_gift_attempts")
+        c.execute("DELETE FROM daily_gift_winners")
+    else:
+        c.execute("DELETE FROM daily_gift_attempts WHERE cycle_date = ?", (cycle_date,))
+        c.execute("DELETE FROM daily_gift_winners WHERE cycle_date = ?", (cycle_date,))
+    conn.commit()
+    conn.close()
+
+def reset_user_daily_gift(user_id):
+    """
+    Removes attempt and win records for a specific user (useful for admin testing).
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM daily_gift_attempts WHERE user_id = ?", (user_id,))
+    c.execute("DELETE FROM daily_gift_winners WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
 
 

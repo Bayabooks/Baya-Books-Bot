@@ -99,6 +99,25 @@ def setup_database():
         date_added TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS daily_gift_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        cycle_date TEXT,
+        chosen_word TEXT,
+        is_correct INTEGER DEFAULT 0,
+        attempt_time TEXT,
+        UNIQUE(user_id, cycle_date)
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS daily_gift_winners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE,
+        cycle_date TEXT,
+        rank INTEGER,
+        book_chosen TEXT,
+        awarded_at TEXT
+    )''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS user_books (
         user_id INTEGER,
         book_key TEXT,
@@ -2340,4 +2359,84 @@ def get_published_author_books():
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+# ══════════════════════════════════════════════════════════════════
+#  DAILY FREE BOOK GIFT (TIKTOK GIVEAWAY)
+# ══════════════════════════════════════════════════════════════════
+
+def has_user_won_daily_gift(user_id):
+    """Returns True if the user has ever won a lifetime book in the daily gift game."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT 1 FROM daily_gift_winners WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return bool(row)
+
+def get_user_daily_gift_attempt(user_id, cycle_date):
+    """Returns the user's attempt record for the given cycle_date, or None."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM daily_gift_attempts WHERE user_id = ? AND cycle_date = ?", (user_id, cycle_date))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def record_daily_gift_attempt(user_id, cycle_date, chosen_word, is_correct):
+    """Records a daily gift game attempt for the cycle date."""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT OR REPLACE INTO daily_gift_attempts (user_id, cycle_date, chosen_word, is_correct, attempt_time)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (user_id, cycle_date, chosen_word, 1 if is_correct else 0, now_str))
+    conn.commit()
+    conn.close()
+
+def get_today_gift_winners_count(cycle_date):
+    """Returns the number of winners who claimed a book today (max 5 per day)."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM daily_gift_winners WHERE cycle_date = ?", (cycle_date,))
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
+def record_daily_gift_winner(user_id, cycle_date, rank, book_chosen):
+    """Records a winner for the daily gift game. Fails if user already won previously."""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO daily_gift_winners (user_id, cycle_date, rank, book_chosen, awarded_at)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (user_id, cycle_date, rank, book_chosen, now_str))
+    conn.commit()
+    conn.close()
+
+def get_daily_gift_winners(cycle_date):
+    """Returns the list of winners for the specified cycle date."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT w.*, u.username, u.first_name
+        FROM daily_gift_winners w
+        LEFT JOIN users u ON w.user_id = u.user_id
+        WHERE w.cycle_date = ?
+        ORDER BY w.rank ASC
+    ''', (cycle_date,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_total_gift_winners_count():
+    """Returns the total number of lifetime gift winners."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM daily_gift_winners")
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
 

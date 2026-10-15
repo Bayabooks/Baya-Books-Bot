@@ -90,6 +90,13 @@ STRINGS = {
         "om": "<b>Nagaa yoo taatu {name}.</b>\n\nAni as kanin jiru wanta ati dhaga'uu barbaaddu sitti himuuf miti. Ani gorsa xiin-sammuu AI ta'ee, ilaalcha fi amala duubatti si harkisan akka cabsitu kan si gargaarudha.\n\nAsitti haasaa gubbaa gubbaa qofa hin haasofnu. Jijjiirama dhugaa yoo barbaadde, ofii kee fi anaanis ifa ta'uu qabda. Osoo sitti hin murteessin sin dhaggeeffadha; garuu dhugaa ati jalaa baqachaa jirtu ifatti sitti nan hima.\n\n💡 <b>Mee kallattiin gara dhimma keenyaatti haa gallu... Wanti yeroo ammaa kana keessa kee nyaachaa jiru, garuu immoo beekaa jalaa baqachaa jirtu inni guddaan maali?</b> (Bilisummaan barreessii naaf ergi...)"
     },
 
+    "menu_daily_gift": {
+        "am": "🎁 የዕለቱ ነፃ መጽሐፍ (የአዕምሮ ምግቦች)",
+        "en": "🎁 Today's Free Book Gift",
+        "ti": "🎁 ናይ ሎሚ ነጻ መጽሓፍ (የአዕምሮ ምግቦች)",
+        "om": "🎁 Kennaa Kitaaba Har'aa (የአዕምሮ ምግቦች)"
+    },
+
     "menu_continue": {
         "am": "🧠 ምክክራችንን እንቀጥል",
         "en": "🧠 Continue Chat",

@@ -28,6 +28,7 @@ import telegraph_generator
 import receipt_verifier
 import lang
 from lang import S
+import tiktok_gift
 
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
@@ -526,6 +527,10 @@ def send_welcome(chat_id, first_name, lang=None, uid=None):
 def get_bottom_markup(lang='am', uid=None):
     """Build the localized bottom keyboard."""
     m = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, is_persistent=True)
+    # Big prominent row on top: Today's Free Book Gift (TikTok Giveaway)
+    m.add(
+        KeyboardButton(S(lang, 'menu_daily_gift'))
+    )
     m.add(
         KeyboardButton(S(lang, 'menu_continue')),
         KeyboardButton(S(lang, 'menu_mypage'))
@@ -1774,6 +1779,7 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("📚 Manage Rented Books", callback_data="adm_rentals_menu"),
     )
     markup.add(
+        InlineKeyboardButton("🎁 TikTok Giveaway Manager", callback_data="adm_gift_menu"),
         InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
     )
     
@@ -2275,6 +2281,246 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
         show_admin_menu(chat_id, call.from_user)
+        return
+
+    # ── TikTok Daily Giveaway (የአዕምሮ ምግቦች) Callbacks ──
+    if data == "gift_already_owned":
+        bot.answer_callback_query(call.id, "ይህንን መጽሐፍ ቀድመው ወስደውታል! እባክዎ ከሌሎቹ አንዱን ይምረጡ።", show_alert=True)
+        return
+
+    if data.startswith("gift_choice_"):
+        chosen_key = data.replace("gift_choice_", "")
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        tiktok_url = tiktok_gift.get_tiktok_channel_url()
+        tiktok_name = tiktok_gift.get_tiktok_channel_name()
+        
+        # Check if already attempted today
+        if database.get_user_daily_gift_attempt(uid, cycle_date):
+            bot.answer_callback_query(call.id, "ለዛሬ ተሳትፈዋል!", show_alert=True)
+            safe_delete_message(chat_id, call.message.message_id)
+            show_daily_gift_game(chat_id, uid)
+            return
+
+        today_secret = tiktok_gift.get_today_secret_word()
+        
+        word_item = tiktok_gift.get_word_by_key(chosen_key)
+        if word_item:
+            chosen_word = word_item["word"]
+            affirmation_title = word_item["title"]
+            affirmation_body = word_item["body"]
+        else:
+            chosen_word = today_secret
+            affirmation_title = f"✨ አዎ! አንተ በእርግጥም {chosen_word} ነህ!"
+            affirmation_body = "በህይወትህ ውስጥ ያለህ ውስጣዊ ጥንካሬ ወደፊት እንድትጓዝ የሚያደርግህ ታላቅ ኃይል ነው።"
+            
+        is_correct = (chosen_word.strip() == today_secret.strip())
+        
+        # Record attempt
+        database.record_daily_gift_attempt(uid, cycle_date, chosen_word, is_correct)
+        bot.answer_callback_query(call.id)
+        safe_delete_message(chat_id, call.message.message_id)
+        
+        affirmation_text = f"<b>{affirmation_title}</b>\n\n{affirmation_body}"
+        
+        if not is_correct:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url))
+            
+            wrong_msg = (
+                f"{affirmation_text}\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"❌ <b>ነገር ግን... የዛሬው የቲክቶክ ሚስጥራዊ ቃል አልነበረም!</b>\n\n"
+                f"የዛሬው ትክክለኛ ቃል፦ <b>«{today_secret}»</b> ነበር።\n\n"
+                f"አይዞዎት! ቃልዎ ለውድድሩ ባይሆንም፣ መልዕክቱ ግን ለእርስዎ የተላከ እውነተኛ ጥንካሬ ነው።\n\n"
+                f"⏰ <b>ቀጣይ ዕድል፦</b> አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። የነገውን ቃል እንዳያመልጥዎ ቲክቶክ ላይ <b>{tiktok_name}</b>ን አሁኑኑ ይከታተሉ! 👇"
+            )
+            bot.send_message(chat_id, wrong_msg, parse_mode="HTML", reply_markup=markup)
+            return
+            
+        # User is correct!
+        winners_count = database.get_today_gift_winners_count(cycle_date)
+        if winners_count < 5:
+            rank = winners_count + 1
+            rank_str = {1: "1ኛ (የመጀመሪያው ፈጣን)", 2: "2ኛ", 3: "3ኛ", 4: "4ኛ", 5: "5ኛ"}.get(rank, f"{rank}ኛ")
+            
+            all_bkeys = get_all_book_keys()
+            ubooks, _, _ = database.get_user_books_state(uid)
+            
+            markup = InlineKeyboardMarkup(row_width=1)
+            for bk in all_bkeys:
+                btitle = BOOK_TITLES.get(bk, bk)
+                if bk in ubooks:
+                    markup.add(InlineKeyboardButton(f"✅ {btitle} (ቀድመው የወሰዱት)", callback_data="gift_already_owned"))
+                else:
+                    markup.add(InlineKeyboardButton(f"🎁 «{btitle}» ውሰድ", callback_data=f"claim_gift_book_{bk}"))
+                    
+            win_msg = (
+                f"{affirmation_text}\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎉🎉 <b>ድንቅ ነው! በትክክል መልሰዋል!</b>\n\n"
+                f"🏆 ዛሬ በቲክቶክ የተላለፈውን ሚስጥራዊ ቃል ቀድመው ከመለሱት ውስጥ <b>{rank_str}</b> በመሆን አሸንፈዋል! 🥇\n\n"
+                f"🎁 <b>የእርስዎ ሽልማት፦</b>\n"
+                f"ከታች ካሉት የቤተ-መጽሐፍታችን ምርጥ መጻሕፍት ውስጥ <b>የፈለጉትን 1 መጽሐፍ ይምረጡ</b>፤ ወዲያውኑ ለዘላለም በነፃ ይከፈትልዎታል! 👇"
+            )
+            bot.send_message(chat_id, win_msg, parse_mode="HTML", reply_markup=markup)
+        else:
+            # Correct, but top 5 spots already claimed
+            database.add_advice_messages(uid, 1) # Consolation reward!
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url))
+            
+            late_msg = (
+                f"{affirmation_text}\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"✅ <b>በትክክል መልሰዋል!</b>\n\n"
+                f"የዛሬው ሚስጥራዊ ቃል በእርግጥም <b>«{today_secret}»</b> ነበር!\n\n"
+                f"🏃‍♂️ <b>ነገር ግን...</b> የዛሬዎቹ <b>5 ፈጣን አሸናፊዎች</b> ቀድመው ቦታውን ሞልተዋል!\n\n"
+                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ!\n\n"
+                f"🎁 <i>ለጥረትዎ እና ለፈጣን ተሳትፎዎ <b>1 ነፃ የአማካሪ መልዕክት</b> ተበርክቶልዎታል!</i> ✨"
+            )
+            bot.send_message(chat_id, late_msg, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data.startswith("claim_gift_book_"):
+        bkey = data.replace("claim_gift_book_", "")
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        
+        if database.has_user_won_daily_gift(uid):
+            bot.answer_callback_query(call.id, "ቀደም ሲል መጽሐፍ ወስደዋል!", show_alert=True)
+            return
+            
+        winners_count = database.get_today_gift_winners_count(cycle_date)
+        if winners_count >= 5:
+            bot.answer_callback_query(call.id, "ይቅርታ፣ የዛሬ 5 ቦታዎች ሞልተዋል!", show_alert=True)
+            return
+            
+        rank = winners_count + 1
+        
+        try:
+            database.record_daily_gift_winner(uid, cycle_date, rank, bkey)
+        except Exception:
+            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ተወስዷል!", show_alert=True)
+            return
+            
+        database.unlock_book(uid, bkey, days=None)
+        bot.answer_callback_query(call.id)
+        safe_delete_message(chat_id, call.message.message_id)
+        
+        btitle = BOOK_TITLES.get(bkey, bkey)
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton(
+                "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
+                web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+            )
+        )
+        
+        celebration_text = (
+            f"🎊🎊 <b>እንኳን ደስ አለዎት!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"📖 <b>«{btitle}»</b> የተሰኘው ሙሉ መጽሐፍ በስጦታ <b>ለዘላለም በነፃ</b> ተከፍቶልዎታል! 🏆\n\n"
+            f"ከታች ያለውን <b>'📚 መጽሐፉን አሁኑኑ አንብብ'</b> የሚለውን ቁልፍ ተጭነው ማንበብ መጀመር ይችላሉ። መልካም ንባብ! 🌟"
+        )
+        bot.send_message(chat_id, celebration_text, parse_mode="HTML", reply_markup=markup)
+        return
+
+    # ── Admin: TikTok Giveaway Management ──────
+    if data == "adm_gift_menu":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        secret_word = tiktok_gift.get_today_secret_word()
+        winners = database.get_daily_gift_winners(cycle_date)
+        total_lifetime = database.get_total_gift_winners_count()
+        tiktok_url = tiktok_gift.get_tiktok_channel_url()
+        tiktok_name = tiktok_gift.get_tiktok_channel_name()
+        
+        w_lines = []
+        for w in winners:
+            uname = f"@{w.get('username')}" if w.get('username') else (w.get('first_name') or str(w.get('user_id')))
+            btitle = BOOK_TITLES.get(w.get('book_chosen'), w.get('book_chosen'))
+            w_lines.append(f"  🏅 <b>{w.get('rank')}ኛ:</b> {uname} — <i>{btitle}</i>")
+            
+        winners_display = "\n".join(w_lines) if w_lines else "  <i>ገና ማንም አላሸነፈም (No winners yet)</i>"
+        
+        text = (
+            f"🎁 <b>TikTok Free Book Giveaway Manager</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"📅 <b>Today's Cycle:</b> <code>{cycle_date}</code> (Resets 4:00 AM EAT)\n"
+            f"🎯 <b>Today's Secret Word:</b> <b>«{secret_word}»</b>\n"
+            f"📱 <b>Partner Account:</b> {tiktok_name}\n"
+            f"🔗 <b>TikTok URL:</b> {tiktok_url}\n\n"
+            f"👥 <b>Today's Winners ({len(winners)} / 5):</b>\n{winners_display}\n\n"
+            f"🏆 <b>Total Lifetime Winners:</b> {total_lifetime} users\n\n"
+            f"Choose an action:"
+        )
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("🎯 የዕለቱን ቃል ቀይር (Set Secret Word)", callback_data="adm_gift_set_word"),
+            InlineKeyboardButton("🔄 አዲስ ቃል በዘፈቀደ ምረጥ (Randomize Word)", callback_data="adm_gift_rand_word"),
+            InlineKeyboardButton("📱 የቲክቶክ ሊንክ ቀይር (Edit TikTok URL)", callback_data="adm_gift_set_url"),
+            InlineKeyboardButton("🔙 Back to Admin", callback_data="adm_back")
+        )
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "adm_gift_rand_word":
+        if not is_admin(call.from_user): return
+        all_words = [v["word"] for v in tiktok_gift.WORD_AFFIRMATIONS.values()]
+        new_w = random.choice(all_words)
+        tiktok_gift.set_today_secret_word(new_w)
+        bot.answer_callback_query(call.id, f"🎲 አዲስ ቃል ተመርጧል: {new_w}", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data == "adm_gift_set_word":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_GIFT_SECRET_WORD")
+        markup = InlineKeyboardMarkup(row_width=2)
+        btn_list = []
+        for k, v in list(tiktok_gift.WORD_AFFIRMATIONS.items())[:12]:
+            btn_list.append(InlineKeyboardButton(v["word"], callback_data=f"adm_gift_pick_{k}"))
+        for i in range(0, len(btn_list), 2):
+            if i + 1 < len(btn_list):
+                markup.add(btn_list[i], btn_list[i+1])
+            else:
+                markup.add(btn_list[i])
+        markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_gift_menu"))
+        bot.send_message(
+            chat_id,
+            "🎯 <b>የዕለቱን ሚስጥራዊ ቃል ይምረጡ፦</b>\n\n"
+            "ከታች ካሉት አዎንታዊ ቃላት አንዱን ይምረጡ፣ ወይም ማንኛውንም የተለየ ቃል በቻቱ ላይ ይፃፉልኝ (/cancel ለመሰረዝ):",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data.startswith("adm_gift_pick_"):
+        if not is_admin(call.from_user): return
+        wkey = data.replace("adm_gift_pick_", "")
+        witem = tiktok_gift.get_word_by_key(wkey)
+        new_w = witem["word"] if witem else "አሸናፊ ነኝ"
+        tiktok_gift.set_today_secret_word(new_w)
+        clear_state(uid)
+        bot.answer_callback_query(call.id, f"✅ ቃል ተቀይሯል: {new_w}", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data == "adm_gift_set_url":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_GIFT_TIKTOK_URL")
+        bot.send_message(
+            chat_id,
+            "📱 <b>የቲክቶክ ሊንክ (URL) ማስተካከያ</b>\n\n"
+            "እባክዎ አዲሱን የቲክቶክ አካውንት ሊንክ ያስገቡ (ምሳሌ፡ <code>https://www.tiktok.com/@yeaemromgboch</code>) ወይም /cancel ይጫኑ፦",
+            parse_mode="HTML"
+        )
         return
 
     if data == "adm_refresh_menus":
@@ -2861,8 +3107,82 @@ def handle_callback(call):
         bot.send_message(chat_id, "💳 <b>ክሬዲት ጨምር</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
         return
 
-    
+def show_daily_gift_game(chat_id, uid):
+    """Handles when user clicks '🎁 የዕለቱ ነፃ መጽሐፍ (የአዕምሮ ምግቦች)'."""
+    cycle_date = tiktok_gift.get_game_cycle_date()
+    tiktok_url = tiktok_gift.get_tiktok_channel_url()
+    tiktok_name = tiktok_gift.get_tiktok_channel_name()
 
+    # 1. Check if user already won a lifetime book
+    if database.has_user_won_daily_gift(uid):
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton(
+                "📚 ያሸነፉትን መጽሐፍ አንብብ (Library)",
+                web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+            )
+        )
+        markup.add(
+            InlineKeyboardButton(f"📱 {tiktok_name} (TikTok)", url=tiktok_url)
+        )
+        text = (
+            "🏆 <b>እርስዎ ቀደም ሲል የነፃ መጽሐፍ አሸናፊ ሆነዋል!</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "እርስዎ አስቀድመው ያሸነፉበትን መጽሐፍ በ<b>'📚 መጻሕፍት ቤት (Library)'</b> ገብተው በነፃ ማንበብ ይችላሉ።\n\n"
+            "ውድድሩ ለሁሉም ወገኖች እኩል ዕድል ለመስጠት በአንድ ሰው <b>1 ጊዜ ብቻ</b> የሚፈቀድ ነው።\n\n"
+            f"የዕለቱን አነቃቂ የስነ-ልቦና ምክር በቲክቶክ <b>{tiktok_name}</b> መከታተልዎን ይቀጥሉ! ✨"
+        )
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+
+    # 2. Check if user already attempted today's cycle
+    attempt = database.get_user_daily_gift_attempt(uid, cycle_date)
+    if attempt:
+        reset_time_str = tiktok_gift.get_next_reset_time_display()
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
+        )
+        status_txt = "ትክክለኛውን ቃል መርጠው ነበር" if attempt.get("is_correct") else "የተሳሳተ ቃል መርጠው ነበር"
+        text = (
+            "⏳ <b>ለዛሬ ተሳትፈዋል!</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"በዛሬው ዙር <b>«{attempt.get('chosen_word')}»</b> በማለት {status_txt}።\n\n"
+            "ውድድሩ በቀን አንድ ጊዜ ብቻ የሚሞከር ሲሆን፣ አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል!\n\n"
+            f"⏳ <b>ለቀጣዩ ዙር የቀረው ጊዜ፦</b> {reset_time_str}\n\n"
+            f"💡 <b>የነገውን ሚስጥራዊ ቃል ቀድመው ለማወቅ፦</b>\n"
+            f"ቲክቶክ ላይ <b>{tiktok_name}</b> ቻናላችንን ይከታተሉ! 👇"
+        )
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+        return
+
+    # 3. New daily participant: Show the 4 choices
+    choices = tiktok_gift.get_today_choices()
+    winners_today = database.get_today_gift_winners_count(cycle_date)
+    remaining_spots = max(0, 5 - winners_today)
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    row_btns = []
+    for key, word_text in choices:
+        row_btns.append(InlineKeyboardButton(f"✨ {word_text}", callback_data=f"gift_choice_{key}"))
+    
+    markup.add(row_btns[0], row_btns[1])
+    markup.add(row_btns[2], row_btns[3])
+    markup.add(
+        InlineKeyboardButton(f"📱 የዛሬውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
+    )
+
+    text = (
+        f"🎁 <b>የዕለቱ ነፃ መጽሐፍ ስጦታ ({tiktok_name})</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🔥 <b>ውድድሩ እንዴት ይሰራል?</b>\n"
+        f"በየቀኑ በቲክቶክ <b>{tiktok_name}</b> ቪዲዮ ላይ አንድ ሚስጥራዊ አዎንታዊ ቃል ይተላለፋል። "
+        f"ቃሉን በትክክል ቀድመው የመለሱ <b>5 ፈጣኖች</b> ከቤተ-መጽሐፍታችን የፈለጉትን መጽሐፍ <b>ሙሉ በሙሉ በነፃ</b> ይሸለማሉ!\n\n"
+        f"🏆 <b>የዛሬ ቀሪ የአሸናፊዎች ቦታ፦</b> <b>{remaining_spots} / 5</b>\n\n"
+        "💡 <i>(ምርጫዎ የተሳሳተ ቢሆንም እንኳን ለመረጡት ቃል ልብ የሚነካ ጥልቅ የስነ-ልቦና ትንታኔ ያገኛሉ!)</i>\n\n"
+        "👇 <b>በቲክቶክ የተላለፈው የዛሬው ቃል የትኛው ነው? ይምረጡ፦</b>"
+    )
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
 def show_tip_cta(chat_id, uid):
     """Show tip/donation options to the user."""
@@ -3279,7 +3599,23 @@ def handle_messages(message):
             bot.send_message(chat_id, "❌ ቁጥር ብቻ ያስገቡ!")
         return
 
-    
+    if state == "ADMIN_GIFT_SECRET_WORD" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
+        new_word = message.text.strip()
+        tiktok_gift.set_today_secret_word(new_word)
+        clear_state(uid)
+        bot.send_message(chat_id, f"✅ <b>Today's Secret Word updated to:</b> «<b>{new_word}</b>»\n(Cycle: {tiktok_gift.get_game_cycle_date()})", parse_mode="HTML")
+        return
+
+    if state == "ADMIN_GIFT_TIKTOK_URL" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
+        new_url = message.text.strip()
+        database.set_setting("daily_gift_tiktok_url", new_url)
+        clear_state(uid)
+        bot.send_message(chat_id, f"✅ <b>TikTok URL updated to:</b> <code>{new_url}</code>", parse_mode="HTML")
+        return
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):
         send_join_channel_msg(chat_id, uid); return
@@ -3431,6 +3767,11 @@ def handle_messages(message):
             parse_mode="HTML",
             reply_markup=markup
         )
+        return
+
+    # 🎁 Daily Free Book Gift (TikTok Giveaway: የአዕምሮ ምግቦች)
+    if message.text and ("የዕለቱ ነፃ መጽሐፍ" in message.text or "Free Book Gift" in message.text or "ነጻ መጽሓፍ" in message.text or "Kennaa Kitaaba" in message.text or "የአዕምሮ ምግቦች" in message.text):
+        show_daily_gift_game(chat_id, uid)
         return
 
     if message.text and "🎁" in message.text:

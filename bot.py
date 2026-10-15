@@ -2571,82 +2571,138 @@ def handle_callback(call):
     # ── Admin: Auto Psych Broadcast ──────────
     if data in ["adm_auto_broadcast_init", "adm_auto_refresh"]:
         if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id, "🧠 Generating profound message...", show_alert=False)
+        bot.answer_callback_query(call.id, "🧠 Generating visual quote card...", show_alert=False)
         bot.send_chat_action(chat_id, 'typing')
         psych_text = ai_engine.generate_psych_broadcast()
         
+        # Clean text for quote card
+        clean_psych = re.sub(r'<[^<]+>', '', psych_text).strip()
+        card_bytes = None
+        try:
+            import quote_card
+            card_bytes = quote_card.generate_quote_card(clean_psych)
+        except Exception as e:
+            logging.error(f"Failed to generate quote card in preview: {e}")
+
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✅ Verify & Broadcast", callback_data="adm_confirm_auto_broadcast"))
+        markup.add(InlineKeyboardButton("🚀 Verify & Broadcast (Card + Post)", callback_data="adm_confirm_auto_broadcast"))
         markup.add(InlineKeyboardButton("🔄 Refresh (Generate New)", callback_data="adm_auto_refresh"))
         markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_back"))
         
-        msg = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{psych_text}\n\n<i>(This is what users will see. Verify or refresh.)</i>"
+        caption_text = f"💡 <b>Auto Psychology Broadcast Preview</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{psych_text}\n\n<i>(This visual quote card will be broadcasted to the Channel, Bot users, and Facebook!)</i>"
         
         if data == "adm_auto_refresh":
-            bot.edit_message_text(msg, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            safe_delete_message(chat_id, call.message.message_id)
+
+        if card_bytes:
+            import io
+            bio = io.BytesIO(card_bytes)
+            bio.name = "baya_quote_preview.png"
+            bot.send_photo(chat_id, bio, caption=caption_text, parse_mode="HTML", reply_markup=markup)
         else:
-            bot.send_message(chat_id, msg, parse_mode="HTML", reply_markup=markup)
+            bot.send_message(chat_id, caption_text, parse_mode="HTML", reply_markup=markup)
         return
 
     if data == "adm_confirm_auto_broadcast":
         if not is_admin(call.from_user): return
-        bot.answer_callback_query(call.id, "✅ Broadcasting...", show_alert=False)
+        bot.answer_callback_query(call.id, "🚀 Broadcasting photo card...", show_alert=False)
         
         # Extract the actual text generated
-        original = call.message.text
-        # Remove the headers and footers
+        original = call.message.caption or call.message.text or ""
         try:
             parts = original.split("━━━━━━━━━━━━━━━━━━━━\n\n")
             if len(parts) > 1:
-                content = parts[1].split("\n\n(This is what")[0].strip()
+                content = parts[1]
+                for delim in ["\n\n<i>(This visual quote", "\n\n(This visual quote", "\n\n<i>(This is what", "\n\n(This is what"]:
+                    if delim in content:
+                        content = content.split(delim)[0]
+                content = content.strip()
             else:
                 content = original
-        except:
+        except Exception:
             content = original
 
-        # Create broadcast thread
-        all_users = database.get_all_user_ids()
-        
-        # Post to Telegram channel
-        try:
-            channel_msg = f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}\n\n👇\nhttps://t.me/bayabooks_bot"
-            bot.send_message("@BAYABOOKS1", channel_msg, parse_mode="HTML")
-        except Exception as e:
-            import logging
-            logging.error(f"Failed to post to channel: {e}")
+        clean_content = re.sub(r'<[^<]+>', '', content).strip()
 
-        # Post to Facebook Page (if configured)
+        # Check if we already have the photo file_id from the preview message
+        broadcast_file_id = None
+        if call.message.photo:
+            broadcast_file_id = call.message.photo[-1].file_id
+
+        # Generate quote card bytes if not already available
+        card_bytes = None
+        if not broadcast_file_id:
+            try:
+                import quote_card
+                card_bytes = quote_card.generate_quote_card(clean_content)
+            except Exception as ce:
+                logging.error(f"Failed to generate quote card for broadcast: {ce}")
+
+        all_users = database.get_all_user_ids()
+        bot_uname = getattr(config, "BOT_USERNAME", "bayabooks_bot")
+
+        # 1. Post Visual Quote Card to Telegram Channel
+        channel_name = getattr(config, "CHANNEL_USERNAME", "BAYABOOKS1").lstrip('@')
+        channel_target = f"@{channel_name}"
+        channel_caption = (
+            f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n"
+            f"{content}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"🧠 <b>የራስዎን የስነ-ልቦና እና የህይወት መመሪያ በነጻ በ AI ለመመርመር ቦቱን ይቀላቀሉ፦</b>\n"
+            f"👉 @{bot_uname}"
+        )
+        channel_markup = InlineKeyboardMarkup()
+        channel_markup.add(
+            InlineKeyboardButton("🧠 ወደ AI ማማከሪያው ግባ (Start Bot)", url=f"https://t.me/{bot_uname}?start=channel_post")
+        )
+
         try:
-            import os
+            if broadcast_file_id:
+                bot.send_photo(channel_target, broadcast_file_id, caption=channel_caption, parse_mode="HTML", reply_markup=channel_markup)
+            elif card_bytes:
+                import io
+                bio = io.BytesIO(card_bytes)
+                bio.name = "baya_channel_card.png"
+                sent_ch = bot.send_photo(channel_target, bio, caption=channel_caption, parse_mode="HTML", reply_markup=channel_markup)
+                if sent_ch and sent_ch.photo:
+                    broadcast_file_id = sent_ch.photo[-1].file_id
+            else:
+                bot.send_message(channel_target, channel_caption, parse_mode="HTML", reply_markup=channel_markup)
+        except Exception as e:
+            logging.error(f"Failed to post photo card to channel: {e}")
+            try:
+                bot.send_message(channel_target, channel_caption, parse_mode="HTML", reply_markup=channel_markup)
+            except Exception:
+                pass
+
+        # 2. Post to Facebook Page (with Visual Photo Card)
+        try:
             fb_token = os.environ.get("FB_PAGE_ACCESS_TOKEN")
             fb_page_id = os.environ.get("FB_PAGE_ID")
             
             if fb_token and fb_page_id:
                 import requests
-                import re
-                # Facebook uses plain text, so strip HTML tags
-                clean_content = re.sub('<[^<]+>', '', content).strip()
                 fb_msg = (
                     f"✨ የዕለቱ የስነ-ልቦና መልዕክት\n\n"
                     f"{clean_content}\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"📚 ሙሉ የስነ-ልቦና መመሪያዎችን እና ምክሮችን ለማግኘት ቦቱን በነጻ ይቀላቀሉ፦\n"
-                    f"👉 https://t.me/bayabooks_bot\n\n"
+                    f"👉 https://t.me/{bot_uname}\n\n"
                     f"#BayaBooks #ሳይኮሎጂ #ስነልቦና #ምክር #ህይወት"
                 )
                 
-                try:
-                    import quote_card
-                    card_bytes = quote_card.generate_quote_card(clean_content)
-                except Exception as ce:
-                    import logging
-                    logging.error(f"Failed to generate quote card: {ce}")
-                    card_bytes = None
+                fb_bytes = card_bytes
+                if not fb_bytes and broadcast_file_id:
+                    try:
+                        finfo = bot.get_file(broadcast_file_id)
+                        fb_bytes = bot.download_file(finfo.file_path)
+                    except Exception:
+                        pass
 
-                if card_bytes:
+                if fb_bytes:
                     fb_photo_url = f"https://graph.facebook.com/v18.0/{fb_page_id}/photos"
                     files = {
-                        "source": ("baya_quote_card.png", card_bytes, "image/png")
+                        "source": ("baya_quote_card.png", fb_bytes, "image/png")
                     }
                     payload = {
                         "caption": fb_msg,
@@ -2660,41 +2716,52 @@ def handle_callback(call):
                         "access_token": fb_token
                     }
                     res = requests.post(fb_url, data=payload, timeout=15)
+
                 if res.status_code != 200:
                     bot.send_message(chat_id, f"⚠️ <b>Facebook Post Failed:</b>\n<code>{res.text}</code>", parse_mode="HTML")
                 else:
                     bot.send_message(chat_id, "✅ <b>Successfully posted Photo Card to Facebook Page!</b> 📸", parse_mode="HTML")
         except Exception as e:
             bot.send_message(chat_id, f"⚠️ <b>Facebook Error:</b> {str(e)}")
-            import logging
             logging.error(f"Failed to post to Facebook: {e}")
 
+        # 3. Broadcast to All Bot Users (Using Visual Photo Card file_id!)
+        user_caption = f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}"
+        
         def background_broadcast():
-            import time
             success = 0
             failed = 0
             for u in all_users:
                 try:
-                    bot.send_message(u, f"✨ <b>የዕለቱ የስነ-ልቦና መልዕክት</b>\n\n{content}", parse_mode="HTML")
-                    # Refresh keyboard for this user
-                    try:
-                        u_lang = database.get_bot_language(u) or 'am'
-                        bot.send_message(u, "​", reply_markup=get_bottom_markup(u_lang, u))
-                        # Append the broadcast to the user's AI history so the AI has context!
-                        database.append_bot_message_to_history(u, content)
-                    except Exception:
-                        pass
+                    u_lang = database.get_bot_language(u) or 'am'
+                    u_markup = get_bottom_markup(u_lang, u)
+                    
+                    if broadcast_file_id:
+                        bot.send_photo(u, broadcast_file_id, caption=user_caption, parse_mode="HTML", reply_markup=u_markup)
+                    else:
+                        bot.send_message(u, user_caption, parse_mode="HTML")
+                        bot.send_message(u, "​", reply_markup=u_markup)
+                        
+                    database.append_bot_message_to_history(u, content)
                     database.mark_user_blocked(u, 0)
                     success += 1
-                except Exception as e:
+                except Exception:
                     database.mark_user_blocked(u, 1)
                     failed += 1
-                time.sleep(0.07)
-            try: bot.send_message(chat_id, f"✅ <b>Auto-Broadcast Complete!</b>\n✔️ {success} Delivered\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
-            except: pass
+                time.sleep(0.05)
+                
+            try:
+                bot.send_message(chat_id, f"✅ <b>Visual Quote Card Broadcast Complete!</b>\n✔️ {success} Delivered (Photo Card)\n❌ {failed} Failed (Marked as Blocked/Left)", parse_mode="HTML")
+            except Exception:
+                pass
             
         threading.Thread(target=background_broadcast, daemon=True).start()
-        bot.edit_message_text(f"🚀 <b>Broadcast Started!</b>\nSending to {len(all_users)} users in the background...\n\nMessage:\n{content}", chat_id, call.message.message_id, parse_mode="HTML")
+        
+        confirm_msg = f"🚀 <b>Photo Card Broadcast Launched!</b>\nSending to {len(all_users)} bot users, the Telegram Channel, and Facebook in background..."
+        if call.message.photo:
+            bot.edit_message_caption(caption=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML")
+        else:
+            bot.edit_message_text(text=confirm_msg, chat_id=chat_id, message_id=call.message.message_id, parse_mode="HTML")
         return
 
     # ── Admin: Broadcast ─────────────────────

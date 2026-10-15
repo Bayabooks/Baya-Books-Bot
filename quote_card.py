@@ -392,7 +392,7 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
     
     # Badge: የዕለቱ ሚስጥራዊ ቃል • የአዕምሮ ምግብ
     badge_font = get_ethiopic_font(20)
-    badge_text = "✨ የዕለቱ ሚስጥራዊ ቃል • የአዕምሮ ምግብ ✨"
+    badge_text = "✦ የዕለቱ ሚስጥራዊ ቃል • የአዕምሮ ምግብ ✦"
     draw.rectangle([(img_w // 2 - 200, box_y1 - 15), (img_w // 2 + 200, box_y1 + 17)], fill=theme["accent_line"])
     draw.text((img_w // 2, box_y1 + 1), badge_text, font=badge_font, fill="#ffffff", anchor="mm")
 
@@ -400,23 +400,37 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
     word_font = get_ethiopic_font(52)
     clean_word_raw = str(secret_word or "").strip().strip("«»\"' ").strip()
     clean_word = f"«{clean_word_raw}»"
-    draw.text((img_w // 2, box_y1 + 68), clean_word, font=word_font, fill=theme["header_color"], anchor="mm")
+    draw.text((img_w // 2, box_y1 + 65), clean_word, font=word_font, fill=theme["header_color"], anchor="mm")
 
-    # About the word (Pure psychological insight explaining the word, NO repetitive 'አዎ አንተ...' title)
-    body_font = get_ethiopic_font(22)
-    insight_text = (word_body or "").strip()
-    if not insight_text:
-        insight_text = (
-            f"«{clean_word_raw}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
-            f"አዕምሮአችንን በምንመግበው አዎንታዊ አስተሳሰብ ልክ ህይወታችን ይለወጣል።"
+    # Content below the word (Pure psychological insight, NEVER repetitive dictionary definitions)
+    clean_insight = (word_body or "").strip().strip("“\"'”«» ")
+    if not clean_insight:
+        clean_insight = (
+            "በህይወትህ ትልቁ ሀብትህ ከብዙ ውጣ ውረዶች በኋላ ራስህን ሳታጣ ዛሬ በሰላም እዚህ መድረስህ ነው። "
+            "አዕምሮህ በጎውን ባየ ቁጥር አለም በሮችዋን በሙሉ ትከፍትልሃለች።"
         )
     
-    framed_insight = f"“ {insight_text} ”"
+    framed_insight = f"“ {clean_insight} ”"
+    
+    # Dynamic font sizing and vertical alignment so text fits cleanly and is beautifully centered
+    if len(clean_insight) > 170:
+        body_font = get_ethiopic_font(19)
+        line_step = 28
+    elif len(clean_insight) > 130:
+        body_font = get_ethiopic_font(21)
+        line_step = 31
+    else:
+        body_font = get_ethiopic_font(23)
+        line_step = 34
+
     wrapped_lines = wrap_text(framed_insight, body_font, 920, draw)
-    text_y = box_y1 + 122
-    for wline in wrapped_lines[:3]:
-        draw.text((img_w // 2, text_y), wline, font=body_font, fill=theme["text_color"], anchor="mm")
-        text_y += 34
+    
+    # Vertically center the quote lines in the box area below the word (y: 245..385)
+    total_text_h = len(wrapped_lines[:4]) * line_step
+    text_start_y = 250 + max(0, (130 - total_text_h) // 2)
+    
+    for i, wline in enumerate(wrapped_lines[:4]):
+        draw.text((img_w // 2, text_start_y + i * line_step), wline, font=body_font, fill=theme["text_color"], anchor="mm")
 
     # 6. Winners Section Header (y = 415)
     win_header_font = get_ethiopic_font(28)
@@ -433,11 +447,11 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
     row_font_book = get_ethiopic_font(23)
     
     rank_pills = {
-        1: ((217, 119, 6), "#ffffff", "🥇 1ኛ"),   # Gold
-        2: ((100, 116, 139), "#ffffff", "🥈 2ኛ"), # Silver
-        3: ((180, 83, 9), "#ffffff", "🥉 3ኛ"),   # Bronze
-        4: (theme["inner_border"], theme["header_color"], "🏅 4ኛ"),
-        5: (theme["inner_border"], theme["header_color"], "🏅 5ኛ"),
+        1: ((217, 119, 6), "#ffffff", "#1  1ኛ"),   # Gold
+        2: ((100, 116, 139), "#ffffff", "#2  2ኛ"), # Silver
+        3: ((180, 83, 9), "#ffffff", "#3  3ኛ"),   # Bronze
+        4: (theme["inner_border"], theme["header_color"], "#4  4ኛ"),
+        5: (theme["inner_border"], theme["header_color"], "#5  5ኛ"),
     }
     
     for r in range(1, 6):

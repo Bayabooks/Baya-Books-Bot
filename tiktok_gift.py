@@ -7,6 +7,7 @@ Cycle resets every morning at 10:00 AM EAT (ጠዋት 4:00 ሰዓት በኢት�
 from datetime import datetime, timezone, timedelta
 import random
 import database
+import creative_quotes
 
 # ══════════════════════════════════════════════════════════════════
 #  CYCLE TIME MATH (Resets at 10:00 AM EAT / ጠዋት 4:00 ሰዓት)
@@ -531,14 +532,22 @@ def find_key_by_word(word_text):
             return k
     return None
 
-def get_word_insight_text(secret_word):
+def get_word_insight_text(secret_word, style_idx=0):
     """
     Returns (word_title, word_body) for a secret word.
-    Guarantees that word_body contains a rich, multi-sentence psychological insight
-    explaining the meaning of the word rather than just repeating it.
+    Guarantees that word_body contains a rich, poetic, non-repetitive psychological insight
+    explaining the deeper meaning or wisdom rather than just repeating or defining the word.
     """
     clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
     skey = find_key_by_word(clean_w)
+    
+    # 1. Check curated non-repetitive creative quotes
+    if skey:
+        c_quote = creative_quotes.get_creative_quote_for_word(skey, style_idx=style_idx)
+        if c_quote:
+            title = WORD_AFFIRMATIONS.get(skey, {}).get("title", f"✨ «{clean_w}»")
+            return title, c_quote
+            
     if skey and skey in WORD_AFFIRMATIONS:
         witem = WORD_AFFIRMATIONS[skey]
         title = witem.get("title", "")
@@ -547,11 +556,12 @@ def get_word_insight_text(secret_word):
 
     # Fallback for custom or unmapped words:
     title = f"✨ የ«{clean_w}» ጥልቅ የስነ-ልቦና ትርጉም"
-    body = (
-        f"«{clean_w}» የሚለው ቃል በአዕምሯችን ውስጥ ያለውን ድብቅ አቅም እና የማይናወጥ ጥንካሬ የሚቀሰቅስ ታላቅ ኃይል አለው። "
-        f"አዕምሮአችንን በየቀኑ በምንመግበው አዎንታዊ አስተሳሰብ ልክ ስሜታችን፣ ድርጊታችን እና ህይወታችን ይለወጣል። "
-        f"ይህንን ቃል የዕለት ተዕለት መመሪያዎ በማድረግ ውስጣዊ ሰላምዎን እና ስኬትዎን ያሳድጉ።"
-    )
+    fallbacks = [
+        "በህይወትህ ትልቁ ሀብትህ ከብዙ ውጣ ውረዶች በኋላ ራስህን ሳታጣ ዛሬ በሰላም እዚህ መድረስህ ነው። አዕምሮህ በጎውን ባየ ቁጥር አለም በሮችዋን በሙሉ ትከፍትልሃለች።",
+        "ዛሬ የምትተነፍሰው እያንዳንዱ እስትንፋስ ለዳግም ስኬት እና ለታላቅ ከፍታ የተሰጠህ ድንቅ ተዓምር ነው። በውስጥህ ያለው ጥልቅ ሰላም ወደ አንተ የሚመጡትን በረከቶች ሁሉ ይስባቸዋል።",
+        "በልብህ ውስጥ የታነፀውን ፅኑ እምነት ምንም ምድራዊ ሃይል ሊያቆመው አይችልም። ወደፊት የምትጓዝበት እያንዳንዱ እርምጃ የነገው ታላቅ ድልህ መጀመሪያ ነው።"
+    ]
+    body = fallbacks[style_idx % len(fallbacks)]
     return title, body
 
 def get_today_secret_word():

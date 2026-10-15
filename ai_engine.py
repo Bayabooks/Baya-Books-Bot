@@ -663,3 +663,45 @@ def generate_creative_giveaway_caption(secret_word, word_insight, winners_block,
         logging.error(f"Error generating creative giveaway caption: {e}")
     return None
 
+
+def generate_creative_card_and_caption(secret_word, winners_block, tiktok_name="የአዕምሮ ምግቦች"):
+    """
+    Uses Gemini AI to generate:
+    1. A profound 1-2 sentence psychological quote for the 1:1 card below the secret word (NEVER repeating or defining the word).
+    2. A full viral TikTok post caption.
+    Returns dict: {"card_quote": "...", "caption": "..."}
+    """
+    clean_w = str(secret_word or "").strip().strip("«»\"' ").strip()
+    prompt = (
+        f"You are a master Ethiopian psychologist, philosopher, and social media copywriter for 'የአዕምሮ ምግቦች' and 'Baya Books'.\n\n"
+        f"Daily Positive Word: «{clean_w}»\n"
+        f"Top 5 Winners:\n{winners_block}\n\n"
+        f"Generate a JSON response with two fields in fluent, native Amharic:\n"
+        f"1. \"card_quote\": A short, deeply touching, poetic and inspiring psychological quote (1 to 2 sentences, 100-160 Amharic characters) to be displayed on a 1:1 image card directly BELOW the word «{clean_w}».\n"
+        f"CRITICAL RULE FOR card_quote: DO NOT REPEAT THE WORD «{clean_w}»! DO NOT start with '{clean_w} ማለት...'. Provide deep, soul-stirring wisdom (የአዕምሮ ምግብ) about inner strength, peace, resilience, or human greatness that gives goosebumps.\n\n"
+        f"2. \"caption\": A complete, highly engaging Amharic TikTok post caption including viral hook, word reveal, comment challenge, winners list, announcement for 10:00 AM reset, and hashtags.\n\n"
+        f"Return ONLY valid JSON format:\n"
+        f"{{\n"
+        f"  \"card_quote\": \"...\",\n"
+        f"  \"caption\": \"...\"\n"
+        f"}}"
+    )
+    try:
+        model = genai.GenerativeModel(MODEL_TEXT)
+        response = model.generate_content(prompt, request_options={"timeout": 20})
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+        data = json.loads(text)
+        if data.get("card_quote") and data.get("caption"):
+            return data
+    except Exception as e:
+        logging.error(f"Error in generate_creative_card_and_caption: {e}")
+    return None
+
+

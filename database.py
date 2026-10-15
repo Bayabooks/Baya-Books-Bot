@@ -2383,16 +2383,21 @@ def get_user_daily_gift_attempt(user_id, cycle_date):
     return dict(row) if row else None
 
 def record_daily_gift_attempt(user_id, cycle_date, chosen_word, is_correct):
-    """Records a daily gift game attempt for the cycle date."""
+    """Records a daily gift game attempt for the cycle date. Returns True if successfully recorded, False if already attempted."""
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
-        INSERT OR REPLACE INTO daily_gift_attempts (user_id, cycle_date, chosen_word, is_correct, attempt_time)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (user_id, cycle_date, chosen_word, 1 if is_correct else 0, now_str))
-    conn.commit()
-    conn.close()
+    try:
+        c.execute('''
+            INSERT INTO daily_gift_attempts (user_id, cycle_date, chosen_word, is_correct, attempt_time)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, cycle_date, chosen_word, 1 if is_correct else 0, now_str))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        conn.close()
+        return False
 
 def get_today_gift_winners_count(cycle_date):
     """Returns the number of winners who claimed a book today (max 5 per day)."""

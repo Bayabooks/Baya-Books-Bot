@@ -2315,8 +2315,13 @@ def handle_callback(call):
             
         is_correct = (chosen_word.strip() == today_secret.strip())
         
-        # Record attempt
-        database.record_daily_gift_attempt(uid, cycle_date, chosen_word, is_correct)
+        # Record attempt with atomic database lock
+        recorded = database.record_daily_gift_attempt(uid, cycle_date, chosen_word, is_correct)
+        if not recorded:
+            bot.answer_callback_query(call.id, "ለዛሬ ተሳትፈዋል! በቀን 1 ጊዜ ብቻ ነው የሚፈቀደው።", show_alert=True)
+            safe_delete_message(chat_id, call.message.message_id)
+            return
+
         bot.answer_callback_query(call.id)
         safe_delete_message(chat_id, call.message.message_id)
         
@@ -2364,8 +2369,7 @@ def handle_callback(call):
             )
             bot.send_message(chat_id, win_msg, parse_mode="HTML", reply_markup=markup)
         else:
-            # Correct, but top 5 spots already claimed
-            database.add_advice_messages(uid, 1) # Consolation reward!
+            # Correct, but top 5 spots already claimed (no advice messages awarded)
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url))
             
@@ -2375,8 +2379,7 @@ def handle_callback(call):
                 f"✅ <b>በትክክል መልሰዋል!</b>\n\n"
                 f"የዛሬው ሚስጥራዊ ቃል በእርግጥም <b>«{today_secret}»</b> ነበር!\n\n"
                 f"🏃‍♂️ <b>ነገር ግን...</b> የዛሬዎቹ <b>5 ፈጣን አሸናፊዎች</b> ቀድመው ቦታውን ሞልተዋል!\n\n"
-                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ!\n\n"
-                f"🎁 <i>ለጥረትዎ እና ለፈጣን ተሳትፎዎ <b>1 ነፃ የአማካሪ መልዕክት</b> ተበርክቶልዎታል!</i> ✨"
+                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ! 👇"
             )
             bot.send_message(chat_id, late_msg, parse_mode="HTML", reply_markup=markup)
         return

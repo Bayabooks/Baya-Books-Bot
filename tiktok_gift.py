@@ -564,10 +564,46 @@ def get_word_insight_text(secret_word, style_idx=0):
     body = fallbacks[style_idx % len(fallbacks)]
     return title, body
 
+def get_next_secret_word():
+    """
+    Returns the pre-chosen secret word scheduled for the next cycle (after 10:00 AM EAT reset).
+    Returns None if no next word is set.
+    """
+    val = database.get_setting("daily_gift_next_secret_word")
+    return val.strip() if val and val.strip() else None
+
+def set_next_secret_word(word_text):
+    """
+    Pre-selects the secret word for the upcoming cycle.
+    When the 10:00 AM EAT reset time arrives, it automatically becomes the active secret word.
+    """
+    clean_w = str(word_text or "").strip()
+    database.set_setting("daily_gift_next_secret_word", clean_w)
+    return clean_w
+
+def clear_next_secret_word():
+    """Clears the pre-chosen next secret word (so the next cycle auto-seeds from the bank)."""
+    database.set_setting("daily_gift_next_secret_word", "")
+
+def check_cycle_rollover():
+    """
+    Checks if the cycle date has changed (past 10:00 AM EAT).
+    If changed, executes the rollover, promoting next_secret_word if set,
+    and returns (rolled_over: bool, new_active_word: str, cycle_date: str).
+    """
+    cycle_date = get_game_cycle_date()
+    saved_date = database.get_setting("daily_gift_secret_word_date")
+    if saved_date != cycle_date:
+        active_w = get_today_secret_word()
+        return True, active_w, cycle_date
+    return False, database.get_setting("daily_gift_secret_word"), cycle_date
+
 def get_today_secret_word():
     """
     Retrieves the current cycle's secret word.
-    If not set manually by Admin for this cycle, auto-selects a stable word based on cycle date.
+    If the cycle date has rolled over (new day / past 10:00 AM EAT):
+      1. If a Next Secret Word was pre-chosen by Admin, automatically promotes it to today's word.
+      2. Otherwise, auto-seeds a stable word deterministically based on cycle date hash.
     """
     cycle_date = get_game_cycle_date()
     saved_word = database.get_setting("daily_gift_secret_word")
@@ -575,6 +611,15 @@ def get_today_secret_word():
 
     if saved_date == cycle_date and saved_word:
         return saved_word
+
+    # Cycle rolled over! Check if Admin pre-scheduled a Next Secret Word
+    next_word = get_next_secret_word()
+    if next_word:
+        chosen_word = next_word.strip()
+        database.set_setting("daily_gift_secret_word", chosen_word)
+        database.set_setting("daily_gift_secret_word_date", cycle_date)
+        clear_next_secret_word()  # Consumed!
+        return chosen_word
 
     # Auto-seed a word deterministically from the bank based on date hash
     all_keys = sorted(list(WORD_AFFIRMATIONS.keys()))
@@ -629,15 +674,20 @@ def get_tiktok_channel_name():
 def restart_game(cycle_date=None, reset_lifetime=True):
     """
     Completely resets the giveaway game.
-    Clears attempts and winners from the database, picks a fresh random secret word,
-    and updates the cycle date.
+    Clears attempts and winners from the database, picks a fresh secret word
+    (using pre-chosen next word if available, else random), and updates the cycle date.
     """
     curr_cycle = cycle_date or get_game_cycle_date()
     database.reset_daily_gift_game(cycle_date=curr_cycle, reset_lifetime=reset_lifetime)
     
-    # Pick a new random secret word
-    all_words = [v["word"] for v in WORD_AFFIRMATIONS.values()]
-    new_word = random.choice(all_words)
+    next_w = get_next_secret_word()
+    if next_w:
+        new_word = next_w
+        clear_next_secret_word()
+    else:
+        all_words = [v["word"] for v in WORD_AFFIRMATIONS.values()]
+        new_word = random.choice(all_words)
+
     database.set_setting("daily_gift_secret_word", new_word)
     database.set_setting("daily_gift_secret_word_date", curr_cycle)
     return new_word, curr_cycle

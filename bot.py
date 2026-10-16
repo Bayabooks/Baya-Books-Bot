@@ -2758,6 +2758,8 @@ def handle_callback(call):
         try:
             cycle_date = tiktok_gift.get_game_cycle_date()
             secret_word = tiktok_gift.get_today_secret_word()
+            next_word = tiktok_gift.get_next_secret_word()
+            next_reset_str = tiktok_gift.get_next_reset_time_display()
             winners = database.get_daily_gift_winners(cycle_date)
             total_lifetime = database.get_total_gift_winners_count()
             tiktok_url = tiktok_gift.get_tiktok_channel_url()
@@ -2776,11 +2778,18 @@ def handle_callback(call):
             esc_secret_word = html.escape(str(secret_word))
             esc_tiktok_name = html.escape(str(tiktok_name))
             
+            if next_word:
+                next_word_line = f"🔮 <b>Next Secret Word (የሚቀጥለው):</b> <b>«{html.escape(next_word)}»</b> <i>(10:00 AM ላይ በራስ-ሰር ይተካል)</i>\n"
+            else:
+                next_word_line = "🔮 <b>Next Secret Word (የሚቀጥለው):</b> <i>ገና አልተመረጠም (በ10:00 AM በዘፈቀደ ይቀጥላል)</i>\n"
+
             text = (
                 f"🎁 <b>TikTok Free Book Giveaway Manager</b>\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"📅 <b>Today's Cycle:</b> <code>{cycle_date}</code> (Resets 10:00 AM EAT / ጠዋት 4:00)\n"
+                f"⏳ <b>Time to Next Reset:</b> <code>{next_reset_str}</code>\n"
                 f"🎯 <b>Today's Secret Word:</b> <b>«{esc_secret_word}»</b>\n"
+                f"{next_word_line}\n"
                 f"📱 <b>Partner Account:</b> {esc_tiktok_name}\n"
                 f"🔗 <b>TikTok URL:</b> {tiktok_url}\n\n"
                 f"👥 <b>Today's Winners ({len(winners)} / 5):</b>\n{winners_display}\n\n"
@@ -2789,8 +2798,15 @@ def handle_callback(call):
             )
             markup = InlineKeyboardMarkup(row_width=1)
             markup.add(
-                InlineKeyboardButton("🎯 የዕለቱን ቃል ቀይር (Set Secret Word)", callback_data="adm_gift_set_word"),
-                InlineKeyboardButton("🔄 አዲስ ቃል በዘፈቀደ ምረጥ (Randomize Word)", callback_data="adm_gift_rand_word"),
+                InlineKeyboardButton("🎯 የዕለቱን ቃል ቀይር (Set Today's Word)", callback_data="adm_gift_set_word"),
+                InlineKeyboardButton("🔮 የሚቀጥለውን ቃል ምረጥ (Choose Next Word)", callback_data="adm_gift_set_next_word"),
+            )
+            if next_word:
+                markup.add(
+                    InlineKeyboardButton("❌ የሚቀጥለውን ቃል ሰርዝ (Clear Next Word)", callback_data="adm_gift_clear_next_word")
+                )
+            markup.add(
+                InlineKeyboardButton("🔄 አዲስ ቃል በዘፈቀደ ምረጥ (Randomize Today's Word)", callback_data="adm_gift_rand_word"),
                 InlineKeyboardButton("📱 የቲክቶክ ሊንክ ቀይር (Edit TikTok URL)", callback_data="adm_gift_set_url"),
                 InlineKeyboardButton("🏆 የዛሬ አሸናፊዎች ፖስት አዘጋጅ (1:1 Card)", callback_data="adm_gift_gen_post"),
                 InlineKeyboardButton("♻️ ዛሬን እንደ አዲስ ጀምር (Restart Game)", callback_data="adm_gift_restart_confirm"),
@@ -2844,6 +2860,67 @@ def handle_callback(call):
         tiktok_gift.set_today_secret_word(new_w)
         clear_state(uid)
         bot.answer_callback_query(call.id, f"✅ ቃል ተቀይሯል: {new_w}", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data == "adm_gift_set_next_word":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        set_state(uid, "ADMIN_GIFT_NEXT_SECRET_WORD")
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("🎲 በዘፈቀደ ምረጥ (Random Next Word)", callback_data="adm_gift_rand_next")
+        )
+        btn_list = []
+        for k, v in list(tiktok_gift.WORD_AFFIRMATIONS.items())[:24]:
+            btn_list.append(InlineKeyboardButton(v["word"], callback_data=f"adm_gift_pnext_{k}"))
+        for i in range(0, len(btn_list), 2):
+            if i + 1 < len(btn_list):
+                markup.add(btn_list[i], btn_list[i+1])
+            else:
+                markup.add(btn_list[i])
+        markup.add(InlineKeyboardButton("🔙 Cancel", callback_data="adm_gift_menu"))
+        bot.send_message(
+            chat_id,
+            "🔮 <b>የሚቀጥለውን ዙር ሚስጥራዊ ቃል ይምረጡ፦</b>\n\n"
+            "ይህ ቃል <b>ነገ ጠዋት 4:00 (10:00 AM EAT)</b> አዲሱ ዙር ሲጀምር <b>በራስ-ሰር</b> የዕለቱ ሚስጥራዊ ቃል ሆኖ ይቀጥላል።\n\n"
+            "ከታች ካሉት አዎንታዊ ቃላት አንዱን ይምረጡ፣ 🎲 በዘፈቀደ ይምረጡ፣ ወይም ማንኛውንም የተለየ ቃል በቻቱ ላይ ይፃፉልኝ (/cancel ለመሰረዝ)፦",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data == "adm_gift_rand_next":
+        if not is_admin(call.from_user): return
+        all_words = [v["word"] for v in tiktok_gift.WORD_AFFIRMATIONS.values()]
+        new_w = random.choice(all_words)
+        tiktok_gift.set_next_secret_word(new_w)
+        clear_state(uid)
+        bot.answer_callback_query(call.id, f"🎲 የሚቀጥለው ቃል ተመርጧል: «{new_w}»\n10:00 AM EAT ላይ በራስ-ሰር ይተካል።", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data.startswith("adm_gift_pnext_"):
+        if not is_admin(call.from_user): return
+        wkey = data.replace("adm_gift_pnext_", "")
+        witem = tiktok_gift.get_word_by_key(wkey)
+        new_w = witem["word"] if witem else "አሸናፊ ነኝ"
+        tiktok_gift.set_next_secret_word(new_w)
+        clear_state(uid)
+        bot.answer_callback_query(call.id, f"✅ የሚቀጥለው ቃል ተመርጧል: «{new_w}»\n10:00 AM EAT ላይ በራስ-ሰር ይተካል።", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        call.data = "adm_gift_menu"
+        handle_callback(call)
+        return
+
+    if data == "adm_gift_clear_next_word":
+        if not is_admin(call.from_user): return
+        tiktok_gift.clear_next_secret_word()
+        bot.answer_callback_query(call.id, "🗑️ የሚቀጥለው ቃል ተሰርዟል። አዲሱ ዙር በዘፈቀደ ይቀጥላል።", show_alert=True)
         safe_delete_message(chat_id, call.message.message_id)
         call.data = "adm_gift_menu"
         handle_callback(call)
@@ -4290,6 +4367,20 @@ def handle_messages(message):
         tiktok_gift.set_today_secret_word(new_word)
         clear_state(uid)
         bot.send_message(chat_id, f"✅ <b>Today's Secret Word updated to:</b> «<b>{new_word}</b>»\n(Cycle: {tiktok_gift.get_game_cycle_date()})", parse_mode="HTML")
+        return
+
+    if state == "ADMIN_GIFT_NEXT_SECRET_WORD" and is_admin(message.from_user):
+        if message.text == "/cancel":
+            clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
+        new_word = message.text.strip()
+        tiktok_gift.set_next_secret_word(new_word)
+        clear_state(uid)
+        bot.send_message(
+            chat_id,
+            f"🔮 <b>Next Secret Word set to:</b> «<b>{html.escape(new_word)}</b>»\n\n"
+            f"በቀጣዩ ዙር (10:00 AM EAT / ጠዋት 4:00) ዙሩ ሲቀየር ጨዋታው <b>በራስ-ሰር</b> በዚህ ቃል ይቀጥላል!",
+            parse_mode="HTML"
+        )
         return
 
     if state == "ADMIN_GIFT_TIKTOK_URL" and is_admin(message.from_user):
@@ -6166,6 +6257,25 @@ def auto_nudge_daemon():
                     except:
                         database.mark_paywall_nudged(uid)
                     time.sleep(0.1)
+
+                # 6. TikTok Giveaway Daily Cycle Rollover Check (10:00 AM EAT)
+                try:
+                    rolled, active_w, cycle_dt = tiktok_gift.check_cycle_rollover()
+                    if rolled:
+                        logging.info(f"TikTok gift cycle rolled over to {cycle_dt}. Active word: {active_w}")
+                        admin_id = get_admin_id()
+                        if admin_id:
+                            bot.send_message(
+                                admin_id,
+                                f"⏰ <b>10:00 AM Giveaway Reset Complete!</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━\n"
+                                f"📅 <b>New Cycle:</b> <code>{cycle_dt}</code>\n"
+                                f"🎯 <b>Active Secret Word:</b> «<b>{active_w}</b>»\n\n"
+                                f"<i>የዕለቱ ዙር በተሳካ ሁኔታ ተጀምሮ በተመረጠው ቃል ቀጥሏል!</i>",
+                                parse_mode="HTML"
+                            )
+                except Exception as ex:
+                    logging.error(f"Error checking cycle rollover: {ex}")
 
         except Exception as e:
             print("Auto-nudge daemon error:", e)

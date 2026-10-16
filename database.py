@@ -2024,6 +2024,19 @@ def get_user_stage_stats():
         "vip_users": vip_users
     }
 
+def get_all_stuck_user_ids():
+    """Returns all user IDs who have not completed onboarding and are not marked blocked."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT user_id FROM users 
+        WHERE (gender IS NULL OR gender = '' OR IFNULL(age_verified, 0) = 0)
+        AND bot_blocked = 0
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
 def get_stuck_users():
     """Get users who haven't completed onboarding (no age_verified or no gender)."""
     conn = get_connection()

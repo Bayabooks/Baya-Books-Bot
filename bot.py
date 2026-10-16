@@ -514,6 +514,9 @@ def check_onboarding(chat_id, user_id, first_name):
             InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"),
             InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f")
         )
+        markup.add(
+            InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
+        )
         bot.send_message(chat_id, S(user_lang, 'onboard_age_gender_prompt'), parse_mode="HTML", reply_markup=markup)
         return False
     
@@ -745,6 +748,9 @@ def cmd_nudge(message):
                 markup.add(
                     InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
                     InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
+                )
+                markup.add(
+                    InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
                 )
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
@@ -1880,6 +1886,91 @@ def send_rental_detail_card(chat_id, target_uid, bkey, call=None):
             pass
     bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
+def get_perks_broadcast_text(lang="am"):
+    texts = {
+        "am": (
+            "🎁 <b>በ Baya Books ቦት ውስጥ የሚያገኟቸው ድንቅ ጥቅሞች እና የገቢ ዕድሎች!</b> 🌟\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "ውድ የቦታችን ቤተሰብ፣ በቦታችን ውስጥ ሙሉ ለሙሉ ተጠቃሚ እንዲሆኑ የተዘጋጁትን ምርጥ እድሎች እነሆ፦\n\n"
+            "1️⃣ <b>🎁 የዕለቱ ነፃ መጽሐፍ ስጦታ (Daily Giveaway)፦</b>\n"
+            "• በየቀኑ በቲክቶክ የሚለቀቀውን ሚስጥራዊ ቃል በመመለስ <b>ሙሉ ነፃ መጽሐፍ</b> ወይም <b>25 ነፃ የውይይት መልዕክቶችን</b> ይሸለሙ!\n\n"
+            "2️⃣ <b>💰 ጓደኛ ጋብዘው ገንዘብ ያግኙ (30% Commission)፦</b>\n"
+            "• የራስዎን መጋበዣ ሊንክ ለጓደኞችዎ ያጋሩ።\n"
+            "• ጓደኛዎ ማንኛውንም መጽሐፍ ወይም ፓኬጅ ሲገዛ <b>30% ፈጣን ኮሚሽን</b> ወደ ቀሪ ሂሳብዎ ይገባል!\n"
+            "• 5 ጓደኞች ማውራት ሲጀምሩ ማንኛውንም 1 ነፃ መጽሐፍ ወይም 25 መልዕክቶች በነፃ ይሸለማሉ!\n"
+            "• ያገኙትን ገቢ በ<b>ቴሌብር (Telebirr)</b> ወይም በ<b>ንግድ ባንክ (CBE)</b> በቀላሉ ማውጣት ይችላሉ።\n\n"
+            "3️⃣ <b>📚 የዲጂታል ቤተ-መጽሐፍት (In-App Mini App)፦</b>\n"
+            "• ምርጥ የስነ-ልቦና፣ የግል እድገት እና የአዕምሮ መጻሕፍትን በቴሌግራም ውስጥ በማንኛውም ሰዓት ማንበብ ይችላሉ።\n\n"
+            "4️⃣ <b>🧠 24/7 AI የስነ-ልቦና አማካሪ፦</b>\n"
+            "• ማንኛውንም የግል ፈተና፣ የፍቅር ግንኙነት፣ የጭንቀት ወይም የውሳኔ ጥያቄ በ 100% ሚስጥራዊነት ይጠይቁ፤ እውነቱን ይነግርዎታል።\n\n"
+            "<i>ከታች ያሉትን ቁልፎች በመጫን አሁኑኑ መጠቀም ይጀምሩ! 👇</i>"
+        ),
+        "en": (
+            "🎁 <b>Exclusive Perks, Free Gifts & Earnings on Baya Books!</b> 🌟\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Here is everything you can unlock and earn with our bot:\n\n"
+            "1️⃣ <b>🎁 Daily Free Book Giveaway:</b>\n"
+            "• Crack the secret word from our daily TikTok video to win <b>free books</b> or <b>25 free advice messages</b>!\n\n"
+            "2️⃣ <b>💰 Invite Friends & Earn Cash (30% Commission):</b>\n"
+            "• Share your personal invite link with friends.\n"
+            "• Earn an instant <b>30% commission</b> on any purchase they make!\n"
+            "• When 5 friends start chatting, pick ANY 1 free book or 25 free messages!\n"
+            "• Withdraw your earnings anytime via <b>Telebirr</b> or <b>CBE Bank</b>.\n\n"
+            "3️⃣ <b>📚 Digital Library (In-App Mini App):</b>\n"
+            "• Read premier psychology and personal growth books right inside Telegram.\n\n"
+            "4️⃣ <b>🧠 24/7 AI Counselor:</b>\n"
+            "• Honest, confidential guidance on relationships, anxiety, and life direction.\n\n"
+            "<i>Tap the buttons below to explore and get started! 👇</i>"
+        ),
+        "ti": (
+            "🎁 <b>ኣብ Baya Books ቦት ዝረኽብዎም ፍሉያት ረብሓታትን ናይ ገቢ ዕድላትን!</b> 🌟\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "1️⃣ <b>🎁 ናይ ሎሚ ነጻ መጽሓፍ ሽልማት (Giveaway)፦</b>\n"
+            "• መዓልታዊ ኣብ ቲክቶክ ዝልቀቕ ምስጢራዊ ቃል ብምምላስ <b>ነጻ መጽሓፍ</b> ወይ <b>25 ናጻ መልእኽትታት</b> ተሸለሙ!\n\n"
+            "2️⃣ <b>💰 መሓዛኹም ዓዲምኩም ገንዘብ ርኸቡ (30% ኮሚሽን)፦</b>\n"
+            "• ናይ ምዕዳም መላግቦኹም ንመሓዙትኩም ኣካፍሉ።\n"
+            "• ዝዓደምኩምዎ ሰብ ዝገዝኦ ዝኾነ ፓኬጅ <b>30% ቅጽበታዊ ኮሚሽን</b> ይረክቡ!\n"
+            "• ዘጥረይዎ ገንዘብ ብ<b>ቴሌብር (Telebirr)</b> ወይ <b>ንግዲ ባንክ (CBE)</b> ብቐሊሉ ኣውጽኡ።\n\n"
+            "3️⃣ <b>📚 ዲጂታል ናይ መጻሕፍቲ ቤት፦</b>\n"
+            "• ዝበለጹ ናይ ስነ-ልቦና መጻሕፍቲ ኣብ ቴሌግራም ከተንብቡ ትኽእሉ ኢኹም።\n\n"
+            "4️⃣ <b>🧠 24/7 AI ስነ-ኣእምሮ ኣማኻሪ፦</b>\n"
+            "• 100% ብምስጢራዊነት ተማኸሩ።\n\n"
+            "<i>ኣብ ታሕቲ ዘለዉ ቁልፍታት ብምጥዋቕ ሕጂ ጀምሩ! 👇</i>"
+        ),
+        "om": (
+            "🎁 <b>Faayidaalee fi Carraawwan Galii Baya Books irraa argattan!</b> 🌟\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            "1️⃣ <b>🎁 Badhaasa Kitaaba Har'aa (Giveaway)፦</b>\n"
+            "• Jecha iccitii TikTok irraa deebisuun <b>kitaaba bilisaa</b> ykn <b>ergaawwan 25</b> badhaafamaa!\n\n"
+            "2️⃣ <b>💰 Hiriyyaa Afeeraa Maallaqa Argadhaa (Komishinii 30%)፦</b>\n"
+            "• Liinkii keessan hiriyyootaaf qoodaa.\n"
+            "• Hiriyyaan keessan paakeejii yoo bite <b>komishinii 30% battalumatti</b> argattu!\n"
+            "• Maallaqa argattan <b>Telebirr</b> ykn <b>Baankii Daldalaatiin (CBE)</b> salphaatti baafadhaa.\n\n"
+            "3️⃣ <b>📚 Mana Dubbisaa Dijitaalaa፦</b>\n"
+            "• Kitaabota xiin-sammuu filatamoo asumaan dubbisaa.\n\n"
+            "4️⃣ <b>🧠 24/7 Gorsaa Xiin-Sammuu AI፦</b>\n"
+            "• Iccitiidhaan mari'adhaa.\n\n"
+            "<i>Qabduulee armaan gadii tuquun amma eegalaa! 👇</i>"
+        )
+    }
+    return texts.get(lang, texts["am"])
+
+def get_perks_broadcast_markup(user_id, lang="am"):
+    markup = InlineKeyboardMarkup(row_width=1)
+    labels = {
+        "am": ("🎁 የዕለቱን ነፃ ስጦታ ተሳተፍ", "💰 መጋበዣ ሊንክህን ውሰድ (30% ኮሚሽን)", "📚 መጻሕፍት ቤት (Open Library)"),
+        "en": ("🎁 Play Daily Giveaway", "💰 Get Referral Link (30% Commission)", "📚 Open Library"),
+        "ti": ("🎁 ናይ ሎሚ ሽልማት ተሳተፉ", "💰 ናይ ምዕዳም መላግቦ ውሰዱ (30% ኮሚሽን)", "📚 ናይ መጻሕፍቲ ቤት"),
+        "om": ("🎁 Badhaasa Har'aa Hirmaadhaa", "💰 Liinkii Afeerraa Fudhadhaa (Komishinii 30%)", "📚 Mana Dubbisaa")
+    }
+    lbl = labels.get(lang, labels["am"])
+    markup.add(
+        InlineKeyboardButton(lbl[0], callback_data="bc_play_gift"),
+        InlineKeyboardButton(lbl[1], callback_data="bc_invite_link"),
+        InlineKeyboardButton(lbl[2], web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={user_id}"))
+    )
+    return markup
+
 def show_admin_menu(chat_id, user):
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -1891,19 +1982,22 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("🤖 Auto Psych Broadcast", callback_data="adm_auto_broadcast_init"),
     )
     markup.add(
+        InlineKeyboardButton("🌟 Perks & Commission Broadcast", callback_data="adm_bc_perks_init"),
         InlineKeyboardButton("📱 TikTok Card Creator (4:5)", callback_data="adm_tiktok_init"),
+    )
+    markup.add(
         InlineKeyboardButton("💳 Add Credit/Msgs", callback_data="admin_credit"),
-    )
-    markup.add(
         InlineKeyboardButton("👑 Sub-Admins", callback_data="adm_subadmin_menu"),
+    )
+    markup.add(
         InlineKeyboardButton("🚫 Ban/Unban", callback_data="adm_ban_menu"),
-    )
-    markup.add(
         InlineKeyboardButton("👑 VIP Manager", callback_data="adm_vip_menu"),
-        InlineKeyboardButton("📚 Manage Rented Books", callback_data="adm_rentals_menu"),
     )
     markup.add(
+        InlineKeyboardButton("📚 Manage Rented Books", callback_data="adm_rentals_menu"),
         InlineKeyboardButton("🎁 TikTok Giveaway Manager", callback_data="adm_gift_menu"),
+    )
+    markup.add(
         InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
     )
     
@@ -1917,6 +2011,35 @@ def show_admin_menu(chat_id, user):
         f"Select an action:",
         parse_mode="HTML", reply_markup=markup,
     )
+
+@bot.message_handler(commands=["perks_broadcast", "broadcast_perks"])
+def cmd_perks_broadcast(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+
+    chat_id = message.chat.id
+    all_count = database.get_total_user_count()
+    stuck_ids = database.get_all_stuck_user_ids()
+    stuck_count = len(stuck_ids)
+    
+    preview_text = get_perks_broadcast_text("am")
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton(f"🚀 ለሁሉም ተጠቃሚዎች ላክ ({all_count} Users)", callback_data="adm_bc_perks_send_all"),
+        InlineKeyboardButton(f"🎯 ለ Stuck ተጠቃሚዎች ብቻ ላክ ({stuck_count} Users)", callback_data="adm_bc_perks_send_stuck"),
+        InlineKeyboardButton("🔙 Back to Admin Panel", callback_data="adm_back")
+    )
+    
+    preview_header = (
+        "📢 <b>[የጥቅሞች እና ኮሚሽን ብሮድካስት ቅድመ-ዕይታ]</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{preview_text}\n\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "<i>የሚላከው ኢላማ ይምረጡ (በሚላክበት ጊዜ Stuck የሆኑት በሙሉ በራስ-ሰር ተከፍቶላቸው የታችኛው ሜኑ ይደርሳቸዋል)፦</i>"
+    )
+    bot.send_message(chat_id, preview_header, parse_mode="HTML", reply_markup=markup)
 
 def enforce_preview_quota(uid, chat_id, call_id=None):
     if is_admin_uid(uid):
@@ -2016,12 +2139,38 @@ def handle_callback(call):
         return
         
     if data.startswith("onboard_gen_"):
-        gender = "male" if data == "onboard_gen_m" else "female"
+        if data == "onboard_gen_skip":
+            gender = "male"
+            database.set_setting(f"gender_defaulted_{uid}", "1")
+        else:
+            gender = "male" if data == "onboard_gen_m" else "female"
+            database.set_setting(f"gender_defaulted_{uid}", "0")
         # Set both age AND gender in one tap (frictionless combined step)
         database.set_user_age_verified(uid)
         database.set_user_gender(uid, gender)
-        bot.delete_message(chat_id, call.message.message_id)
-        send_welcome(chat_id, call.from_user.first_name, get_lang(uid))
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except Exception:
+            pass
+        send_welcome(chat_id, call.from_user.first_name, get_lang(uid), uid)
+        return
+
+    if data.startswith("rechoose_gen_"):
+        new_gen = "female" if "female" in data else "male"
+        database.set_user_gender(uid, new_gen)
+        database.set_user_age_verified(uid)
+        database.set_setting(f"gender_defaulted_{uid}", "0")
+        bot.answer_callback_query(call.id, f"✅ ጾታ ተስተካክሏል: {'👩 ሴት' if new_gen == 'female' else '👨 ወንድ'}", show_alert=True)
+        try:
+            safe_delete_message(chat_id, call.message.message_id)
+        except Exception:
+            pass
+        bot.send_message(
+            chat_id,
+            f"✅ <b>ጾታዎ ወደ {'👩 ሴት' if new_gen == 'female' else '👨 ወንድ'} ተስተካክሏል!</b>\n\nአሁን ውይይታችንን መቀጠል እንችላለን። እባክዎ ጥያቄዎን ወይም ሀሳብዎን ይቀጥሉ 👇",
+            parse_mode="HTML",
+            reply_markup=get_bottom_markup(get_lang(uid), uid)
+        )
         return
 
     # ── Re-download PDF ──────────────────────
@@ -3800,6 +3949,142 @@ def handle_callback(call):
         bot.send_message(chat_id, "💳 <b>ክሬዲት ጨምር</b>\n\nየደንበኛውን User ID ያስገቡ:", parse_mode="HTML")
         return
 
+    # ── Admin: Perks & Commission Broadcast ──
+    if data == "adm_bc_perks_init":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        
+        all_count = database.get_total_user_count()
+        stuck_ids = database.get_all_stuck_user_ids()
+        stuck_count = len(stuck_ids)
+        
+        preview_text = get_perks_broadcast_text("am")
+        
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton(f"🚀 ለሁሉም ተጠቃሚዎች ላክ ({all_count} Users)", callback_data="adm_bc_perks_send_all"),
+            InlineKeyboardButton(f"🎯 ለ Stuck ተጠቃሚዎች ብቻ ላክ ({stuck_count} Users)", callback_data="adm_bc_perks_send_stuck"),
+            InlineKeyboardButton("🔙 Back to Admin Panel", callback_data="adm_back")
+        )
+        
+        preview_header = (
+            "📢 <b>[የጥቅሞች እና ኮሚሽን ብሮድካስት ቅድመ-ዕይታ]</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{preview_text}\n\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "<i>የሚላከው ኢላማ ይምረጡ (በሚላክበት ጊዜ Stuck የሆኑት በሙሉ በራስ-ሰር ተከፍቶላቸው የታችኛው ሜኑ ይደርሳቸዋል)፦</i>"
+        )
+        try:
+            safe_delete_message(chat_id, call.message.message_id)
+        except Exception:
+            pass
+        bot.send_message(chat_id, preview_header, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data in ["adm_bc_perks_send_all", "adm_bc_perks_send_stuck"]:
+        if not is_admin(call.from_user): return
+        is_stuck_only = (data == "adm_bc_perks_send_stuck")
+        
+        if is_stuck_only:
+            target_ids = database.get_all_stuck_user_ids()
+            label = "Stuck Onboarding Users"
+        else:
+            target_ids = database.get_all_user_ids()
+            label = "All Bot Users"
+            
+        bot.answer_callback_query(call.id, f"🚀 ብሮድካስቱ ለ {len(target_ids)} ተጠቃሚዎች በጀርባ ተጀምሯል...", show_alert=True)
+        try:
+            safe_delete_message(chat_id, call.message.message_id)
+        except Exception:
+            pass
+        bot.send_message(
+            chat_id,
+            f"🚀 <b>Perks & Commission Broadcast Launched!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 Target: <b>{label}</b>\n"
+            f"👥 Total Target: <b>{len(target_ids)}</b> users\n\n"
+            f"<i>ስራው በጀርባ እየተከናወነ ነው፤ ሲጠናቀቅ ማጠቃለያ ይላክልዎታል።</i>",
+            parse_mode="HTML"
+        )
+        
+        def run_perks_broadcast():
+            import time
+            delivered, failed = 0, 0
+            for u in target_ids:
+                try:
+                    u_lang = database.get_bot_language(u) or "am"
+                    b_text = get_perks_broadcast_text(u_lang)
+                    b_markup = get_perks_broadcast_markup(u, u_lang)
+                    
+                    bot.send_message(u, b_text, parse_mode="HTML", reply_markup=b_markup)
+                    
+                    # Auto-activate user so they are completely freed
+                    database.set_user_age_verified(u)
+                    _, curr_g = database.get_onboarding_status(u)
+                    if not curr_g:
+                        database.set_user_gender(u, "male")
+                        database.set_setting(f"gender_defaulted_{u}", "1")
+                    if not database.get_bot_language(u):
+                        database.set_bot_language(u, "am")
+                        
+                    database.mark_user_blocked(u, 0)
+                    delivered += 1
+                except Exception:
+                    database.mark_user_blocked(u, 1)
+                    failed += 1
+                time.sleep(0.05) # Rate limit safety
+                
+            try:
+                bot.send_message(
+                    chat_id,
+                    f"✅ <b>Perks & Commission Broadcast Complete!</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🎯 Target: <b>{label}</b>\n"
+                    f"📬 Delivered & Activated: <b>{delivered}</b>\n"
+                    f"❌ Blocked/Failed: <b>{failed}</b>",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+                
+        threading.Thread(target=run_perks_broadcast, daemon=True).start()
+        return
+
+    if data == "bc_play_gift":
+        bot.answer_callback_query(call.id)
+        show_daily_gift_game(chat_id, uid)
+        return
+
+    if data == "bc_invite_link":
+        bot.answer_callback_query(call.id)
+        lang = get_lang(uid)
+        bot_info = bot.get_me()
+        link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
+        stats = database.get_user_referral_stats(uid)
+        balance = database.get_commission_balance(uid)
+        
+        markup = InlineKeyboardMarkup(row_width=1)
+        if stats["can_claim"]:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_claim_milestone'), callback_data="claim_milestone_picker"))
+        if balance >= 100.0:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_request_payout'), callback_data="payout_start"))
+        markup.add(InlineKeyboardButton(S(lang, 'btn_payout_history'), callback_data="payout_history"))
+        
+        bot.send_message(
+            chat_id,
+            S(lang, 'invite_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+            S(lang, 'invite_stats',
+              started=stats['total_started'],
+              chatted=stats['total_chatted'],
+              uncredited=stats['uncredited_chatted'],
+              balance=balance) + "\n\n" +
+            S(lang, 'invite_rules') + "\n\n" +
+            S(lang, 'invite_link') + "\n<code>" + link + "</code>",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
 def send_winners_post_preview(chat_id, theme_index=1, style_index=0):
     try:
         cycle_date = tiktok_gift.get_game_cycle_date()
@@ -4815,9 +5100,24 @@ def handle_messages(message):
         if message.text.startswith("/"):
             return
             
-        # Enforce onboarding first
-        if not check_onboarding(chat_id, uid, message.from_user.first_name):
-            return
+        # Auto-free un-onboarded users as male by default
+        age_verified, u_gender = database.get_onboarding_status(uid)
+        if not age_verified or not u_gender:
+            database.set_user_age_verified(uid)
+            database.set_user_gender(uid, "male")
+            database.set_setting(f"gender_defaulted_{uid}", "1")
+            u_lang = database.get_bot_language(uid) or "am"
+            database.set_bot_language(uid, u_lang)
+            u_gender = "male"
+            try:
+                bot.send_message(
+                    chat_id,
+                    "👋 <b>እንኳን ወደ ባያ ቡክስ በደህና መጡ!</b>\n<i>(የታችኛው ዋና ሜኑ ተከፍቶልዎታል፤ ጥያቄዎን በማስተናገድ ላይ ነኝ...)</i>",
+                    parse_mode="HTML",
+                    reply_markup=get_bottom_markup(u_lang, uid)
+                )
+            except Exception:
+                pass
             
         # Check quota
         msgs_left = database.get_advice_messages_left(uid)
@@ -4847,12 +5147,44 @@ def handle_messages(message):
             bot.send_message(chat_id, cta_text, parse_mode="HTML", reply_markup=markup)
             return
 
+        user_text = message.text.strip()
+        curr_gender = u_gender or "male"
+        
+        # Gender contradiction check
+        female_clues = [
+            r'እኔ\s*ሴት\s*ነኝ', r'ሴት\s*ልጅ\s*ነኝ', r'ሴት\s*እኮ\s*ነኝ', r'እኔኮ\s*ሴት',
+            r'ባሌ\b', r'የባሌ\b', r'ከባሌ\b', r'ባል\s*አለኝ', r'እርጉዝ\s*ነኝ', r'አርግዣለሁ',
+            r'ሚስት\s*ነኝ', r'ወንድ\s*አይደለሁ', r'\bi\s*am\s*female\b', r'\bi\s*am\s*a\s*(woman|girl)\b',
+            r'\bi\'?m\s*a\s*(woman|girl|female)\b', r'\bmy\s*husband\b'
+        ]
+        male_clues = [
+            r'እኔ\s*ወንድ\s*ነኝ', r'ወንድ\s*ልጅ\s*ነኝ', r'ወንድ\s*እኮ\s*ነኝ', r'እኔኮ\s*ወንድ',
+            r'ሚስቴ\b', r'የሚስቴ\b', r'ከሚስቴ\b', r'ሚስት\s*አለኝ', r'ሴት\s*አይደለሁ',
+            r'\bi\s*am\s*male\b', r'\bi\s*am\s*a\s*(man|boy)\b', r'\bi\'?m\s*a\s*(man|boy|male)\b', r'\bmy\s*wife\b'
+        ]
+        
+        has_female_clue = any(re.search(p, user_text, re.IGNORECASE) for p in female_clues)
+        has_male_clue = any(re.search(p, user_text, re.IGNORECASE) for p in male_clues)
+        
+        if (curr_gender == "male" and has_female_clue) or (curr_gender == "female" and has_male_clue):
+            markup = InlineKeyboardMarkup(row_width=2)
+            markup.add(
+                InlineKeyboardButton("👩 ሴት (Female)", callback_data="rechoose_gen_female"),
+                InlineKeyboardButton("👨 ወንድ (Male)", callback_data="rechoose_gen_male")
+            )
+            bot.send_message(
+                chat_id,
+                "🔍 <b>የጾታ ማረጋገጫ (Gender Confirmation)</b>\n━━━━━━━━━━━━━━━━━━━━\n"
+                "በመልዕክትዎ ውስጥ የጾታ ለውጥ አስተውያለሁ። የ AI አማካሪው ለእርስዎ በሚስማማ አነጋገር እና ትክክለኛ ምክር እንዲያናግርዎት፣ እባክዎ ጾታዎን ያረጋግጡ፦",
+                parse_mode="HTML",
+                reply_markup=markup
+            )
+            return
+
         try:
             bot.send_chat_action(chat_id, 'typing')
         except Exception:
             pass
-            
-        user_text = message.text.strip()
         
         def process_advice_chat():
             import time
@@ -6211,6 +6543,9 @@ def auto_nudge_daemon():
                     markup.add(
                         InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
                         InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
+                    )
+                    markup.add(
+                        InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
                     )
                     try:
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)

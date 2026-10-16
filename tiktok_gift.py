@@ -715,7 +715,11 @@ def format_winners_caption(secret_word, word_title, word_body, winners, tiktok_n
         m = medals[r]
         if w:
             uname = f"@{w.get('username')}" if w.get('username') else (w.get('first_name') or f"User {w.get('user_id')}")
-            btitle = w.get('book_title') or w.get('book_chosen') or "የነፃ መጽሐፍ"
+            raw_b = w.get('book_chosen')
+            if raw_b in ('messages_25', '25_messages', 'messages') or w.get('book_title') in ('messages_25', '25_messages', 'messages'):
+                btitle = "25 ነፃ መልዕክቶች"
+            else:
+                btitle = w.get('book_title') or raw_b or "የነፃ መጽሐፍ"
             w_lines.append(f"{m}፦ {uname} («{btitle}»)")
         else:
             w_lines.append(f"{m}፦ ክፍት ቦታ (Open Spot) — አሁኑኑ ተሳተፉ!")

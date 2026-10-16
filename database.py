@@ -2657,13 +2657,22 @@ def get_published_author_books():
 # ══════════════════════════════════════════════════════════════════
 
 def has_user_won_daily_gift(user_id):
-    """Returns True if the user has ever won a lifetime book in the daily gift game."""
+    """Returns True if the user has ever won a lifetime book or messages in the daily gift game."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT 1 FROM daily_gift_winners WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     conn.close()
     return bool(row)
+
+def get_user_daily_gift_win(user_id):
+    """Returns the winner record dictionary if the user has won the daily gift game, or None."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM daily_gift_winners WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 def get_user_daily_gift_attempt(user_id, cycle_date):
     """Returns the user's attempt record for the given cycle_date, or None."""

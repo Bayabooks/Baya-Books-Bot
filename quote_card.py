@@ -467,7 +467,11 @@ def generate_winners_card_1_1(secret_word, word_title, word_body, winners, cycle
         w_entry = win_by_rank.get(r)
         if w_entry:
             uname = f"@{w_entry.get('username')}" if w_entry.get('username') else (w_entry.get('first_name') or f"User {w_entry.get('user_id')}")
-            btitle = w_entry.get('book_title') or w_entry.get('book_chosen') or "የነፃ መጽሐፍ"
+            raw_b = w_entry.get('book_chosen')
+            if raw_b in ('messages_25', '25_messages', 'messages') or w_entry.get('book_title') in ('messages_25', '25_messages', 'messages'):
+                btitle = "25 ነፃ መልዕክቶች"
+            else:
+                btitle = w_entry.get('book_title') or raw_b or "የነፃ መጽሐፍ"
             
             draw.text((205, ry + 31), uname, font=row_font_name, fill="#ffffff", anchor="lm")
             book_str = f"«{btitle}»"

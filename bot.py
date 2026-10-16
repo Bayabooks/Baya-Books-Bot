@@ -976,6 +976,8 @@ class DynamicBookTitles(dict):
         if not key:
             return default if default is not None else ''
         k_str = str(key).strip().lower()
+        if k_str in ["messages_25", "25_messages", "messages"]:
+            return "25 ነፃ መልዕክቶች"
         val = super().get(k_str)
         if val:
             return val
@@ -998,11 +1000,13 @@ BOOK_TITLES = DynamicBookTitles({
     "narcissist": "የናርስሲስቶች ወጥመድ",
     "boundaries": "ድንበርህን አብጅ",
     "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
-    "meaning": "የህይወት ትርጉም"
+    "meaning": "የህይወት ትርጉም",
+    "messages_25": "25 ነፃ መልዕክቶች",
+    "25_messages": "25 ነፃ መልዕክቶች"
 })
 
 def get_all_book_keys():
-    keys = list(BOOK_TITLES.keys())
+    keys = [k for k in BOOK_TITLES.keys() if k not in ("messages_25", "25_messages", "messages")]
     try:
         conn = database.get_connection()
         c = conn.cursor()
@@ -2603,7 +2607,7 @@ def handle_callback(call):
 
     # ── TikTok Daily Giveaway (የአዕምሮ ምግቦች) Callbacks ──
     if data == "gift_already_owned":
-        bot.answer_callback_query(call.id, "ይህንን መጽሐፍ ቀድመው ወስደውታል! እባክዎ ከሌሎቹ አንዱን ይምረጡ።", show_alert=True)
+        bot.answer_callback_query(call.id, "ይህንን መጽሐፍ ቀድመው ወስደውታል! እባክዎ ሌላ መጽሐፍ ወይም 25 ነፃ መልዕክቶችን ይምረጡ።", show_alert=True)
         return
 
     if data.startswith("gift_choice_"):
@@ -2670,6 +2674,9 @@ def handle_callback(call):
             ubooks, _, _ = database.get_user_books_state(uid)
             
             markup = InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                InlineKeyboardButton("💬 25 ነፃ መልዕክቶች ውሰድ (25 Free Messages)", callback_data="claim_gift_msgs")
+            )
             for bk in all_bkeys:
                 btitle = BOOK_TITLES.get(bk, bk)
                 if bk in ubooks:
@@ -2683,7 +2690,7 @@ def handle_callback(call):
                 f"🎉🎉 <b>ድንቅ ነው! በትክክል መልሰዋል!</b>\n\n"
                 f"🏆 ዛሬ በቲክቶክ የተላለፈውን ሚስጥራዊ ቃል ቀድመው ከመለሱት ውስጥ <b>{rank_str}</b> በመሆን አሸንፈዋል! 🥇\n\n"
                 f"🎁 <b>የእርስዎ ሽልማት፦</b>\n"
-                f"ከታች ካሉት የቤተ-መጽሐፍታችን ምርጥ መጻሕፍት ውስጥ <b>የፈለጉትን 1 መጽሐፍ ይምረጡ</b>፤ ወዲያውኑ ለዘላለም በነፃ ይከፈትልዎታል! 👇"
+                f"ከታች ካሉት አማራጮች <b>25 ነፃ መልዕክቶች</b> ወይም የፈለጉትን <b>1 ነፃ መጽሐፍ</b> ይምረጡ፤ ወዲያውኑ ይሰጥዎታል! 👇"
             )
             bot.send_message(chat_id, win_msg, parse_mode="HTML", reply_markup=markup)
         else:
@@ -2697,9 +2704,42 @@ def handle_callback(call):
                 f"✅ <b>በትክክል መልሰዋል!</b>\n\n"
                 f"የዛሬው ሚስጥራዊ ቃል በእርግጥም <b>«{today_secret}»</b> ነበር!\n\n"
                 f"🏃‍♂️ <b>ነገር ግን...</b> የዛሬዎቹ <b>5 ፈጣን አሸናፊዎች</b> ቀድመው ቦታውን ሞልተዋል!\n\n"
-                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት (10:00 AM) እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ አሸናፊ ይሁኑ! 👇"
+                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት (10:00 AM) እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ ወይም የ25 መልዕክት አሸናፊ ይሁኑ! 👇"
             )
             bot.send_message(chat_id, late_msg, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "claim_gift_msgs":
+        cycle_date = tiktok_gift.get_game_cycle_date()
+        
+        if database.has_user_won_daily_gift(uid):
+            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ወስደዋል!", show_alert=True)
+            return
+            
+        winners_count = database.get_today_gift_winners_count(cycle_date)
+        if winners_count >= 5:
+            bot.answer_callback_query(call.id, "ይቅርታ፣ የዛሬ 5 ቦታዎች ሞልተዋል!", show_alert=True)
+            return
+            
+        rank = winners_count + 1
+        
+        try:
+            database.record_daily_gift_winner(uid, cycle_date, rank, "messages_25")
+        except Exception:
+            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ተወስዷል!", show_alert=True)
+            return
+            
+        database.add_advice_messages(uid, 25)
+        bot.answer_callback_query(call.id, "🎉 25 ነፃ መልዕክቶች ተሰጥቶዎታል!", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        
+        celebration_text = (
+            f"🎊🎊 <b>እንኳን ደስ አለዎት!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"💬 <b>25 ነፃ መልዕክቶች</b> ወደ አካውንትዎ ገቢ ሆነዋል! 🏆\n\n"
+            f"አሁን ከኤአይ አማካሪው (AI Mentor) ጋር በነፃ ማውራት፣ ማንኛውንም ጥያቄ መጠየቅ እና መወያየት ይችላሉ። መልካም ቆይታ! 🌟"
+        )
+        bot.send_message(chat_id, celebration_text, parse_mode="HTML")
         return
 
     if data.startswith("claim_gift_book_"):
@@ -2707,7 +2747,7 @@ def handle_callback(call):
         cycle_date = tiktok_gift.get_game_cycle_date()
         
         if database.has_user_won_daily_gift(uid):
-            bot.answer_callback_query(call.id, "ቀደም ሲል መጽሐፍ ወስደዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ወስደዋል!", show_alert=True)
             return
             
         winners_count = database.get_today_gift_winners_count(cycle_date)
@@ -3860,15 +3900,20 @@ def show_daily_gift_game(chat_id, uid):
     tiktok_url = tiktok_gift.get_tiktok_channel_url()
     tiktok_name = tiktok_gift.get_tiktok_channel_name()
 
-    # 1. Check if user already won a lifetime book
+    # 1. Check if user already won a lifetime reward
     if database.has_user_won_daily_gift(uid):
+        win_rec = database.get_user_daily_gift_win(uid)
+        b_chosen = win_rec.get("book_chosen") if win_rec else None
+        is_msg_reward = b_chosen in ("messages_25", "25_messages", "messages")
+        
         markup = InlineKeyboardMarkup()
-        markup.add(
-            InlineKeyboardButton(
-                "📚 ያሸነፉትን መጽሐፍ አንብብ (Library)",
-                web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+        if not is_msg_reward:
+            markup.add(
+                InlineKeyboardButton(
+                    "📚 ያሸነፉትን መጽሐፍ አንብብ (Library)",
+                    web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+                )
             )
-        )
         markup.add(
             InlineKeyboardButton(f"📱 {tiktok_name} (TikTok)", url=tiktok_url)
         )
@@ -3877,11 +3922,12 @@ def show_daily_gift_game(chat_id, uid):
                 InlineKeyboardButton("🔄 [Admin] Reset My Win & Play", callback_data="adm_gift_reset_me"),
                 InlineKeyboardButton("♻️ [Admin] Restart Whole Game", callback_data="adm_gift_restart_confirm")
             )
+        reward_name = "25 ነፃ መልዕክቶች" if is_msg_reward else f"«{BOOK_TITLES.get(b_chosen, b_chosen)}» መጽሐፍ"
         text = (
-            "🏆 <b>እርስዎ ቀደም ሲል የነፃ መጽሐፍ አሸናፊ ሆነዋል!</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━\n\n"
-            "እርስዎ አስቀድመው ያሸነፉበትን መጽሐፍ በ<b>'📚 መጻሕፍት ቤት (Library)'</b> ገብተው በነፃ ማንበብ ይችላሉ።\n\n"
-            "ውድድሩ ለሁሉም ወገኖች እኩል ዕድል ለመስጠት በአንድ ሰው <b>1 ጊዜ ብቻ</b> የሚፈቀድ ነው።\n\n"
+            f"🏆 <b>እርስዎ ቀደም ሲል የ{reward_name} አሸናፊ ሆነዋል!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"ያሸነፉት ሽልማት ወደ አካውንትዎ ገቢ ሆኗል።\n\n"
+            f"ውድድሩ ለሁሉም ወገኖች እኩል ዕድል ለመስጠት በአንድ ሰው <b>1 ጊዜ ብቻ</b> የሚፈቀድ ነው።\n\n"
             f"የዕለቱን አነቃቂ የስነ-ልቦና ምክር በቲክቶክ <b>{tiktok_name}</b> መከታተልዎን ይቀጥሉ! ✨"
         )
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)

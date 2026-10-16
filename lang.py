@@ -159,16 +159,16 @@ STRINGS = {
         "om": "🎫 Ergaawwan bilisaa hafan: {msgs}"
     },
     "mypage_referrals": {
-        "am": "👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>",
-        "en": "👥 People joined via your link: <b>{count}</b>",
-        "ti": "👥 ብመንገዲ መላግቦኹም ዝኣተዉ ሰባት: <b>{count}</b>",
-        "om": "👥 Namoota liinkii keessaniin seenan: <b>{count}</b>"
+        "am": "👥 የጋበዟቸው ጓደኞች: <b>{started}</b> የገቡ | <b>{chatted}</b> ማውራት የጀመሩ\n💰 የኮሚሽን ቀሪ ሂሳብ: <b>{balance:.2f} ብር</b>",
+        "en": "👥 Invited Friends: <b>{started}</b> Joined | <b>{chatted}</b> Started Chatting\n💰 Commission Balance: <b>{balance:.2f} ETB</b>",
+        "ti": "👥 ዝዓደምኩምዎም መሓዙት: <b>{started}</b> ዝኣተዉ | <b>{chatted}</b> ምይይጥ ዝጀመሩ\n💰 ናይ ኮሚሽን ቀሪ ሕሳብ: <b>{balance:.2f} ብር</b>",
+        "om": "👥 Hiriyyoota Afeertan: <b>{started}</b> kan seenan | <b>{chatted}</b> kan marii eegalan\n💰 Haftee Komishinii: <b>{balance:.2f} Birrii</b>"
     },
     "mypage_referral_hint": {
-        "am": "<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>",
-        "en": "<i>(Invite 1 person to get 1 free message. You can claim when it reaches 10 people.)</i>",
-        "ti": "<i>(1 ሰብ ክትዕድሙ ከለኹም 1 ናጻ መልእኽቲ ትረኽቡ። 10 ሰብ ምስ መልኡ ክትጥቀሙሉ ትኽእሉ ኢኹም።)</i>",
-        "om": "<i>(Nama 1 yeroo afeertan ergaa bilisaa 1 argattu. Yeroo nama 10 guutu fayyadamuu ni dandeessu.)</i>"
+        "am": "<i>(5 ጓደኛ ማውራት ሲጀምር 1 ነፃ መጽሐፍ ወይም 25 መልዕክት ያገኛሉ። ማንኛውንም ፓኬጅ ሲገዙ 30% ኮሚሽን ያገኛሉ!)</i>",
+        "en": "<i>(When 5 friends start chatting, get 1 free book or 25 messages. Earn 30% commission whenever they buy any package!)</i>",
+        "ti": "<i>(5 መሓዙት ምይይጥ ክጅምሩ ከለዉ 1 ናጻ መጽሓፍ ወይ 25 መልእኽቲ ትረኽቡ። ዝኾነ ፓኬጅ ምስ ዝገዝኡ ድማ 30% ኮሚሽን ይረኽቡ!)</i>",
+        "om": "<i>(Hiriyyoonni 5 marii yoo eegalan kitaaba bilisaa 1 ykn ergaa 25 argattu. Paakeejii kamiyyuu yoo bitan immoo komishinii 30% argattu!)</i>"
     },
     "mypage_reset_info": {
         "am": "🧹 <b>ማህደር አጽዳ (Reset):</b> ይህን ሲጫኑ እስካሁን ያደረግነው ሚስጥራዊ ውይይት ከሲስተማችን ሙሉ በሙሉ ይሰረዛል።",
@@ -417,40 +417,142 @@ STRINGS = {
     },
 
     "invite_title": {
-        "am": "🎁 <b>ጓደኛዎን ይጋብዙ!</b>",
-        "en": "🎁 <b>Invite a Friend!</b>",
-        "ti": "🎁 <b>መሓዛኹም ዕደሙ!</b>",
-        "om": "🎁 <b>Hiriyyaa keessan afeeraa!</b>"
+        "am": "🎁 <b>ጓደኛዎን ይጋብዙ እና ገንዘብ ያግኙ!</b>",
+        "en": "🎁 <b>Invite Friends & Earn Money!</b>",
+        "ti": "🎁 <b>መሓዛኹም ዕደሙን ገንዘብ ርኸቡን!</b>",
+        "om": "🎁 <b>Hiriyyaa Afeeraa Maallaqa Argadhaa!</b>"
     },
-    "invite_count": {
-        "am": "👥 በሊንክዎ የገቡ ሰዎች: <b>{count}</b>",
-        "en": "👥 People joined via your link: <b>{count}</b>",
-        "ti": "👥 ብመንገዲ መላግቦኹም ዝኣተዉ ሰባት: <b>{count}</b>",
-        "om": "👥 Namoota liinkii keessaniin seenan: <b>{count}</b>"
+    "invite_stats": {
+        "am": "📊 <b>የእርስዎ የመጋበዝ ውጤት:</b>\n• ቦቱን የተቀላቀሉ (የጀመሩ): <b>{started}</b>\n• ማውራት የጀመሩ (Conversating): <b>{chatted}</b>\n• ላልተወሰደ ሽልማት የቀረቡ: <b>{uncredited}</b>/5\n\n💰 <b>የኮሚሽን ቀሪ ሂሳብ:</b> <b>{balance:.2f} ብር</b>",
+        "en": "📊 <b>Your Referral Performance:</b>\n• Started the bot: <b>{started}</b>\n• Started chatting (Conversating): <b>{chatted}</b>\n• Progress to next reward: <b>{uncredited}</b>/5\n\n💰 <b>Commission Balance:</b> <b>{balance:.2f} ETB</b>",
+        "ti": "📊 <b>ናይ ምዕዳም ውጽኢትኩም:</b>\n• ቦት ዝጀመሩ: <b>{started}</b>\n• ምይይጥ ዝጀመሩ: <b>{chatted}</b>\n• ንሽልማት ዝቐረቡ: <b>{uncredited}</b>/5\n\n💰 <b>ናይ ኮሚሽን ቀሪ ሕሳብ:</b> <b>{balance:.2f} ብር</b>",
+        "om": "📊 <b>Raawwii Afeerraa Keessanii:</b>\n• Boottii kan eegalan: <b>{started}</b>\n• Marii kan eegalan: <b>{chatted}</b>\n• Badhaasa itti aanuuf: <b>{uncredited}</b>/5\n\n💰 <b>Haftee Komishinii:</b> <b>{balance:.2f} Birrii</b>"
     },
-    "invite_hint": {
-        "am": "<i>(1 ሰው ሲጋብዙ 1 ነፃ መልዕክት ያገኛሉ። 10 ሰው ሲሞሉ መጠቀም ይችላሉ።)</i>",
-        "en": "<i>(Invite 1 person to get 1 free message. You can claim when it reaches 10 people.)</i>",
-        "ti": "<i>(1 ሰብ ክትዕድሙ ከለኹም 1 ናጻ መልእኽቲ ትረኽቡ። 10 ሰብ ምስ መልኡ ክትጥቀሙሉ ትኽእሉ ኢኹም።)</i>",
-        "om": "<i>(Nama 1 yeroo afeertan ergaa bilisaa 1 argattu. Yeroo nama 10 guutu fayyadamuu ni dandeessu.)</i>"
+    "invite_rules": {
+        "am": "💡 <b>ህጎች እና ሽልማቶች:</b>\n1️⃣ <b>5 ጓደኞች ማውራት ሲጀምሩ፦</b> ማንኛውንም 1 ነፃ መጽሐፍ ወይም 25 ነፃ መልዕክቶች ይሸለማሉ!\n2️⃣ <b>ጓደኛዎ ማንኛውንም ፓኬጅ ሲገዛ፦</b> ወዲያውኑ <b>30% ኮሚሽን</b> ወደ ቀሪ ሂሳብዎ ገቢ ይሆናል!\n3️⃣ <b>ገንዘብ ማውጣት:</b> ዝቅተኛው 100 ብር ሲሆን በቴሌብር (Telebirr) ወይም በንግድ ባንክ (CBE) ማውጣት ይችላሉ።",
+        "en": "💡 <b>Rules & Rewards:</b>\n1️⃣ <b>When 5 friends start chatting:</b> Choose ANY 1 free book or 25 free messages!\n2️⃣ <b>When an invited friend buys ANY package:</b> You earn an instant <b>30% commission</b>!\n3️⃣ <b>Withdrawal:</b> Minimum payout is 100 Birr via Telebirr or CBE Bank.",
+        "ti": "💡 <b>ሕግታትን ሽልማታትን:</b>\n1️⃣ <b>5 መሓዙት ምይይጥ ክጅምሩ ከለዉ:</b> ዝደለኹምዎ 1 ናጻ መጽሓፍ ወይ 25 ናጻ መልእኽትታት ትሸለሙ!\n2️⃣ <b>ዝዓደምኩምዎ ሰብ ዝኾነ ፓኬጅ ምስ ዝገዝእ:</b> ብቕጽበት <b>30% ኮሚሽን</b> ይኣትወልኩም!\n3️⃣ <b>ገንዘብ ምውጻእ:</b> ትሑት 100 ብር ኮይኑ ብቴሌብር (Telebirr) ወይ ንግዲ ባንክ (CBE) ከተውጽኡ ትኽእሉ ኢኹም።",
+        "om": "💡 <b>Seerotaa fi Badhaasota:</b>\n1️⃣ <b>Hiriyyoonni 5 marii yoo eegalan:</b> Kitaaba bilisaa 1 kamiyyuu ykn ergaawwan 25 badhaafamtu!\n2️⃣ <b>Hiriyyaan keessan paakeejii kamiyyuu yoo bite:</b> Battalumatti <b>komishinii 30%</b> argattu!\n3️⃣ <b>Baasii baafachuu:</b> Gadi aanaan Birrii 100 yoo ta'u Telebirr ykn Baankii Daldalaatiin (CBE) baafachuu dandeessu."
     },
     "invite_link": {
-        "am": "🔗 የእርስዎ መጋበዣ ሊንክ:",
-        "en": "🔗 Your invitation link:",
-        "ti": "🔗 ናይ መጋበዝያ መላግቦኹም:",
-        "om": "🔗 Liinkii afeerraa keessanii:"
+        "am": "🔗 <b>የእርስዎ መጋበዣ ሊንክ:</b>",
+        "en": "🔗 <b>Your Invitation Link:</b>",
+        "ti": "🔗 <b>ናይ መጋበዝያ መላግቦኹም:</b>",
+        "om": "🔗 <b>Liinkii Afeerraa Keessanii:</b>"
+    },
+    "btn_claim_milestone": {
+        "am": "🎁 ሽልማት ይውሰዱ (Claim Reward)",
+        "en": "🎁 Claim Milestone Reward",
+        "ti": "🎁 ሽልማትኩም ውሰዱ (Claim)",
+        "om": "🎁 Badhaasa Fudhadhaa (Claim)"
+    },
+    "btn_request_payout": {
+        "am": "💸 ሂሳብ አውጣ (Request Payout)",
+        "en": "💸 Request Payout",
+        "ti": "💸 ገንዘብ ኣውጽእ (Payout)",
+        "om": "💸 Baasii Baafadhaa (Payout)"
+    },
+    "btn_payout_history": {
+        "am": "📜 የክፍያ ታሪክ",
+        "en": "📜 Payout History",
+        "ti": "📜 ናይ ክፍሊት ታሪኽ",
+        "om": "📜 Seenaa Kaffaltii"
+    },
+    "claim_choose_reward": {
+        "am": "🎁 <b>እንኳን ደስ አሎት!</b> 5 ያጋበዟቸው ጓደኞች ማውራት ጀምረዋል!\n\nየሚፈልጉትን ሽልማት ይምረጡ፦",
+        "en": "🎁 <b>Congratulations!</b> 5 invited friends started chatting!\n\nChoose your preferred reward:",
+        "ti": "🎁 <b>እንኳዕ ደስ በለኩም!</b> 5 ዝዓደምኩምዎም መሓዙት ምይይጥ ጀሚሮም ኣለዉ!\n\nዝደለኹምዎ ሽልማት ምረጹ፦",
+        "om": "🎁 <b>Baga gammaddan!</b> Hiriyyoonni afeertan 5 marii eegalaniiru!\n\nBadhaasa barbaaddan filadhaa:"
+    },
+    "btn_reward_msgs": {
+        "am": "💬 25 ነፃ መልዕክቶች",
+        "en": "💬 25 Free Messages",
+        "ti": "💬 25 ናጻ መልእኽትታት",
+        "om": "💬 Ergaawwan Bilisaa 25"
+    },
+    "btn_reward_book": {
+        "am": "📚 1 ነፃ መጽሐፍ ምረጥ",
+        "en": "📚 Pick 1 Free Book",
+        "ti": "📚 1 ናጻ መጽሓፍ ምረጽ",
+        "om": "📚 Kitaaba Bilisaa 1 Filadhu"
+    },
+    "claim_msgs_success": {
+        "am": "🎉 <b>እንኳን ደስ አሎት!</b> 25 ነፃ መልዕክቶች ወደ አካውንትዎ ገቢ ሆነዋል!",
+        "en": "🎉 <b>Congratulations!</b> 25 free messages have been added to your account!",
+        "ti": "🎉 <b>እንኳዕ ደስ በለኩም!</b> 25 ናጻ መልእኽትታት ኣብ ሕሳብኩም ተወሲኹ ኣሎ!",
+        "om": "🎉 <b>Baga gammaddan!</b> Ergaawwan bilisaa 25 herrega keessanitti dabalameera!"
+    },
+    "claim_book_success": {
+        "am": "🎉 <b>እንኳን ደስ አሎት!</b> '<b>{title}</b>' የተሰኘው መጽሐፍ በነፃ ተከፍቶልዎታል!\nአሁኑኑ በ '📚 የኔ መጻሕፍት' ገፅ ውስጥ ገብተው ማንበብ ይችላሉ።",
+        "en": "🎉 <b>Congratulations!</b> The book '<b>{title}</b>' has been unlocked for free!\nYou can read it now under '📚 My Books'.",
+        "ti": "🎉 <b>እንኳዕ ደስ በለኩም!</b> መጽሓፍ '<b>{title}</b>' ብናጻ ተኸፊቱልኩም ኣሎ!\nሕጂ ኣብ '📚 ናተይ መጻሕፍቲ' ኣቲኹም ከተንብቡ ትኽእሉ ኢኹም።",
+        "om": "🎉 <b>Baga gammaddan!</b> Kitaabni '<b>{title}</b>' jedhamu bilisaan isiniif banameera!\nAmma '📚 Kitaabota Koo' keessatti dubbisuu dandeessu."
+    },
+    "claim_fail_5": {
+        "am": "❌ ገና 5 ማውራት የጀመሩ ጓደኞች አልሞሉም!",
+        "en": "❌ You have not reached 5 chatting friends yet!",
+        "ti": "❌ ዛጊት ምይይጥ ዝጀመሩ 5 መሓዙት ኣይመልኡን!",
+        "om": "❌ Hiriyyoonni marii eegalan 5 hin guunne!"
     },
     "claim_success": {
-        "am": "🎉 እንኳን ደስ አለዎት! {count} ነፃ መልዕክቶች ተሰጥቶዎታል!",
-        "en": "🎉 Congratulations! You have been awarded {count} free messages!",
-        "ti": "🎉 እንኳዕ ደስ በለኩም! {count} ናጻ መልእኽትታት ተዋሂቡኩም ኣሎ!",
-        "om": "🎉 Baga gammaddan! Ergaawwan bilisaa {count} isiniif kennamaniiru!"
+        "am": "🎉 እንኳን ደስ አለዎት! 25 ነፃ መልዕክቶች ተሰጥቶዎታል!",
+        "en": "🎉 Congratulations! You have been awarded 25 free messages!",
+        "ti": "🎉 እንኳዕ ደስ በለኩም! 25 ናጻ መልእኽትታት ተዋሂቡኩም ኣሎ!",
+        "om": "🎉 Baga gammaddan! Ergaawwan bilisaa 25 isiniif kennamaniiru!"
     },
     "claim_fail": {
-        "am": "❌ ገና 10 ሰው አልሞሉም!",
-        "en": "❌ You haven't reached 10 people yet!",
-        "ti": "❌ ዛጊት 10 ሰብ ኣይመልአን!",
-        "om": "❌ Ammayyuu nama 10 hin guunne!"
+        "am": "❌ ገና 5 ማውራት የጀመሩ ጓደኞች አልሞሉም!",
+        "en": "❌ You haven't reached 5 chatting friends yet!",
+        "ti": "❌ ዛጊት ምይይጥ ዝጀመሩ 5 መሓዙት ኣይመልኡን!",
+        "om": "❌ Ammayyuu marii eegalan nama 5 hin guunne!"
+    },
+    "payout_min_error": {
+        "am": "❌ ዝቅተኛው የማውጣት መጠን 100 ብር ነው። አሁን ያለዎት ቀሪ ሂሳብ {balance:.2f} ብር ነው።",
+        "en": "❌ Minimum payout is 100 Birr. Your current balance is {balance:.2f} ETB.",
+        "ti": "❌ ትሑት ናይ ምውጻእ መጠን 100 ብር እዩ። ሕጂ ዘለኩም ቀሪ ሕሳብ {balance:.2f} ብር እዩ።",
+        "om": "❌ Gadi aanaan baasii baafachuu Birrii 100 dha. Hafteen keessan ammaa Birrii {balance:.2f} dha."
+    },
+    "payout_choose_method": {
+        "am": "💸 <b>የገንዘብ ማውጫ መንገድ ይምረጡ (Payout Method)</b>\n━━━━━━━━━━━━━━━━━━━━\nያለዎት ቀሪ ሂሳብ: <b>{balance:.2f} ብር</b>\nዝቅተኛው መጠን: <b>100 ብር</b>\n\nክፍያ የሚቀበሉበትን ዘዴ ይምረጡ፦",
+        "en": "💸 <b>Choose Payout Method</b>\n━━━━━━━━━━━━━━━━━━━━\nYour Balance: <b>{balance:.2f} ETB</b>\nMinimum Payout: <b>100 ETB</b>\n\nSelect your preferred payment method:",
+        "ti": "💸 <b>መንገዲ ምውጻእ ገንዘብ ምረጹ (Payout Method)</b>\n━━━━━━━━━━━━━━━━━━━━\nዘለኩም ቀሪ ሕሳብ: <b>{balance:.2f} ብር</b>\nትሑት መጠን: <b>100 ብር</b>\n\nክፍሊት እትቕበሉሉ መገዲ ምረጹ፦",
+        "om": "💸 <b>Mala Baasii Baafachuu Filadhaa</b>\n━━━━━━━━━━━━━━━━━━━━\nHaftee Keessan: <b>{balance:.2f} Birrii</b>\nGadi aanaa: <b>Birrii 100</b>\n\nMala kaffaltiin ittiin isiniif ergamu filadhaa:"
+    },
+    "btn_method_telebirr": {
+        "am": "📱 ቴሌብር (Telebirr)",
+        "en": "📱 Telebirr",
+        "ti": "📱 ቴሌብር (Telebirr)",
+        "om": "📱 Telebirr"
+    },
+    "btn_method_cbe": {
+        "am": "🏦 የኢትዮጵያ ንግድ ባንክ (CBE)",
+        "en": "🏦 Commercial Bank of Ethiopia (CBE)",
+        "ti": "🏦 ንግዲ ባንክ ኢትዮጵያ (CBE)",
+        "om": "🏦 Baankii Daldala Itoophiyaa (CBE)"
+    },
+    "payout_prompt_telebirr": {
+        "am": "📱 <b>ቴሌብር የክፍያ መጠየቂያ (Telebirr Payout)</b>\n━━━━━━━━━━━━━━━━━━━━\nያለዎት ቀሪ ሂሳብ: <b>{balance:.2f} ብር</b>\n\nእባክዎ የሚከተሉትን መረጃዎች በኮማ (,) ወይም በመስመር ለይተው ይላኩልን፦\n1️⃣ <b>የቴሌብር ስልክ ቁጥር</b>\n2️⃣ <b>ሙሉ ስም (Full Name)</b>\n3️⃣ <b>የብር መጠን (Amount - ዝቅተኛ 100)</b>\n\n📝 <b>ምሳሌ (Example):</b>\n<code>0912345678, አበበ ከበደ, 150</code>\n\n<i>ለመሰረዝ /cancel ብለው ይፃፉ።</i>",
+        "en": "📱 <b>Telebirr Payout Request</b>\n━━━━━━━━━━━━━━━━━━━━\nYour Balance: <b>{balance:.2f} ETB</b>\n\nPlease reply with your details separated by comma or new lines:\n1️⃣ <b>Telebirr Phone Number</b>\n2️⃣ <b>Full Name</b>\n3️⃣ <b>Amount to withdraw (min 100)</b>\n\n📝 <b>Example:</b>\n<code>0912345678, Abebe Kebede, 150</code>\n\n<i>Type /cancel to abort.</i>",
+        "ti": "📱 <b>ናይ ቴሌብር ክፍሊት ሕቶ (Telebirr Payout)</b>\n━━━━━━━━━━━━━━━━━━━━\nዘለኩም ቀሪ ሕሳብ: <b>{balance:.2f} ብር</b>\n\nበጃኹም ዝስዕቡ ሓበሬታታት ብኮማ (,) ፈሊኹም ስደዱልና፦\n1️⃣ <b>ናይ ቴሌብር ቁጽሪ ስልኪ</b>\n2️⃣ <b>ምሉእ ስም</b>\n3️⃣ <b>መጠን ገንዘብ (ትሑት 100 ብር)</b>\n\n📝 <b>ኣብነት (Example):</b>\n<code>0912345678, ኣበበ ከበደ, 150</code>\n\n<i>ንምስራዝ /cancel ኢልኩም ጸሓፉ።</i>",
+        "om": "📱 <b>Gaaffii Baasii Telebirr</b>\n━━━━━━━━━━━━━━━━━━━━\nHaftee Keessan: <b>{balance:.2f} Birrii</b>\n\nMallattoolee armaan gadii koman (,) addaan baasaatii ergaa:\n1️⃣ <b>Lakkoofsa Bilbilaa Telebirr</b>\n2️⃣ <b>Maqaa Guutuu</b>\n3️⃣ <b>Hamma Maallaqaa (yoo xiqqaate 100)</b>\n\n📝 <b>Fakkeenya:</b>\n<code>0912345678, Abebe Kebede, 150</code>\n\n<i>Haqsuuf /cancel jedhaa barreessaa.</i>"
+    },
+    "payout_prompt_cbe": {
+        "am": "🏦 <b>ንግድ ባንክ የክፍያ መጠየቂያ (CBE Bank Payout)</b>\n━━━━━━━━━━━━━━━━━━━━\nያለዎት ቀሪ ሂሳብ: <b>{balance:.2f} ብር</b>\n\nእባክዎ የሚከተሉትን መረጃዎች በኮማ (,) ወይም በመስመር ለይተው ይላኩልን፦\n1️⃣ <b>የንግድ ባንክ ሂሳብ ቁጥር (CBE Account Number)</b>\n2️⃣ <b>ሙሉ ስም (Full Name)</b>\n3️⃣ <b>የብር መጠን (Amount - ዝቅተኛ 100)</b>\n\n📝 <b>ምሳሌ (Example):</b>\n<code>1000123456789, አበበ ከበደ, 200</code>\n\n<i>ለመሰረዝ /cancel ብለው ይፃፉ።</i>",
+        "en": "🏦 <b>CBE Bank Payout Request</b>\n━━━━━━━━━━━━━━━━━━━━\nYour Balance: <b>{balance:.2f} ETB</b>\n\nPlease reply with your details separated by comma or new lines:\n1️⃣ <b>CBE Account Number</b>\n2️⃣ <b>Full Name</b>\n3️⃣ <b>Amount to withdraw (min 100)</b>\n\n📝 <b>Example:</b>\n<code>1000123456789, Abebe Kebede, 200</code>\n\n<i>Type /cancel to abort.</i>",
+        "ti": "🏦 <b>ናይ ንግዲ ባንክ ክፍሊት ሕቶ (CBE Payout)</b>\n━━━━━━━━━━━━━━━━━━━━\nዘለኩም ቀሪ ሕሳብ: <b>{balance:.2f} ብር</b>\n\nበጃኹም ዝስዕቡ ሓበሬታታት ብኮማ (,) ፈሊኹም ስደዱልና፦\n1️⃣ <b>ናይ ንግዲ ባንክ ቁጽሪ ሕሳብ (CBE Account)</b>\n2️⃣ <b>ምሉእ ስም</b>\n3️⃣ <b>መጠን ገንዘብ (ትሑት 100 ብር)</b>\n\n📝 <b>ኣብነት (Example):</b>\n<code>1000123456789, ኣበበ ከበደ, 200</code>\n\n<i>ንምስራዝ /cancel ኢልኩም ጸሓፉ።</i>",
+        "om": "🏦 <b>Gaaffii Baasii Baankii Daldalaa (CBE Payout)</b>\n━━━━━━━━━━━━━━━━━━━━\nHaftee Keessan: <b>{balance:.2f} Birrii</b>\n\nMallattoolee armaan gadii koman (,) addaan baasaatii ergaa:\n1️⃣ <b>Lakkoofsa Herregaa CBE</b>\n2️⃣ <b>Maqaa Guutuu</b>\n3️⃣ <b>Hamma Maallaqaa (yoo xiqqaate 100)</b>\n\n📝 <b>Fakkeenya:</b>\n<code>1000123456789, Abebe Kebede, 200</code>\n\n<i>Haqsuuf /cancel jedhaa barreessaa.</i>"
+    },
+    "payout_request_submitted": {
+        "am": "✅ <b>የክፍያ ጥያቄዎ ቀርቧል!</b>\n━━━━━━━━━━━━━━━━━━━━\n💰 መጠን: <b>{amount:.2f} ብር</b>\n🏦 ዘዴ: <b>{method}</b>\n👤 ስም: <b>{name}</b>\n🔢 ቁጥር: <code>{account}</code>\n\n<i>አስተዳዳሪው ክፍያውን ሲፈጽም ማረጋገጫ ይደርስዎታል። እናመሰግናለን!</i>",
+        "en": "✅ <b>Payout Request Submitted!</b>\n━━━━━━━━━━━━━━━━━━━━\n💰 Amount: <b>{amount:.2f} ETB</b>\n🏦 Method: <b>{method}</b>\n👤 Name: <b>{name}</b>\n🔢 Account/Phone: <code>{account}</code>\n\n<i>You will receive a notification once the admin processes and approves your payout. Thank you!</i>",
+        "ti": "✅ <b>ናይ ክፍሊት ሕቶኹም ቀሪቡ ኣሎ!</b>\n━━━━━━━━━━━━━━━━━━━━\n💰 መጠን: <b>{amount:.2f} ብር</b>\n🏦 መገዲ: <b>{method}</b>\n👤 ስም: <b>{name}</b>\n🔢 ቁጽሪ: <code>{account}</code>\n\n<i>ኣመሓዳሪ ነቲ ክፍሊት ምስ ፈጸሞ ማረጋገጺ ክበጽሓኩም እዩ። ነመስግን!</i>",
+        "om": "✅ <b>Gaaffiin Kaffaltii Dhiyaateera!</b>\n━━━━━━━━━━━━━━━━━━━━\n💰 Hamma: <b>{amount:.2f} Birrii</b>\n🏦 Mala: <b>{method}</b>\n👤 Maqaa: <b>{name}</b>\n🔢 Lakkoofsa: <code>{account}</code>\n\n<i>Kaffaltiin kun yeroo raawwatamu beeksisni isiniif ergama. Galatoomaa!</i>"
+    },
+    "payout_cancelled": {
+        "am": "❌ የክፍያ ጥያቄ ተሰርዟል።",
+        "en": "❌ Payout request cancelled.",
+        "ti": "❌ ናይ ክፍሊት ሕቶ ተሰሪዙ።",
+        "om": "❌ Gaaffiin kaffaltii haqameera."
     },
 
     "tip_title": {

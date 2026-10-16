@@ -46,6 +46,8 @@ def setup_database():
         "ALTER TABLE users ADD COLUMN last_paywall_nudge TEXT",
         "ALTER TABLE users ADD COLUMN last_nudge_at TEXT",
         "ALTER TABLE users ADD COLUMN last_mentor_message TEXT",
+        "ALTER TABLE users ADD COLUMN commission_balance REAL DEFAULT 0.0",
+        "ALTER TABLE users ADD COLUMN total_earned_commission REAL DEFAULT 0.0",
     ]:
         try: c.execute(col_sql)
         except: pass
@@ -90,7 +92,38 @@ def setup_database():
         referrer_id INTEGER,
         referred_id INTEGER UNIQUE,
         credit_given INTEGER DEFAULT 0,
+        has_chatted INTEGER DEFAULT 0,
+        chatted_date TEXT,
         created_date TEXT
+    )''')
+    try: c.execute("ALTER TABLE referrals ADD COLUMN has_chatted INTEGER DEFAULT 0")
+    except: pass
+    try: c.execute("ALTER TABLE referrals ADD COLUMN chatted_date TEXT")
+    except: pass
+
+    c.execute('''CREATE TABLE IF NOT EXISTS referral_commissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        referrer_id INTEGER,
+        buyer_id INTEGER,
+        tx_ref TEXT UNIQUE,
+        package_name TEXT,
+        purchase_amount REAL,
+        commission_amount REAL,
+        created_at TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS referral_payouts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        amount REAL,
+        payment_method TEXT,
+        account_holder TEXT,
+        account_number TEXT,
+        phone_number TEXT,
+        status TEXT DEFAULT 'pending',
+        admin_notes TEXT DEFAULT '',
+        created_at TEXT,
+        processed_at TEXT DEFAULT NULL
     )''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS broadcasts (
@@ -848,14 +881,14 @@ def use_credit(user_id):
     conn.close()
     return success
 
-# ─── Referral Functions ────────────────────
+# ─── Referral & Commission Functions ────────────────────
 
 def record_referral(referrer_id, referred_id):
     conn = get_connection()
     c = conn.cursor()
     try:
-        c.execute('''INSERT OR IGNORE INTO referrals (referrer_id, referred_id, credit_given, created_date)
-            VALUES (?, ?, 0, ?)
+        c.execute('''INSERT OR IGNORE INTO referrals (referrer_id, referred_id, credit_given, has_chatted, created_date)
+            VALUES (?, ?, 0, 0, ?)
         ''', (referrer_id, referred_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
     except Exception:
@@ -863,12 +896,104 @@ def record_referral(referrer_id, referred_id):
     conn.close()
 
 def get_referrer(user_id):
+    """Legacy lookup for uncredited referrer."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT referrer_id FROM referrals WHERE referred_id = ? AND credit_given = 0", (user_id,))
     row = c.fetchone()
     conn.close()
     return row['referrer_id'] if row else None
+
+def get_user_referrer(user_id):
+    """Lifetime lookup for who referred this user."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT referred_by FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row and row['referred_by']:
+        conn.close()
+        return row['referred_by']
+    c.execute("SELECT referrer_id FROM referrals WHERE referred_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return row['referrer_id'] if row else None
+
+def mark_referred_user_chatted(referred_id):
+    """
+    Called when a user sends a chat message to the mentor AI.
+    Marks has_chatted = 1 if not already marked.
+    Returns (is_new_chatter, referrer_id, uncredited_chatted_count).
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, referrer_id, has_chatted FROM referrals WHERE referred_id = ?", (referred_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False, None, 0
+    referrer_id = row['referrer_id']
+    if row['has_chatted'] == 1:
+        conn.close()
+        return False, referrer_id, 0
+        
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("UPDATE referrals SET has_chatted = 1, chatted_date = ? WHERE referred_id = ?", (now_str, referred_id))
+    conn.commit()
+
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND has_chatted = 1 AND credit_given = 0", (referrer_id,))
+    uncredited = c.fetchone()[0]
+    conn.close()
+    return True, referrer_id, uncredited
+
+def get_user_referral_stats(user_id):
+    """
+    Returns referral statistics for a user:
+    - total_started: count of people who joined using their referral link
+    - total_chatted: count of referred people who started conversating with AI
+    - uncredited_chatted: chatting friends not yet claimed for 5-friend milestones
+    - can_claim: True if uncredited_chatted >= 5
+    - claimable_count: uncredited_chatted // 5
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ?", (user_id,))
+    total_started = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND has_chatted = 1", (user_id,))
+    total_chatted = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND has_chatted = 1 AND credit_given = 0", (user_id,))
+    uncredited_chatted = c.fetchone()[0]
+    conn.close()
+
+    return {
+        "total_started": total_started,
+        "total_chatted": total_chatted,
+        "uncredited_chatted": uncredited_chatted,
+        "can_claim": uncredited_chatted >= 5,
+        "claimable_count": uncredited_chatted // 5
+    }
+
+def mark_n_chatted_referrals_credited(referrer_id, n=5):
+    """
+    Marks n uncredited chatting referrals as credited towards rewards.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        UPDATE referrals 
+        SET credit_given = 1 
+        WHERE id IN (
+            SELECT id FROM referrals 
+            WHERE referrer_id = ? AND has_chatted = 1 AND credit_given = 0 
+            ORDER BY id ASC
+            LIMIT ?
+        )
+    ''', (referrer_id, n))
+    updated = c.rowcount
+    conn.commit()
+    conn.close()
+    return updated
 
 def mark_referral_credited(referred_id):
     conn = get_connection()
@@ -903,10 +1028,165 @@ def get_referral_count(user_id):
 def get_uncredited_referral_count(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND credit_given = 0", (user_id,))
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id = ? AND has_chatted = 1 AND credit_given = 0", (user_id,))
     count = c.fetchone()[0]
     conn.close()
     return count
+
+# ─── Commission & Payout Functions ────────────────────
+
+def get_commission_balance(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT IFNULL(commission_balance, 0.0) as bal FROM users WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return float(row['bal']) if row and row['bal'] is not None else 0.0
+
+def add_commission_balance(user_id, amount):
+    conn = get_connection()
+    c = conn.cursor()
+    amt = float(amount)
+    c.execute('''
+        UPDATE users 
+        SET commission_balance = IFNULL(commission_balance, 0.0) + ?,
+            total_earned_commission = IFNULL(total_earned_commission, 0.0) + ?
+        WHERE user_id = ?
+    ''', (amt, amt, user_id))
+    conn.commit()
+    conn.close()
+
+def deduct_commission_balance(user_id, amount):
+    """
+    Deducts amount from commission balance if balance is sufficient.
+    Returns True if successfully deducted, False if insufficient balance.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    amt = float(amount)
+    c.execute('''
+        UPDATE users 
+        SET commission_balance = commission_balance - ? 
+        WHERE user_id = ? AND IFNULL(commission_balance, 0.0) >= ?
+    ''', (amt, user_id, amt))
+    success = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success
+
+def record_referral_commission(referrer_id, buyer_id, tx_ref, package_name, purchase_amount, commission_rate=0.30):
+    """
+    Records a 30% commission for referrer on a package purchase.
+    Idempotent based on tx_ref.
+    Returns (credited, commission_amount).
+    """
+    if not referrer_id or referrer_id == buyer_id:
+        return False, 0.0
+    purchase_amount = float(purchase_amount)
+    if purchase_amount <= 0:
+        return False, 0.0
+
+    comm_amt = round(purchase_amount * commission_rate, 2)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute('''
+            INSERT INTO referral_commissions (
+                referrer_id, buyer_id, tx_ref, package_name, purchase_amount, commission_amount, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (referrer_id, buyer_id, tx_ref, package_name, purchase_amount, comm_amt, now_str))
+        conn.commit()
+        credited = True
+    except Exception:
+        credited = False
+    conn.close()
+
+    if credited:
+        add_commission_balance(referrer_id, comm_amt)
+        return True, comm_amt
+    return False, 0.0
+
+def create_referral_payout(user_id, amount, payment_method, account_holder, account_number='', phone_number=''):
+    """
+    Creates a pending payout request for referral commission.
+    """
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO referral_payouts (
+            user_id, amount, payment_method, account_holder, account_number, phone_number, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+    ''', (user_id, float(amount), payment_method, account_holder, account_number, phone_number, now_str))
+    payout_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return payout_id
+
+def get_referral_payout(payout_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM referral_payouts WHERE id = ?", (payout_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def approve_referral_payout(payout_id, admin_notes=''):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM referral_payouts WHERE id = ? AND status = 'pending'", (payout_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return None
+    c.execute('''
+        UPDATE referral_payouts 
+        SET status = 'approved', admin_notes = ?, processed_at = ? 
+        WHERE id = ?
+    ''', (admin_notes, now_str, payout_id))
+    conn.commit()
+    conn.close()
+    return dict(row)
+
+def reject_referral_payout(payout_id, admin_notes=''):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM referral_payouts WHERE id = ? AND status = 'pending'", (payout_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return None
+    amount = float(row['amount'])
+    user_id = row['user_id']
+    c.execute('''
+        UPDATE referral_payouts 
+        SET status = 'rejected', admin_notes = ?, processed_at = ? 
+        WHERE id = ?
+    ''', (admin_notes, now_str, payout_id))
+    conn.commit()
+    conn.close()
+    # Refund amount back to user's commission balance
+    add_commission_balance(user_id, amount)
+    return dict(row)
+
+def get_user_referral_payouts(user_id, limit=10):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM referral_payouts WHERE user_id = ? ORDER BY id DESC LIMIT ?", (user_id, limit))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_pending_referral_payouts():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM referral_payouts WHERE status = 'pending' ORDER BY id ASC")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def has_free_protocol(user_id):
     conn = get_connection()

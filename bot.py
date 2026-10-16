@@ -458,15 +458,21 @@ def cmd_start(message):
 
     if referred_by:
         database.record_referral(referred_by, user.id)
-        # Check if they hit 5 uncredited referrals
-        ref_count = database.get_uncredited_referral_count(referred_by)
-        if ref_count >= 5:
-            database.add_credits(referred_by, 1)
-            database.mark_n_referrals_credited(referred_by, 5)
-            try:
-                bot.send_message(referred_by, "🎉 <b>እንኳን ደስ አሎት!</b>\n\n5 ጓደኞችዎ ስለተቀላቀሉ 1 ነጻ የመመሪያ ክሬዲት አግኝተዋል!\n\n/new ይጫኑ እና መመሪያዎን ያዘጋጁ!", parse_mode="HTML")
-            except Exception:
-                pass
+        try:
+            new_name = get_full_name(user)
+            stats = database.get_user_referral_stats(referred_by)
+            bot.send_message(
+                referred_by,
+                f"👋 <b>አዲስ ጓደኛ በሊንክዎ ተቀላቅሏል!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 <b>{html.escape(new_name)}</b> ቦቱን ጀምረዋል።\n\n"
+                f"📊 እስካሁን ቦቱን የጀመሩ: <b>{stats['total_started']}</b>\n"
+                f"💬 ማውራት የጀመሩ: <b>{stats['total_chatted']}</b>\n\n"
+                f"<i>ጓደኛዎ ከ AI አማካሪው ጋር ማውራት ሲጀምሩ ወደ 5 ጓደኞች ሽልማትዎ (1 ነፃ መጽሐፍ ወይም 25 መልዕክት) ይቆጠራል!</i>",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
 
     # Channel check
     if not is_admin(user) and not check_channel_member(user.id):
@@ -630,20 +636,31 @@ def cmd_library(message):
 
 @bot.message_handler(commands=["referral"])
 def cmd_referral(message):
-    ref_count = database.get_uncredited_referral_count(message.from_user.id)
+    uid = message.from_user.id
+    lang = get_lang(uid)
     bot_info = bot.get_me()
-    link = f"https://t.me/{bot_info.username}?start=ref_{message.from_user.id}"
+    link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
+    stats = database.get_user_referral_stats(uid)
+    balance = database.get_commission_balance(uid)
 
-    bot.send_message(
-        message.chat.id,
-        f"🎉 <b>ጓደኛዎን ይጋብዙ፣ ነጻ መመሪያ ያግኙ!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"👥 5 ጓደኞችዎን ይህን ሊንክ ተጠቅመው\n"
-        f"ቦቱን ሲቀላቀሉ — እርስዎ ነጻ 1 መመሪያ ያገኛሉ!\n\n"
-        f"🔗 <b>የእርስዎ ሊንክ:</b>\n<code>{link}</code>\n\n"
-        f"📊 ያጋበዙት: <b>{ref_count}</b>/5\n",
-        parse_mode="HTML"
+    markup = InlineKeyboardMarkup(row_width=1)
+    if stats["can_claim"]:
+        markup.add(InlineKeyboardButton(S(lang, 'btn_claim_milestone'), callback_data="claim_milestone_picker"))
+    if balance >= 100.0:
+        markup.add(InlineKeyboardButton(S(lang, 'btn_request_payout'), callback_data="payout_start"))
+    markup.add(InlineKeyboardButton(S(lang, 'btn_payout_history'), callback_data="payout_history"))
+
+    msg_text = (
+        S(lang, 'invite_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+        S(lang, 'invite_stats',
+          started=stats['total_started'],
+          chatted=stats['total_chatted'],
+          uncredited=stats['uncredited_chatted'],
+          balance=balance) + "\n\n" +
+        S(lang, 'invite_rules') + "\n\n" +
+        S(lang, 'invite_link') + "\n<code>" + link + "</code>"
     )
+    bot.send_message(message.chat.id, msg_text, parse_mode="HTML", reply_markup=markup)
 
 @bot.message_handler(commands=["new"])
 def cmd_new(message):
@@ -1048,6 +1065,85 @@ def get_payment_item_summary(tx_ref):
         return "☕ Tip / Support"
     return purpose or "Unknown Item"
 
+def credit_referral_commission(buyer_id, tx_ref, item_summary=""):
+    """
+    Credits 30% commission to the lifetime referrer of buyer_id for any package purchase.
+    """
+    try:
+        parts = tx_ref.split("-")
+        purpose = parts[2] if len(parts) >= 3 else ""
+        if purpose == "TIP":
+            return
+
+        referrer_id = database.get_user_referrer(buyer_id)
+        if not referrer_id or int(referrer_id) == int(buyer_id):
+            return
+        referrer_id = int(referrer_id)
+
+        # Determine purchase amount
+        amount = 0.0
+        conn = database.get_connection()
+        c = conn.cursor()
+        c.execute("SELECT amount FROM payments WHERE tx_ref = ?", (tx_ref,))
+        prow = c.fetchone()
+        conn.close()
+        if prow and prow['amount'] and float(prow['amount']) > 0:
+            amount = float(prow['amount'])
+        else:
+            if purpose.startswith("ADVICE_"):
+                pkg = purpose.split("_")[1]
+                if pkg == "unlimited": amount = 1800.0
+                elif pkg == "unlimited_month": amount = 4500.0
+                elif pkg == "25": amount = 200.0
+                elif pkg == "75": amount = 400.0
+                elif pkg == "225": amount = 1200.0
+            elif purpose.startswith("BOOKRENT_"):
+                amount = 149.0
+            elif purpose.startswith("BOOKEXT_"):
+                amount = 99.0
+            elif purpose.startswith("BOOK_"):
+                amount = 399.0
+
+        if amount <= 0:
+            return
+
+        credited, comm_amt = database.record_referral_commission(
+            referrer_id=referrer_id,
+            buyer_id=buyer_id,
+            tx_ref=tx_ref,
+            package_name=item_summary or purpose,
+            purchase_amount=amount,
+            commission_rate=0.30
+        )
+
+        if credited:
+            new_bal = database.get_commission_balance(referrer_id)
+            ref_lang = get_lang(referrer_id)
+            buyer_user = database.get_user(buyer_id)
+            buyer_name = buyer_user.get("first_name", "ጓደኛዎ") if buyer_user else "ጓደኛዎ"
+
+            payout_btn_markup = None
+            if new_bal >= 100.0:
+                payout_btn_markup = InlineKeyboardMarkup()
+                payout_btn_markup.add(
+                    InlineKeyboardButton(S(ref_lang, 'btn_request_payout'), callback_data="payout_start")
+                )
+
+            bot.send_message(
+                referrer_id,
+                f"🎉 <b>እንኳን ደስ አሎት! የ30% ኮሚሽን ገቢ አግኝተዋል!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 የጋበዙት ደንበኛ: <b>{html.escape(buyer_name)}</b>\n"
+                f"📦 የገዙት: <b>{html.escape(item_summary or 'የአማካሪ ፓኬጅ')}</b> ({amount:.2f} ብር)\n"
+                f"💰 የእርስዎ 30% ኮሚሽን: <b>+{comm_amt:.2f} ብር</b>\n"
+                f"💳 አጠቃላይ የኮሚሽን ቀሪ ሂሳብ: <b>{new_bal:.2f} ብር</b>\n\n"
+                f"<i>ቀሪ ሂሳብዎ 100 ብር ሲሞላ በቴሌብር (Telebirr) ወይም በንግድ ባንክ (CBE) ማውጣት ይችላሉ!</i>",
+                parse_mode="HTML",
+                reply_markup=payout_btn_markup
+            )
+    except Exception as e:
+        logging.error(f"Error in credit_referral_commission for buyer {buyer_id}, tx {tx_ref}: {e}")
+
 def fulfill_payment(uid, tx_ref, order_id=None, receipt_ref=None):
     """
     Approves payment in database, unlocks the purchased item/package,
@@ -1093,6 +1189,12 @@ def fulfill_payment(uid, tx_ref, order_id=None, receipt_ref=None):
                 bot.send_message(chat_id, S(lang, 'payment_success_msgs', msgs=msgs), parse_mode="HTML")
         elif purpose == "TIP":
             bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
+            
+        try:
+            credit_referral_commission(uid, tx_ref, item_summary)
+        except Exception as ce:
+            logging.error(f"Failed to credit commission in fulfill_payment: {ce}")
+            
         return True, item_summary
     except Exception as e:
         logging.error(f"Error in fulfill_payment for {uid}: {e}")
@@ -1945,17 +2047,215 @@ def handle_callback(call):
             send_welcome(chat_id, call.from_user.first_name, lang)
         return
 
-    if data == "claim_referrals":
+    if data in ["claim_referrals", "claim_milestone_picker"]:
         lang = get_lang(uid)
-        count = database.get_uncredited_referral_count(uid)
-        if count >= 10:
-            database.mark_n_referrals_credited(uid, n=count)
-            database.add_advice_messages(uid, count)
-            bot.answer_callback_query(call.id, S(lang, 'claim_success', count=count), show_alert=True)
-            bot.delete_message(chat_id, call.message.message_id)
-            send_welcome(chat_id, call.from_user.first_name, lang)
+        stats = database.get_user_referral_stats(uid)
+        if not stats["can_claim"]:
+            bot.answer_callback_query(call.id, S(lang, 'claim_fail_5'), show_alert=True)
+            return
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton(S(lang, 'btn_reward_msgs'), callback_data="claim_reward_msgs"),
+            InlineKeyboardButton(S(lang, 'btn_reward_book'), callback_data="claim_reward_book")
+        )
+        bot.answer_callback_query(call.id)
+        bot.send_message(chat_id, S(lang, 'claim_choose_reward'), parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "claim_reward_msgs":
+        lang = get_lang(uid)
+        stats = database.get_user_referral_stats(uid)
+        if not stats["can_claim"]:
+            bot.answer_callback_query(call.id, S(lang, 'claim_fail_5'), show_alert=True)
+            return
+        database.mark_n_chatted_referrals_credited(uid, 5)
+        database.add_advice_messages(uid, 25)
+        bot.answer_callback_query(call.id, S(lang, 'claim_msgs_success'), show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        bot.send_message(chat_id, S(lang, 'claim_msgs_success'), parse_mode="HTML")
+        return
+
+    if data == "claim_reward_book":
+        lang = get_lang(uid)
+        stats = database.get_user_referral_stats(uid)
+        if not stats["can_claim"]:
+            bot.answer_callback_query(call.id, S(lang, 'claim_fail_5'), show_alert=True)
+            return
+        ubooks, _, _ = database.get_user_books_state(uid)
+        all_bkeys = get_all_book_keys()
+        available_bkeys = [k for k in all_bkeys if k not in ubooks]
+        if not available_bkeys:
+            bot.answer_callback_query(call.id, "ሁሉንም መጻሕፍት አስቀድመው ወስደዋል! እባክዎ 25 መልዕክቶችን ይውሰዱ።", show_alert=True)
+            return
+        markup = InlineKeyboardMarkup(row_width=1)
+        for bk in available_bkeys:
+            bt = BOOK_TITLES.get(bk, bk)
+            markup.add(InlineKeyboardButton(f"📖 {bt}", callback_data=f"claim_ref_book_{bk}"))
+        markup.add(InlineKeyboardButton("🔙 ተመለስ (Back)", callback_data="claim_milestone_picker"))
+        bot.answer_callback_query(call.id)
+        bot.send_message(
+            chat_id,
+            "📚 <b>የሚፈልጉትን ነፃ መጽሐፍ ይምረጡ፦</b>\n<i>(የመረጡት መጽሐፍ በቋሚነት በነፃ ይከፈትልዎታል)</i>",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data.startswith("claim_ref_book_"):
+        lang = get_lang(uid)
+        stats = database.get_user_referral_stats(uid)
+        if not stats["can_claim"]:
+            bot.answer_callback_query(call.id, S(lang, 'claim_fail_5'), show_alert=True)
+            return
+        bkey = data.replace("claim_ref_book_", "")
+        bt = BOOK_TITLES.get(bkey, bkey)
+        database.mark_n_chatted_referrals_credited(uid, 5)
+        database.unlock_book(uid, bkey, days=None)
+        bot.answer_callback_query(call.id, f"🎉 '{bt}' በነፃ ተከፍቷል!", show_alert=True)
+        safe_delete_message(chat_id, call.message.message_id)
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton(
+                "📚 የኔ መጻሕፍት (Open Library)",
+                web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
+            )
+        )
+        bot.send_message(
+            chat_id,
+            S(lang, 'claim_book_success', title=bt),
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data == "payout_start":
+        lang = get_lang(uid)
+        balance = database.get_commission_balance(uid)
+        if balance < 100.0:
+            bot.answer_callback_query(call.id, S(lang, 'payout_min_error', balance=balance), show_alert=True)
+            return
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton(S(lang, 'btn_method_telebirr'), callback_data="payout_method_telebirr"),
+            InlineKeyboardButton(S(lang, 'btn_method_cbe'), callback_data="payout_method_cbe"),
+            InlineKeyboardButton("🔙 ተመለስ (Back)", callback_data="payout_cancel")
+        )
+        bot.answer_callback_query(call.id)
+        bot.send_message(
+            chat_id,
+            S(lang, 'payout_choose_method', balance=balance),
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    if data == "payout_method_telebirr":
+        lang = get_lang(uid)
+        balance = database.get_commission_balance(uid)
+        if balance < 100.0:
+            bot.answer_callback_query(call.id, S(lang, 'payout_min_error', balance=balance), show_alert=True)
+            return
+        set_state(uid, "AWAIT_PAYOUT_TELEBIRR", balance=balance)
+        bot.answer_callback_query(call.id)
+        bot.send_message(chat_id, S(lang, 'payout_prompt_telebirr', balance=balance), parse_mode="HTML")
+        return
+
+    if data == "payout_method_cbe":
+        lang = get_lang(uid)
+        balance = database.get_commission_balance(uid)
+        if balance < 100.0:
+            bot.answer_callback_query(call.id, S(lang, 'payout_min_error', balance=balance), show_alert=True)
+            return
+        set_state(uid, "AWAIT_PAYOUT_CBE", balance=balance)
+        bot.answer_callback_query(call.id)
+        bot.send_message(chat_id, S(lang, 'payout_prompt_cbe', balance=balance), parse_mode="HTML")
+        return
+
+    if data == "payout_cancel":
+        lang = get_lang(uid)
+        clear_state(uid)
+        bot.answer_callback_query(call.id, S(lang, 'payout_cancelled'))
+        safe_delete_message(chat_id, call.message.message_id)
+        return
+
+    if data == "payout_history":
+        payouts = database.get_user_referral_payouts(uid, 10)
+        bot.answer_callback_query(call.id)
+        if not payouts:
+            bot.send_message(chat_id, "📜 <b>እስካሁን ምንም የክፍያ ታሪክ የለዎትም።</b>\n\nቀሪ ሂሳብዎ 100 ብር ሲሞላ ማውጣት ይችላሉ!", parse_mode="HTML")
+            return
+        lines = ["📜 <b>የእርስዎ የክፍያ ታሪክ (Payout History):</b>\n━━━━━━━━━━━━━━━━━━━━"]
+        status_map = {
+            "pending": "⏳ በመጠባበቅ ላይ (Pending)",
+            "approved": "✅ የተከፈለ (Paid)",
+            "rejected": "❌ ውድቅ የተደረገ (Rejected)"
+        }
+        for p in payouts:
+            st = status_map.get(p.get('status'), p.get('status', ''))
+            dt = (p.get('created_at') or '')[:10]
+            m = p.get('payment_method', '')
+            amt = float(p.get('amount') or 0.0)
+            lines.append(f"• <b>{amt:.2f} ብር</b> ({m}) — {st} <i>[{dt}]</i>")
+        bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
+        return
+
+    if data.startswith("adm_refpayout_app_"):
+        if not is_admin(call.from_user): return
+        pid = int(data.replace("adm_refpayout_app_", ""))
+        payout = database.approve_referral_payout(pid, admin_notes=f"Approved by {call.from_user.id}")
+        if payout:
+            bot.answer_callback_query(call.id, f"✅ Payout #{pid} Approved!", show_alert=True)
+            admin_name = call.from_user.first_name
+            bot.edit_message_text(
+                f"{call.message.text}\n\n✅ <b>በ {html.escape(admin_name)} ፀድቋል! (APPROVED)</b>",
+                chat_id, call.message.message_id, parse_mode="HTML"
+            )
+            try:
+                target_uid = payout['user_id']
+                t_lang = get_lang(target_uid)
+                acc_info = payout['account_number'] or payout['phone_number']
+                bot.send_message(
+                    target_uid,
+                    f"🎉 <b>ክፍያዎ ተፈጽሟል! (Payout Approved)</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💰 መጠን: <b>{float(payout['amount']):.2f} ብር</b>\n"
+                    f"🏦 ዘዴ: <b>{payout['payment_method']}</b> ({acc_info})\n"
+                    f"👤 ስም: <b>{html.escape(payout['account_holder'])}</b>\n\n"
+                    f"<i>ገንዘቡ ወደ አካውንትዎ ገቢ ተደርጓል። ከእኛ ጋር ስለሰሩ እናመሰግናለን!</i>",
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logging.error(f"Failed to notify user of approved payout #{pid}: {e}")
         else:
-            bot.answer_callback_query(call.id, S(lang, 'claim_fail'), show_alert=True)
+            bot.answer_callback_query(call.id, "❌ Already processed or not found.", show_alert=True)
+        return
+
+    if data.startswith("adm_refpayout_rej_"):
+        if not is_admin(call.from_user): return
+        pid = int(data.replace("adm_refpayout_rej_", ""))
+        payout = database.reject_referral_payout(pid, admin_notes=f"Rejected by {call.from_user.id}")
+        if payout:
+            bot.answer_callback_query(call.id, f"❌ Payout #{pid} Rejected & Refunded!", show_alert=True)
+            admin_name = call.from_user.first_name
+            bot.edit_message_text(
+                f"{call.message.text}\n\n❌ <b>በ {html.escape(admin_name)} ውድቅ ተደርጓል (ገንዘቡ ተመልሷል)</b>",
+                chat_id, call.message.message_id, parse_mode="HTML"
+            )
+            try:
+                target_uid = payout['user_id']
+                t_lang = get_lang(target_uid)
+                bot.send_message(
+                    target_uid,
+                    f"⚠️ <b>የክፍያ ጥያቄዎ ውድቅ ተደርጓል (Payout Rejected)</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💰 የተጠየቀው <b>{float(payout['amount']):.2f} ብር</b> ወደ ኮሚሽን ቀሪ ሂሳብዎ ተመልሷል።\n\n"
+                    f"<i>እባክዎ ትክክለኛ የቴሌብር ወይም የባንክ መረጃ ማቅረብዎን አረጋግጠው እንደገና ይጠይቁ።</i>",
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logging.error(f"Failed to notify user of rejected payout #{pid}: {e}")
+        else:
+            bot.answer_callback_query(call.id, "❌ Already processed or not found.", show_alert=True)
         return
     if data == "confirm_reset":
         lang = get_lang(uid)
@@ -4025,6 +4325,136 @@ def handle_messages(message):
         bot.send_message(chat_id, "✅ <b>በካርዱ ላይ በቃሉ ስር የሚቀመጠው ፅሁፍ ተቀይሯል! አዲሱን ካርድ እያዘጋጀሁ ነው...</b>", parse_mode="HTML")
         send_winners_post_preview(chat_id, theme_index=t_idx, style_index=s_idx)
         return
+
+    # ── Payout Request Input Handlers ─────────
+    if state in ["AWAIT_PAYOUT_TELEBIRR", "AWAIT_PAYOUT_CBE"]:
+        user_lang = get_lang(uid)
+        if message.text and message.text.strip() == "/cancel":
+            clear_state(uid)
+            bot.send_message(chat_id, S(user_lang, 'payout_cancelled'))
+            return
+            
+        bal = database.get_commission_balance(uid)
+        method = "Telebirr" if state == "AWAIT_PAYOUT_TELEBIRR" else "CBE"
+        
+        # Parse inputs
+        raw_text = (message.text or "").strip()
+        tokens = [p.strip() for p in raw_text.replace("\n", ",").replace(";", ",").split(",") if p.strip()]
+        
+        acc_or_phone = ""
+        full_name = ""
+        payout_amount = 0.0
+        
+        if len(tokens) >= 3:
+            acc_or_phone = tokens[0]
+            full_name = tokens[1]
+            try:
+                payout_amount = float(re.sub(r"[^\d.]", "", tokens[2]))
+            except:
+                payout_amount = 0.0
+        elif len(tokens) == 2:
+            acc_or_phone = tokens[0]
+            try:
+                payout_amount = float(re.sub(r"[^\d.]", "", tokens[1]))
+                full_name = get_full_name(message.from_user)
+            except:
+                full_name = tokens[1]
+                payout_amount = bal
+        else:
+            parts = raw_text.split()
+            for p in reversed(parts):
+                try:
+                    v = float(re.sub(r"[^\d.]", "", p))
+                    if v >= 50:
+                        payout_amount = v
+                        parts.remove(p)
+                        break
+                except:
+                    pass
+            if parts:
+                acc_or_phone = parts[0]
+                full_name = " ".join(parts[1:]) if len(parts) > 1 else get_full_name(message.from_user)
+                
+        if not acc_or_phone:
+            bot.send_message(
+                chat_id,
+                "❌ <b>እባክዎ መረጃዎን በትክክል ያስገቡ።</b>\n\n"
+                f"📝 <b>ምሳሌ ({method}):</b>\n"
+                f"<code>{'0912345678' if method == 'Telebirr' else '1000123456789'}, አበበ ከበደ, 150</code>\n\n"
+                "<i>ለመሰረዝ /cancel ብለው ይፃፉ።</i>",
+                parse_mode="HTML"
+            )
+            return
+            
+        if payout_amount < 100.0:
+            bot.send_message(
+                chat_id,
+                f"❌ <b>ዝቅተኛው የማውጣት መጠን 100 ብር ነው።</b>\nያለዎት ቀሪ ሂሳብ: <b>{bal:.2f} ብር</b>\n\nእባክዎ ከ100 ብር በላይ ያስገቡ ወይም /cancel ብለው ይሰርዙ።",
+                parse_mode="HTML"
+            )
+            return
+            
+        if payout_amount > bal:
+            bot.send_message(
+                chat_id,
+                f"❌ <b>በቂ ቀሪ ሂሳብ የለዎትም።</b>\nየተጠየቀው: <b>{payout_amount:.2f} ብር</b>\nያለዎት ቀሪ ሂሳብ: <b>{bal:.2f} ብር</b>\n\nእባክዎ ከቀሪ ሂሳብዎ ያነሰ መጠን ያስገቡ ወይም /cancel ብለው ይሰርዙ።",
+                parse_mode="HTML"
+            )
+            return
+            
+        # Deduct balance atomically
+        deducted = database.deduct_commission_balance(uid, payout_amount)
+        if not deducted:
+            bot.send_message(chat_id, "❌ በቂ ቀሪ ሂሳብ የለዎትም።")
+            clear_state(uid)
+            return
+            
+        phone = acc_or_phone if method == "Telebirr" else ""
+        acc = acc_or_phone if method == "CBE" else ""
+        payout_id = database.create_referral_payout(
+            user_id=uid,
+            amount=payout_amount,
+            payment_method=method,
+            account_holder=full_name or get_full_name(message.from_user),
+            account_number=acc,
+            phone_number=phone
+        )
+        clear_state(uid)
+        
+        # Confirm to user
+        bot.send_message(
+            chat_id,
+            S(user_lang, 'payout_request_submitted', 
+              amount=payout_amount, 
+              method=method, 
+              name=full_name or get_full_name(message.from_user), 
+              account=acc_or_phone),
+            parse_mode="HTML"
+        )
+        
+        # Alert admins
+        admin_markup = InlineKeyboardMarkup()
+        admin_markup.add(
+            InlineKeyboardButton("✅ Approve", callback_data=f"adm_refpayout_app_{payout_id}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"adm_refpayout_rej_{payout_id}")
+        )
+        admin_alert = (
+            f"🔔 <b>አዲስ የኮሚሽን ክፍያ ጥያቄ! (Payout #{payout_id})</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 ደንበኛ: {html.escape(get_full_name(message.from_user))} (<code>{uid}</code>)\n"
+            f"💰 መጠን: <b>{payout_amount:.2f} ETB</b>\n"
+            f"🏦 ዘዴ: <b>{method}</b>\n"
+            f"👤 ባለቤት ስም: <b>{html.escape(full_name)}</b>\n"
+            f"🔢 ቁጥር: <code>{html.escape(acc_or_phone)}</code>\n"
+            f"📅 ቀን: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        for aid in get_all_admin_ids():
+            try:
+                bot.send_message(aid, admin_alert, parse_mode="HTML", reply_markup=admin_markup)
+            except Exception:
+                pass
+        return
+
     # ── Channel check for non-admin ──────────
     if not is_admin(message.from_user) and not check_channel_member(uid):
         send_join_channel_msg(chat_id, uid); return
@@ -4127,7 +4557,8 @@ def handle_messages(message):
             msgs = database.get_advice_messages_left(uid)
             msgs_display = f"<b>{msgs}</b>"
             
-        count = database.get_uncredited_referral_count(uid)
+        stats = database.get_user_referral_stats(uid)
+        comm_balance = database.get_commission_balance(uid)
         if is_adm:
             ubooks = get_all_book_keys()
             urentals = {}
@@ -4156,8 +4587,10 @@ def handle_messages(message):
                     web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
                 )
             )
-        if count >= 10:
-            markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
+        if stats["can_claim"]:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_claim_milestone'), callback_data="claim_milestone_picker"))
+        if comm_balance >= 100.0:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_request_payout'), callback_data="payout_start"))
         if not is_adm:
             markup.add(InlineKeyboardButton(S(lang, 'btn_topup'), callback_data="show_topup"))
         markup.add(InlineKeyboardButton(S(lang, 'btn_reset'), callback_data="confirm_reset"))
@@ -4168,7 +4601,7 @@ def handle_messages(message):
             S(lang, 'mypage_title') + "\n━━━━━━━━━━━━━━━━━━━━\n" +
             S(lang, 'mypage_msgs_left', msgs=msgs_display) + "\n\n" +
             books_section +
-            S(lang, 'mypage_referrals', count=count) + "\n" +
+            S(lang, 'mypage_referrals', started=stats['total_started'], chatted=stats['total_chatted'], balance=comm_balance) + "\n" +
             S(lang, 'mypage_referral_hint') + "\n\n" +
             S(lang, 'mypage_reset_info') + "\n" +
             S(lang, 'mypage_reset_warn') +
@@ -4187,18 +4620,25 @@ def handle_messages(message):
         lang = get_lang(uid)
         bot_info = bot.get_me()
         link = f"https://t.me/{bot_info.username}?start=ref_{uid}"
-        count = database.get_uncredited_referral_count(uid)
+        stats = database.get_user_referral_stats(uid)
+        balance = database.get_commission_balance(uid)
         
-        markup = None
-        if count >= 10:
-            markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton(S(lang, 'btn_claim'), callback_data="claim_referrals"))
+        markup = InlineKeyboardMarkup(row_width=1)
+        if stats["can_claim"]:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_claim_milestone'), callback_data="claim_milestone_picker"))
+        if balance >= 100.0:
+            markup.add(InlineKeyboardButton(S(lang, 'btn_request_payout'), callback_data="payout_start"))
+        markup.add(InlineKeyboardButton(S(lang, 'btn_payout_history'), callback_data="payout_history"))
             
         bot.send_message(
             chat_id,
-            S(lang, 'invite_title') + "\n\n" +
-            S(lang, 'invite_count', count=count) + "\n" +
-            S(lang, 'invite_hint') + "\n\n" +
+            S(lang, 'invite_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+            S(lang, 'invite_stats',
+              started=stats['total_started'],
+              chatted=stats['total_chatted'],
+              uncredited=stats['uncredited_chatted'],
+              balance=balance) + "\n\n" +
+            S(lang, 'invite_rules') + "\n\n" +
             S(lang, 'invite_link') + "\n<code>" + link + "</code>",
             parse_mode="HTML",
             reply_markup=markup
@@ -4344,6 +4784,35 @@ def handle_messages(message):
                     clean_chunks = [clean[i:i+4000] for i in range(0, len(clean), 4000)]
                     for chunk in clean_chunks:
                         bot.send_message(chat_id, chunk)
+
+                # Track referral chatting milestone
+                try:
+                    is_new_chatter, referrer_id, uncredited_count = database.mark_referred_user_chatted(uid)
+                    if is_new_chatter and referrer_id:
+                        ref_lang = get_lang(referrer_id)
+                        if uncredited_count >= 5:
+                            markup = InlineKeyboardMarkup(row_width=1)
+                            markup.add(
+                                InlineKeyboardButton(S(ref_lang, 'btn_reward_msgs'), callback_data="claim_reward_msgs"),
+                                InlineKeyboardButton(S(ref_lang, 'btn_reward_book'), callback_data="claim_reward_book")
+                            )
+                            bot.send_message(
+                                referrer_id,
+                                S(ref_lang, 'claim_choose_reward'),
+                                parse_mode="HTML",
+                                reply_markup=markup
+                            )
+                        else:
+                            bot.send_message(
+                                referrer_id,
+                                f"💬 <b>አንድ የጋበዟቸው ጓደኛ ማውራት ጀምረዋል!</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━\n"
+                                f"📊 ላልተወሰደ ሽልማት የቀረቡ: <b>{uncredited_count}</b>/5\n\n"
+                                f"<i>5 ጓደኞች ማውራት ሲጀምሩ ማንኛውንም 1 ነፃ መጽሐፍ ወይም 25 ነፃ መልዕክቶች ይሸለማሉ!</i>",
+                                parse_mode="HTML"
+                            )
+                except Exception as re_err:
+                    logging.error(f"Error updating referral chat tracking: {re_err}")
             except Exception as e:
                 stop_typing.set()
                 logging.error(f"ADVICE THREAD CRASH: {e}")
@@ -4563,6 +5032,11 @@ def process_payment_success(tx_ref):
         lang = get_lang(uid)
         database.approve_payment(tx_ref, order_id)
         bot.send_message(chat_id, S(lang, 'tip_received'), parse_mode="HTML")
+
+    try:
+        credit_referral_commission(uid, tx_ref, get_payment_item_summary(tx_ref))
+    except Exception as ce:
+        logging.error(f"Failed to credit commission in process_payment_success: {ce}")
 
 class DummyHandler(BaseHTTPRequestHandler):
     def do_GET(self):

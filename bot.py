@@ -2902,6 +2902,7 @@ def handle_callback(call):
             bot.answer_callback_query(call.id, "Unauthorized", show_alert=True)
             return
         bot.answer_callback_query(call.id)
+        clear_state(uid)
         try:
             safe_delete_message(chat_id, call.message.message_id)
         except Exception:
@@ -4326,6 +4327,28 @@ def handle_web_app_data(message):
     except Exception as e:
         logging.error(f"Error handling web_app_data for {uid}: {e}")
 
+def is_bottom_menu_text(text):
+    if not text:
+        return False
+    t = text.strip()
+    # Check bottom keyboard emojis
+    if any(t.startswith(e) for e in ("🧠", "👤", "🎁", "☕", "🌐", "📚", "⚙️", "💬")):
+        return True
+    # Check commands
+    if t.startswith("/"):
+        return True
+    # Check known button phrases in all 4 languages
+    known_phrases = (
+        "ምክክራችንን እንቀጥል", "Continue Chat", "ምይይጥና ንቐጽል", "Marii keenya",
+        "የእኔ ገፅ", "የኔ ገፅ", "My Page", "ገጸይ", "Fuula koo",
+        "ጓደኛ ይጋብዙ", "Invite Friend", "መሓዛኹም ዓድሙ", "Hiriyyaa Afeeraa",
+        "የዕለቱ ነፃ መጽሐፍ", "Free Book Gift", "ናይ ሎሚ ነጻ መጽሓፍ", "Kennaa Kitaaba", "የአዕምሮ ምግቦች",
+        "የኔ መጻሕፍት", "መጻሕፍት ቤት", "My Books", "Library", "ናተይ መጻሕፍቲ", "Kitaabota Koo",
+        "ቋንቋ", "Language",
+        "Dashboard", "አስተያየት", "Feedback", "ቡድኑን ያበረታቱ"
+    )
+    return any(p in t for p in known_phrases)
+
 @bot.message_handler(content_types=["text", "photo", "document"])
 def handle_messages(message):
     uid = message.from_user.id
@@ -4338,6 +4361,13 @@ def handle_messages(message):
     if database.is_banned(uid):
         bot.reply_to(message, S(get_lang(uid), 'banned'))
         return
+
+    # If user/admin clicked any bottom menu button or command, always clear any active state
+    # so it never misinterprets the menu button click as input!
+    if message.text and is_bottom_menu_text(message.text):
+        if state:
+            clear_state(uid)
+            state = None
 
     if message.text == "/debug_carts" and is_admin(message.from_user):
         conn = database.get_connection()
@@ -4632,6 +4662,12 @@ def handle_messages(message):
         if message.text == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
         new_word = message.text.strip()
+        if is_bottom_menu_text(new_word) or any(e in new_word for e in ("🧠", "👤", "🎁", "☕", "🌐", "📚", "⚙️", "💬")):
+            clear_state(uid)
+            return
+        if len(new_word) > 35 or "\n" in new_word:
+            bot.send_message(chat_id, "❌ እባክዎ አጭር አዎንታዊ ቃል ብቻ ያስገቡ (ለምሳሌ፦ «ተስፋ»፣ «ጽናት»)። ወይም /cancel ይጫኑ።")
+            return
         tiktok_gift.set_today_secret_word(new_word)
         clear_state(uid)
         bot.send_message(chat_id, f"✅ <b>Today's Secret Word updated to:</b> «<b>{new_word}</b>»\n(Cycle: {tiktok_gift.get_game_cycle_date()})", parse_mode="HTML")
@@ -4641,6 +4677,12 @@ def handle_messages(message):
         if message.text == "/cancel":
             clear_state(uid); bot.send_message(chat_id, "❌ ተሰርዧል."); return
         new_word = message.text.strip()
+        if is_bottom_menu_text(new_word) or any(e in new_word for e in ("🧠", "👤", "🎁", "☕", "🌐", "📚", "⚙️", "💬")):
+            clear_state(uid)
+            return
+        if len(new_word) > 35 or "\n" in new_word:
+            bot.send_message(chat_id, "❌ እባክዎ አጭር አዎንታዊ ቃል ብቻ ያስገቡ (ለምሳሌ፦ «ተስፋ»፣ «ጽናት»)። ወይም /cancel ይጫኑ።")
+            return
         tiktok_gift.set_next_secret_word(new_word)
         clear_state(uid)
         bot.send_message(

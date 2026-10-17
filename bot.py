@@ -514,9 +514,6 @@ def check_onboarding(chat_id, user_id, first_name):
             InlineKeyboardButton(S(user_lang, 'gender_male'), callback_data="onboard_gen_m"),
             InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f")
         )
-        markup.add(
-            InlineKeyboardButton(S(user_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
-        )
         bot.send_message(chat_id, S(user_lang, 'onboard_age_gender_prompt'), parse_mode="HTML", reply_markup=markup)
         return False
     
@@ -749,9 +746,6 @@ def cmd_nudge(message):
                 markup.add(
                     InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
                     InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
-                )
-                markup.add(
-                    InlineKeyboardButton(S(u_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
                 )
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
@@ -2133,12 +2127,8 @@ def handle_callback(call):
         return
         
     if data.startswith("onboard_gen_"):
-        if data == "onboard_gen_skip":
-            gender = "male"
-            database.set_setting(f"gender_defaulted_{uid}", "1")
-        else:
-            gender = "male" if data == "onboard_gen_m" else "female"
-            database.set_setting(f"gender_defaulted_{uid}", "0")
+        gender = "male" if data == "onboard_gen_m" else "female"
+        database.set_setting(f"gender_defaulted_{uid}", "0")
         # Set both age AND gender in one tap (frictionless combined step)
         database.set_user_age_verified(uid)
         database.set_user_gender(uid, gender)
@@ -3990,15 +3980,6 @@ def handle_callback(call):
                     
                     bot.send_message(u, b_text, parse_mode="HTML", reply_markup=b_markup)
                     
-                    # Auto-activate user so they are completely freed
-                    database.set_user_age_verified(u)
-                    _, curr_g = database.get_onboarding_status(u)
-                    if not curr_g:
-                        database.set_user_gender(u, "male")
-                        database.set_setting(f"gender_defaulted_{u}", "1")
-                    if not database.get_bot_language(u):
-                        database.set_bot_language(u, "am")
-                        
                     database.mark_user_blocked(u, 0)
                     delivered += 1
                 except Exception:
@@ -5056,24 +5037,11 @@ def handle_messages(message):
         if message.text.startswith("/"):
             return
             
-        # Auto-free un-onboarded users as male by default
+        # Require un-onboarded users to choose their gender first
         age_verified, u_gender = database.get_onboarding_status(uid)
         if not age_verified or not u_gender:
-            database.set_user_age_verified(uid)
-            database.set_user_gender(uid, "male")
-            database.set_setting(f"gender_defaulted_{uid}", "1")
-            u_lang = database.get_bot_language(uid) or "am"
-            database.set_bot_language(uid, u_lang)
-            u_gender = "male"
-            try:
-                bot.send_message(
-                    chat_id,
-                    S(u_lang, 'autofree_welcome'),
-                    parse_mode="HTML",
-                    reply_markup=get_bottom_markup(u_lang, uid)
-                )
-            except Exception:
-                pass
+            check_onboarding(chat_id, uid, message.from_user.first_name)
+            return
             
         # Check quota
         msgs_left = database.get_advice_messages_left(uid)
@@ -6513,9 +6481,6 @@ def auto_nudge_daemon():
                     markup.add(
                         InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="onboard_gen_m"),
                         InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
-                    )
-                    markup.add(
-                        InlineKeyboardButton(S(u_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
                     )
                     try:
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)

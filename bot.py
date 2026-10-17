@@ -515,7 +515,7 @@ def check_onboarding(chat_id, user_id, first_name):
             InlineKeyboardButton(S(user_lang, 'gender_female'), callback_data="onboard_gen_f")
         )
         markup.add(
-            InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
+            InlineKeyboardButton(S(user_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
         )
         bot.send_message(chat_id, S(user_lang, 'onboard_age_gender_prompt'), parse_mode="HTML", reply_markup=markup)
         return False
@@ -553,7 +553,7 @@ def get_bottom_markup(lang='am', uid=None):
     # Library Mini App Button (Active for all users)
     lib_url = f"{config.BASE_URL}/app?uid={uid}" if uid else f"{config.BASE_URL}/app"
     m.add(
-        KeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=lib_url))
+        KeyboardButton(S(lang, 'menu_library'), web_app=WebAppInfo(url=lib_url))
     )
     
     if uid and is_admin_uid(uid):
@@ -597,6 +597,7 @@ def cmd_library(message):
     if not check_channel_member(uid):
         send_join_channel_msg(message.chat.id, uid); return
 
+    lang = get_lang(uid)
     if is_admin_uid(uid):
         ubooks = get_all_book_keys()
         urentals = {}
@@ -609,12 +610,12 @@ def cmd_library(message):
     for bk in ubooks:
         bt = BOOK_TITLES.get(bk, bk)
         if bk in urentals:
-            lines.append(f"  ⏳ <b>{bt}</b> (ኪራይ — ቀሪ {urentals[bk]} ቀናት)")
+            lines.append(f"  ⏳ <b>{bt}</b> ({S(lang, 'rental_badge', days=urentals[bk])})")
         else:
-            lines.append(f"  ✅ <b>{bt}</b> (ሙሉ መጽሐፍ)")
+            lines.append(f"  ✅ <b>{bt}</b> ({S(lang, 'full_book_badge')})")
     for bk in uexpired:
         bt = BOOK_TITLES.get(bk, bk)
-        lines.append(f"  ⏰ <b>{bt}</b> (የኪራይ ጊዜው ያለፈ)")
+        lines.append(f"  ⏰ <b>{bt}</b> ({S(lang, 'expired_badge')})")
     for i, o in enumerate(orders, 1):
         date = o["delivered_date"][:10] if o["delivered_date"] else "N/A"
         lines.append(f"  📕 {o['book_title']} ({date})")
@@ -622,7 +623,7 @@ def cmd_library(message):
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(
-            "📚 መጻሕፍት ቤት ክፈት (Open Library)",
+            S(lang, 'btn_open_library'),
             web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
         )
     )
@@ -630,10 +631,10 @@ def cmd_library(message):
         if o["pdf_file_id"]:
             markup.add(InlineKeyboardButton(f"📥 {i}. {o['book_title']}", callback_data=f"redownload_{o['id']}"))
 
-    body = "\n".join(lines) if lines else "📚 ገና የገዙት ወይም የተከራዩት መጽሐፍ የለም። ከታች ያለውን ቁልፍ ተጭነው መጻሕፍት ቤቱን ይጎብኙ!"
+    body = "\n".join(lines) if lines else S(lang, 'library_empty')
     bot.send_message(
         message.chat.id,
-        f"📚 <b>ቤተ-መጻሕፍትዎ (My Library)</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{body}",
+        f"{S(lang, 'library_title')}\n━━━━━━━━━━━━━━━━━━━━\n\n{body}",
         parse_mode="HTML", reply_markup=markup,
     )
 
@@ -750,7 +751,7 @@ def cmd_nudge(message):
                     InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
                 )
                 markup.add(
-                    InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
+                    InlineKeyboardButton(S(u_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
                 )
                 bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
                 database.append_bot_message_to_history(uid, text)
@@ -1005,7 +1006,7 @@ class DynamicBookTitles(dict):
 BOOK_TITLES = DynamicBookTitles({
     "narcissist": "የናርስሲስቶች ወጥመድ",
     "boundaries": "ድንበርህን አብጅ",
-    "buyback": "ጊዜህን አስመልስ (Buy Back Your Time)",
+    "buyback": "ጊዜህን አስመልስ",
     "meaning": "የህይወት ትርጉም",
     "messages_25": "25 ነፃ መልዕክቶች",
     "25_messages": "25 ነፃ መልዕክቶች"
@@ -1026,26 +1027,19 @@ def get_all_book_keys():
     return keys
 
 def notify_user_book_unlocked(uid, book_key, days=None):
+    lang = get_lang(uid)
     b_title = BOOK_TITLES.get(book_key, book_key)
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(
-            "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
+            S(lang, 'btn_read_book_now'),
             web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
         )
     )
     if days:
-        txt = (
-            f"🎉 <b>እንኳን ደስ አለዎት!</b>\n\n"
-            f"📖 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለ {days} ቀናት (ኪራይ)</b> ተከፍቶልዎታል!\n\n"
-            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
-        )
+        txt = S(lang, 'book_unlocked_rental', title=b_title, days=days)
     else:
-        txt = (
-            f"🎉 <b>እንኳን ደስ አለዎት!</b>\n\n"
-            f"📖 <b>«{b_title}»</b> ሙሉ መጽሐፍ <b>ለዘላለም</b> ተከፍቶልዎታል!\n\n"
-            f"ከታች ያለውን ቁልፍ ተጭነው በ<b>'📖 የኔ መጻሕፍት'</b> ስር ሙሉውን መጽሐፍ ማንበብ ይችላሉ 👇"
-        )
+        txt = S(lang, 'book_unlocked_perm', title=b_title)
     try:
         bot.send_message(uid, txt, parse_mode="HTML", reply_markup=markup)
     except Exception as e:
@@ -1958,7 +1952,7 @@ def get_perks_broadcast_text(lang="am"):
 def get_perks_broadcast_markup(user_id, lang="am"):
     markup = InlineKeyboardMarkup(row_width=1)
     labels = {
-        "am": ("🎁 የዕለቱን ነፃ ስጦታ ተሳተፍ", "💰 መጋበዣ ሊንክህን ውሰድ (30% ኮሚሽን)", "📚 መጻሕፍት ቤት (Open Library)"),
+        "am": ("🎁 የዕለቱን ነፃ ስጦታ ተሳተፍ", "💰 መጋበዣ ሊንክህን ውሰድ (30% ኮሚሽን)", "📚 መጻሕፍት ቤት"),
         "en": ("🎁 Play Daily Giveaway", "💰 Get Referral Link (30% Commission)", "📚 Open Library"),
         "ti": ("🎁 ናይ ሎሚ ሽልማት ተሳተፉ", "💰 ናይ ምዕዳም መላግቦ ውሰዱ (30% ኮሚሽን)", "📚 ናይ መጻሕፍቲ ቤት"),
         "om": ("🎁 Badhaasa Har'aa Hirmaadhaa", "💰 Liinkii Afeerraa Fudhadhaa (Komishinii 30%)", "📚 Mana Dubbisaa")
@@ -2160,16 +2154,18 @@ def handle_callback(call):
         database.set_user_gender(uid, new_gen)
         database.set_user_age_verified(uid)
         database.set_setting(f"gender_defaulted_{uid}", "0")
-        bot.answer_callback_query(call.id, f"✅ ጾታ ተስተካክሏል: {'👩 ሴት' if new_gen == 'female' else '👨 ወንድ'}", show_alert=True)
+        lang = get_lang(uid)
+        gen_lbl = S(lang, 'gender_female') if new_gen == 'female' else S(lang, 'gender_male')
+        bot.answer_callback_query(call.id, f"{S(lang, 'gender_updated_alert')}: {gen_lbl}", show_alert=True)
         try:
             safe_delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
         bot.send_message(
             chat_id,
-            f"✅ <b>ጾታዎ ወደ {'👩 ሴት' if new_gen == 'female' else '👨 ወንድ'} ተስተካክሏል!</b>\n\nአሁን ውይይታችንን መቀጠል እንችላለን። እባክዎ ጥያቄዎን ወይም ሀሳብዎን ይቀጥሉ 👇",
+            S(lang, 'gender_updated_msg', gender=gen_lbl),
             parse_mode="HTML",
-            reply_markup=get_bottom_markup(get_lang(uid), uid)
+            reply_markup=get_bottom_markup(lang, uid)
         )
         return
 
@@ -2335,20 +2331,21 @@ def handle_callback(call):
         payouts = database.get_user_referral_payouts(uid, 10)
         bot.answer_callback_query(call.id)
         if not payouts:
-            bot.send_message(chat_id, "📜 <b>እስካሁን ምንም የክፍያ ታሪክ የለዎትም።</b>\n\nቀሪ ሂሳብዎ 100 ብር ሲሞላ ማውጣት ይችላሉ!", parse_mode="HTML")
+            bot.send_message(chat_id, S(lang, 'payout_history_empty'), parse_mode="HTML")
             return
-        lines = ["📜 <b>የእርስዎ የክፍያ ታሪክ (Payout History):</b>\n━━━━━━━━━━━━━━━━━━━━"]
+        lines = [S(lang, 'payout_history_title') + "\n━━━━━━━━━━━━━━━━━━━━"]
         status_map = {
-            "pending": "⏳ በመጠባበቅ ላይ (Pending)",
-            "approved": "✅ የተከፈለ (Paid)",
-            "rejected": "❌ ውድቅ የተደረገ (Rejected)"
+            "pending": S(lang, 'payout_status_pending'),
+            "approved": S(lang, 'payout_status_approved'),
+            "rejected": S(lang, 'payout_status_rejected')
         }
+        curr = "ETB" if lang == "en" else ("Birrii" if lang == "om" else "ብር")
         for p in payouts:
             st = status_map.get(p.get('status'), p.get('status', ''))
             dt = (p.get('created_at') or '')[:10]
             m = p.get('payment_method', '')
             amt = float(p.get('amount') or 0.0)
-            lines.append(f"• <b>{amt:.2f} ብር</b> ({m}) — {st} <i>[{dt}]</i>")
+            lines.append(f"• <b>{amt:.2f} {curr}</b> ({m}) — {st} <i>[{dt}]</i>")
         bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
         return
 
@@ -2360,7 +2357,7 @@ def handle_callback(call):
             bot.answer_callback_query(call.id, f"✅ Payout #{pid} Approved!", show_alert=True)
             admin_name = call.from_user.first_name
             bot.edit_message_text(
-                f"{call.message.text}\n\n✅ <b>በ {html.escape(admin_name)} ፀድቋል! (APPROVED)</b>",
+                f"{call.message.text}\n\n✅ <b>በ {html.escape(admin_name)} ፀድቋል!</b>",
                 chat_id, call.message.message_id, parse_mode="HTML"
             )
             try:
@@ -2369,12 +2366,11 @@ def handle_callback(call):
                 acc_info = payout['account_number'] or payout['phone_number']
                 bot.send_message(
                     target_uid,
-                    f"🎉 <b>ክፍያዎ ተፈጽሟል! (Payout Approved)</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"💰 መጠን: <b>{float(payout['amount']):.2f} ብር</b>\n"
-                    f"🏦 ዘዴ: <b>{payout['payment_method']}</b> ({acc_info})\n"
-                    f"👤 ስም: <b>{html.escape(payout['account_holder'])}</b>\n\n"
-                    f"<i>ገንዘቡ ወደ አካውንትዎ ገቢ ተደርጓል። ከእኛ ጋር ስለሰሩ እናመሰግናለን!</i>",
+                    S(t_lang, 'payout_approved_notif',
+                      amount=float(payout['amount']),
+                      method=payout['payment_method'],
+                      account=acc_info,
+                      name=html.escape(payout['account_holder'])),
                     parse_mode="HTML"
                 )
             except Exception as e:
@@ -2399,10 +2395,7 @@ def handle_callback(call):
                 t_lang = get_lang(target_uid)
                 bot.send_message(
                     target_uid,
-                    f"⚠️ <b>የክፍያ ጥያቄዎ ውድቅ ተደርጓል (Payout Rejected)</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"💰 የተጠየቀው <b>{float(payout['amount']):.2f} ብር</b> ወደ ኮሚሽን ቀሪ ሂሳብዎ ተመልሷል።\n\n"
-                    f"<i>እባክዎ ትክክለኛ የቴሌብር ወይም የባንክ መረጃ ማቅረብዎን አረጋግጠው እንደገና ይጠይቁ።</i>",
+                    S(t_lang, 'payout_rejected_notif', amount=float(payout['amount'])),
                     parse_mode="HTML"
                 )
             except Exception as e:
@@ -2760,6 +2753,7 @@ def handle_callback(call):
         return
 
     if data.startswith("gift_choice_"):
+        lang = get_lang(uid)
         chosen_key = data.replace("gift_choice_", "")
         cycle_date = tiktok_gift.get_game_cycle_date()
         tiktok_url = tiktok_gift.get_tiktok_channel_url()
@@ -2767,7 +2761,7 @@ def handle_callback(call):
         
         # Check if already attempted today
         if database.get_user_daily_gift_attempt(uid, cycle_date):
-            bot.answer_callback_query(call.id, "ለዛሬ ተሳትፈዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_attempted'), show_alert=True)
             safe_delete_message(chat_id, call.message.message_id)
             show_daily_gift_game(chat_id, uid)
             return
@@ -2781,7 +2775,7 @@ def handle_callback(call):
             affirmation_body = word_item["body"]
         else:
             chosen_word = today_secret
-            affirmation_title = f"✨ አዎ! አንተ በእርግጥም {chosen_word} ነህ!"
+            affirmation_title = f"✨ «{chosen_word}»"
             affirmation_body = "በህይወትህ ውስጥ ያለህ ውስጣዊ ጥንካሬ ወደፊት እንድትጓዝ የሚያደርግህ ታላቅ ኃይል ነው።"
             
         is_correct = (chosen_word.strip() == today_secret.strip())
@@ -2789,7 +2783,7 @@ def handle_callback(call):
         # Record attempt with atomic database lock
         recorded = database.record_daily_gift_attempt(uid, cycle_date, chosen_word, is_correct)
         if not recorded:
-            bot.answer_callback_query(call.id, "ለዛሬ ተሳትፈዋል! በቀን 1 ጊዜ ብቻ ነው የሚፈቀደው።", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_attempted'), show_alert=True)
             safe_delete_message(chat_id, call.message.message_id)
             return
 
@@ -2800,15 +2794,12 @@ def handle_callback(call):
         
         if not is_correct:
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url))
+            markup.add(InlineKeyboardButton(S(lang, 'btn_gift_tiktok_tomorrow'), url=tiktok_url))
             
             wrong_msg = (
                 f"{affirmation_text}\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
-                f"❌ <b>ነገር ግን... የዛሬው የቲክቶክ ሚስጥራዊ ቃል አልነበረም!</b>\n\n"
-                f"የዛሬው ትክክለኛ ቃል፦ <b>«{today_secret}»</b> ነበር።\n\n"
-                f"አይዞዎት! ቃልዎ ለውድድሩ ባይሆንም፣ መልዕክቱ ግን ለእርስዎ የተላከ እውነተኛ ጥንካሬ ነው።\n\n"
-                f"⏰ <b>ቀጣይ ዕድል፦</b> አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። የነገውን ቃል እንዳያመልጥዎ ቲክቶክ ላይ <b>{tiktok_name}</b>ን አሁኑኑ ይከታተሉ! 👇"
+                f"{S(lang, 'gift_wrong_answer', word=today_secret)}"
             )
             bot.send_message(chat_id, wrong_msg, parse_mode="HTML", reply_markup=markup)
             return
@@ -2817,57 +2808,50 @@ def handle_callback(call):
         winners_count = database.get_today_gift_winners_count(cycle_date)
         if winners_count < 5:
             rank = winners_count + 1
-            rank_str = {1: "1ኛ (የመጀመሪያው ፈጣን)", 2: "2ኛ", 3: "3ኛ", 4: "4ኛ", 5: "5ኛ"}.get(rank, f"{rank}ኛ")
-            
             all_bkeys = get_all_book_keys()
             ubooks, _, _ = database.get_user_books_state(uid)
             
             markup = InlineKeyboardMarkup(row_width=1)
             markup.add(
-                InlineKeyboardButton("💬 25 ነፃ መልዕክቶች ውሰድ (25 Free Messages)", callback_data="claim_gift_msgs")
+                InlineKeyboardButton(S(lang, 'btn_claim_free_msgs'), callback_data="claim_gift_msgs")
             )
             for bk in all_bkeys:
                 btitle = BOOK_TITLES.get(bk, bk)
                 if bk in ubooks:
-                    markup.add(InlineKeyboardButton(f"✅ {btitle} (ቀድመው የወሰዱት)", callback_data="gift_already_owned"))
+                    markup.add(InlineKeyboardButton(S(lang, 'btn_already_owned_fmt', title=btitle), callback_data="gift_already_owned"))
                 else:
-                    markup.add(InlineKeyboardButton(f"🎁 «{btitle}» ውሰድ", callback_data=f"claim_gift_book_{bk}"))
+                    markup.add(InlineKeyboardButton(S(lang, 'btn_claim_book_fmt', title=btitle), callback_data=f"claim_gift_book_{bk}"))
                     
             win_msg = (
                 f"{affirmation_text}\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
-                f"🎉🎉 <b>ድንቅ ነው! በትክክል መልሰዋል!</b>\n\n"
-                f"🏆 ዛሬ በቲክቶክ የተላለፈውን ሚስጥራዊ ቃል ቀድመው ከመለሱት ውስጥ <b>{rank_str}</b> በመሆን አሸንፈዋል! 🥇\n\n"
-                f"🎁 <b>የእርስዎ ሽልማት፦</b>\n"
-                f"ከታች ካሉት አማራጮች <b>25 ነፃ መልዕክቶች</b> ወይም የፈለጉትን <b>1 ነፃ መጽሐፍ</b> ይምረጡ፤ ወዲያውኑ ይሰጥዎታል! 👇"
+                f"{S(lang, 'gift_win_congrats', rank=rank)}"
             )
             bot.send_message(chat_id, win_msg, parse_mode="HTML", reply_markup=markup)
         else:
             # Correct, but top 5 spots already claimed (no advice messages awarded)
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url))
+            markup.add(InlineKeyboardButton(S(lang, 'btn_gift_tiktok_tomorrow'), url=tiktok_url))
             
             late_msg = (
                 f"{affirmation_text}\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
-                f"✅ <b>በትክክል መልሰዋል!</b>\n\n"
-                f"የዛሬው ሚስጥራዊ ቃል በእርግጥም <b>«{today_secret}»</b> ነበር!\n\n"
-                f"🏃‍♂️ <b>ነገር ግን...</b> የዛሬዎቹ <b>5 ፈጣን አሸናፊዎች</b> ቀድመው ቦታውን ሞልተዋል!\n\n"
-                f"⏰ <b>ተስፋ አይቁረጡ!</b> የነገው ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል። ጠዋት 4:00 ሰዓት (10:00 AM) እንደተጀመረ ቀድመው በመመለስ የነፃ መጽሐፍ ወይም የ25 መልዕክት አሸናፊ ይሁኑ! 👇"
+                f"{S(lang, 'gift_late_congrats', word=today_secret)}"
             )
             bot.send_message(chat_id, late_msg, parse_mode="HTML", reply_markup=markup)
         return
 
     if data == "claim_gift_msgs":
+        lang = get_lang(uid)
         cycle_date = tiktok_gift.get_game_cycle_date()
         
         if database.has_user_won_daily_gift(uid):
-            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ወስደዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_won'), show_alert=True)
             return
             
         winners_count = database.get_today_gift_winners_count(cycle_date)
         if winners_count >= 5:
-            bot.answer_callback_query(call.id, "ይቅርታ፣ የዛሬ 5 ቦታዎች ሞልተዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_spots_filled'), show_alert=True)
             return
             
         rank = winners_count + 1
@@ -2875,33 +2859,28 @@ def handle_callback(call):
         try:
             database.record_daily_gift_winner(uid, cycle_date, rank, "messages_25")
         except Exception:
-            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ተወስዷል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_won'), show_alert=True)
             return
             
         database.add_advice_messages(uid, 25)
-        bot.answer_callback_query(call.id, "🎉 25 ነፃ መልዕክቶች ተሰጥቶዎታል!", show_alert=True)
+        bot.answer_callback_query(call.id, S(lang, 'claim_msgs_success'), show_alert=True)
         safe_delete_message(chat_id, call.message.message_id)
         
-        celebration_text = (
-            f"🎊🎊 <b>እንኳን ደስ አለዎት!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"💬 <b>25 ነፃ መልዕክቶች</b> ወደ አካውንትዎ ገቢ ሆነዋል! 🏆\n\n"
-            f"አሁን ከኤአይ አማካሪው (AI Mentor) ጋር በነፃ ማውራት፣ ማንኛውንም ጥያቄ መጠየቅ እና መወያየት ይችላሉ። መልካም ቆይታ! 🌟"
-        )
-        bot.send_message(chat_id, celebration_text, parse_mode="HTML")
+        bot.send_message(chat_id, S(lang, 'gift_claim_msgs_success'), parse_mode="HTML")
         return
 
     if data.startswith("claim_gift_book_"):
+        lang = get_lang(uid)
         bkey = data.replace("claim_gift_book_", "")
         cycle_date = tiktok_gift.get_game_cycle_date()
         
         if database.has_user_won_daily_gift(uid):
-            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ወስደዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_won'), show_alert=True)
             return
             
         winners_count = database.get_today_gift_winners_count(cycle_date)
         if winners_count >= 5:
-            bot.answer_callback_query(call.id, "ይቅርታ፣ የዛሬ 5 ቦታዎች ሞልተዋል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_spots_filled'), show_alert=True)
             return
             
         rank = winners_count + 1
@@ -2909,7 +2888,7 @@ def handle_callback(call):
         try:
             database.record_daily_gift_winner(uid, cycle_date, rank, bkey)
         except Exception:
-            bot.answer_callback_query(call.id, "ቀደም ሲል ሽልማት ተወስዷል!", show_alert=True)
+            bot.answer_callback_query(call.id, S(lang, 'gift_alert_already_won'), show_alert=True)
             return
             
         database.unlock_book(uid, bkey, days=None)
@@ -2920,18 +2899,11 @@ def handle_callback(call):
         markup = InlineKeyboardMarkup()
         markup.add(
             InlineKeyboardButton(
-                "📚 መጽሐፉን አሁኑኑ አንብብ (Open Book)",
+                S(lang, 'btn_read_book_now'),
                 web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
             )
         )
-        
-        celebration_text = (
-            f"🎊🎊 <b>እንኳን ደስ አለዎት!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"📖 <b>«{btitle}»</b> የተሰኘው ሙሉ መጽሐፍ በስጦታ <b>ለዘላለም በነፃ</b> ተከፍቶልዎታል! 🏆\n\n"
-            f"ከታች ያለውን <b>'📚 መጽሐፉን አሁኑኑ አንብብ'</b> የሚለውን ቁልፍ ተጭነው ማንበብ መጀመር ይችላሉ። መልካም ንባብ! 🌟"
-        )
-        bot.send_message(chat_id, celebration_text, parse_mode="HTML", reply_markup=markup)
+        bot.send_message(chat_id, S(lang, 'gift_claim_book_success', title=btitle), parse_mode="HTML", reply_markup=markup)
         return
 
     # ── Admin: TikTok Giveaway Management ──────
@@ -4180,7 +4152,8 @@ def send_winners_post_preview(chat_id, theme_index=1, style_index=0):
     return
 
 def show_daily_gift_game(chat_id, uid):
-    """Handles when user clicks '🎁 የዕለቱ ነፃ መጽሐፍ (የአዕምሮ ምግቦች)'."""
+    """Handles when user clicks daily gift button."""
+    lang = get_lang(uid)
     cycle_date = tiktok_gift.get_game_cycle_date()
     tiktok_url = tiktok_gift.get_tiktok_channel_url()
     tiktok_name = tiktok_gift.get_tiktok_channel_name()
@@ -4195,7 +4168,7 @@ def show_daily_gift_game(chat_id, uid):
         if not is_msg_reward:
             markup.add(
                 InlineKeyboardButton(
-                    "📚 ያሸነፉትን መጽሐፍ አንብብ (Library)",
+                    S(lang, 'btn_read_won_book'),
                     web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
                 )
             )
@@ -4207,14 +4180,8 @@ def show_daily_gift_game(chat_id, uid):
                 InlineKeyboardButton("🔄 [Admin] Reset My Win & Play", callback_data="adm_gift_reset_me"),
                 InlineKeyboardButton("♻️ [Admin] Restart Whole Game", callback_data="adm_gift_restart_confirm")
             )
-        reward_name = "25 ነፃ መልዕክቶች" if is_msg_reward else f"«{BOOK_TITLES.get(b_chosen, b_chosen)}» መጽሐፍ"
-        text = (
-            f"🏆 <b>እርስዎ ቀደም ሲል የ{reward_name} አሸናፊ ሆነዋል!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"ያሸነፉት ሽልማት ወደ አካውንትዎ ገቢ ሆኗል።\n\n"
-            f"ውድድሩ ለሁሉም ወገኖች እኩል ዕድል ለመስጠት በአንድ ሰው <b>1 ጊዜ ብቻ</b> የሚፈቀድ ነው።\n\n"
-            f"የዕለቱን አነቃቂ የስነ-ልቦና ምክር በቲክቶክ <b>{tiktok_name}</b> መከታተልዎን ይቀጥሉ! ✨"
-        )
+        reward_name = S(lang, 'btn_reward_msgs') if is_msg_reward else f"«{BOOK_TITLES.get(b_chosen, b_chosen)}»"
+        text = S(lang, 'gift_already_won', reward=reward_name)
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return
 
@@ -4224,23 +4191,18 @@ def show_daily_gift_game(chat_id, uid):
         reset_time_str = tiktok_gift.get_next_reset_time_display()
         markup = InlineKeyboardMarkup()
         markup.add(
-            InlineKeyboardButton(f"📱 የነገውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
+            InlineKeyboardButton(S(lang, 'btn_gift_tiktok_tomorrow'), url=tiktok_url)
         )
         if is_admin_uid(uid):
             markup.add(
                 InlineKeyboardButton("🔄 [Admin] Reset My Attempt & Play", callback_data="adm_gift_reset_me"),
                 InlineKeyboardButton("♻️ [Admin] Restart Whole Game", callback_data="adm_gift_restart_confirm")
             )
-        status_txt = "ትክክለኛውን ቃል መርጠው ነበር" if attempt.get("is_correct") else "የተሳሳተ ቃል መርጠው ነበር"
-        text = (
-            "⏳ <b>ለዛሬ ተሳትፈዋል!</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"በዛሬው ዙር <b>«{attempt.get('chosen_word')}»</b> በማለት {status_txt}።\n\n"
-            "ውድድሩ በቀን አንድ ጊዜ ብቻ የሚሞከር ሲሆን፣ አዲስ ዙር <b>ነገ ጠዋት 4:00 ሰዓት (10:00 AM)</b> ላይ ይጀመራል!\n\n"
-            f"⏳ <b>ለቀጣዩ ዙር የቀረው ጊዜ፦</b> {reset_time_str}\n\n"
-            f"💡 <b>የነገውን ሚስጥራዊ ቃል ቀድመው ለማወቅ፦</b>\n"
-            f"ቲክቶክ ላይ <b>{tiktok_name}</b> ቻናላችንን ይከታተሉ! 👇"
-        )
+        status_txt = S(lang, 'gift_status_correct') if attempt.get("is_correct") else S(lang, 'gift_status_wrong')
+        text = S(lang, 'gift_already_attempted',
+                 word=attempt.get('chosen_word'),
+                 status=status_txt,
+                 time_left=reset_time_str)
         bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
         return
 
@@ -4261,18 +4223,12 @@ def show_daily_gift_game(chat_id, uid):
             markup.add(row_btns[i])
 
     markup.add(
-        InlineKeyboardButton(f"📱 የዛሬውን ቃል በቲክቶክ እይ ({tiktok_name})", url=tiktok_url)
+        InlineKeyboardButton(S(lang, 'btn_gift_tiktok_today'), url=tiktok_url)
     )
 
     text = (
-        f"🎁 <b>የዕለቱ ነፃ መጽሐፍ ስጦታ ({tiktok_name})</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"🔥 <b>ውድድሩ እንዴት ይሰራል?</b>\n"
-        f"በየቀኑ በቲክቶክ <b>{tiktok_name}</b> ቪዲዮ ላይ አንድ ሚስጥራዊ አዎንታዊ ቃል ይተላለፋል። "
-        f"ቃሉን በትክክል ቀድመው የመለሱ <b>5 ፈጣኖች</b> ከቤተ-መጽሐፍታችን የፈለጉትን መጽሐፍ <b>ሙሉ በሙሉ በነፃ</b> ይሸለማሉ!\n\n"
-        f"🏆 <b>የዛሬ ቀሪ የአሸናፊዎች ቦታ፦</b> <b>{remaining_spots} / 5</b>\n\n"
-        "💡 <i>(ምርጫዎ የተሳሳተ ቢሆንም እንኳን ለመረጡት ቃል ልብ የሚነካ ጥልቅ የስነ-ልቦና ትንታኔ ያገኛሉ!)</i>\n\n"
-        "👇 <b>በቲክቶክ የተላለፈው የዛሬው ቃል የትኛው ነው? ይምረጡ፦</b>"
+        S(lang, 'gift_game_title') + "\n━━━━━━━━━━━━━━━━━━━━\n\n" +
+        S(lang, 'gift_how_it_works', remaining=remaining_spots)
     )
     bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
@@ -4993,19 +4949,19 @@ def handle_messages(message):
             for bk in ubooks:
                 bt = BOOK_TITLES.get(bk, bk)
                 if bk in urentals:
-                    blines.append(f"  ⏳ <b>{bt}</b> (ቀሪ {urentals[bk]} ቀናት)")
+                    blines.append(f"  ⏳ <b>{bt}</b> {S(lang, 'rental_badge', days=urentals[bk])}")
                 else:
-                    blines.append(f"  ✅ <b>{bt}</b> (ሙሉ መጽሐፍ)")
+                    blines.append(f"  ✅ <b>{bt}</b> {S(lang, 'full_book_badge')}")
             for bk in uexpired:
                 bt = BOOK_TITLES.get(bk, bk)
-                blines.append(f"  ⏰ <b>{bt}</b> (የኪራይ ጊዜው ያለፈ)")
-            books_section = "📚 <b>የእርስዎ መጻሕፍት:</b>\n" + "\n".join(blines) + "\n\n"
+                blines.append(f"  ⏰ <b>{bt}</b> {S(lang, 'expired_badge')}")
+            books_section = f"{S(lang, 'library_title')}:\n" + "\n".join(blines) + "\n\n"
 
         markup = InlineKeyboardMarkup()
         if ubooks or uexpired:
             markup.add(
                 InlineKeyboardButton(
-                    "📚 የኔ መጻሕፍት (Open Library)",
+                    S(lang, 'btn_open_library'),
                     web_app=WebAppInfo(url=f"{config.BASE_URL}/app?uid={uid}")
                 )
             )
@@ -5112,7 +5068,7 @@ def handle_messages(message):
             try:
                 bot.send_message(
                     chat_id,
-                    "👋 <b>እንኳን ወደ ባያ ቡክስ በደህና መጡ!</b>\n<i>(የታችኛው ዋና ሜኑ ተከፍቶልዎታል፤ ጥያቄዎን በማስተናገድ ላይ ነኝ...)</i>",
+                    S(u_lang, 'autofree_welcome'),
                     parse_mode="HTML",
                     reply_markup=get_bottom_markup(u_lang, uid)
                 )
@@ -5154,28 +5110,33 @@ def handle_messages(message):
         female_clues = [
             r'እኔ\s*ሴት\s*ነኝ', r'ሴት\s*ልጅ\s*ነኝ', r'ሴት\s*እኮ\s*ነኝ', r'እኔኮ\s*ሴት',
             r'ባሌ\b', r'የባሌ\b', r'ከባሌ\b', r'ባል\s*አለኝ', r'እርጉዝ\s*ነኝ', r'አርግዣለሁ',
-            r'ሚስት\s*ነኝ', r'ወንድ\s*አይደለሁ', r'\bi\s*am\s*female\b', r'\bi\s*am\s*a\s*(woman|girl)\b',
-            r'\bi\'?m\s*a\s*(woman|girl|female)\b', r'\bmy\s*husband\b'
+            r'ሚስት\s*ነኝ', r'ወንድ\s*አይደለሁ',
+            r'\bi\s*am\s*female\b', r'\bi\s*am\s*a\s*(woman|girl)\b',
+            r'\bi\'?m\s*a\s*(woman|girl|female)\b', r'\bmy\s*husband\b', r'\bi\'?m\s*pregnant\b',
+            r'ኣነ\s*ጓል\s*እየ', r'ኣነ\s*ሰበይቲ\s*እየ', r'በዓል\s*ቤተይ\b', r'ሰብኣየይ\b', r'ጥንሲ\s*ኣለኒ',
+            r'ani\s*dubartii\b', r'ani\s*shamaran\b', r'dhirsa\s*koo\b', r'abbaa\s*warraa\s*koo\b'
         ]
         male_clues = [
             r'እኔ\s*ወንድ\s*ነኝ', r'ወንድ\s*ልጅ\s*ነኝ', r'ወንድ\s*እኮ\s*ነኝ', r'እኔኮ\s*ወንድ',
             r'ሚስቴ\b', r'የሚስቴ\b', r'ከሚስቴ\b', r'ሚስት\s*አለኝ', r'ሴት\s*አይደለሁ',
-            r'\bi\s*am\s*male\b', r'\bi\s*am\s*a\s*(man|boy)\b', r'\bi\'?m\s*a\s*(man|boy|male)\b', r'\bmy\s*wife\b'
+            r'\bi\s*am\s*male\b', r'\bi\s*am\s*a\s*(man|boy)\b', r'\bi\'?m\s*a\s*(man|boy|male)\b', r'\bmy\s*wife\b',
+            r'ኣነ\s*ወዲ\s*እየ', r'ኣነ\s*ተባዕታይ\s*እየ', r'ሰበይተይ\b', r'በዓልቲ\s*ቤተይ\b',
+            r'ani\s*dhiira\b', r'niitii\s*koo\b', r'haadha\s*warraa\s*koo\b'
         ]
         
         has_female_clue = any(re.search(p, user_text, re.IGNORECASE) for p in female_clues)
         has_male_clue = any(re.search(p, user_text, re.IGNORECASE) for p in male_clues)
         
         if (curr_gender == "male" and has_female_clue) or (curr_gender == "female" and has_male_clue):
+            u_lang = database.get_bot_language(uid) or "am"
             markup = InlineKeyboardMarkup(row_width=2)
             markup.add(
-                InlineKeyboardButton("👩 ሴት (Female)", callback_data="rechoose_gen_female"),
-                InlineKeyboardButton("👨 ወንድ (Male)", callback_data="rechoose_gen_male")
+                InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="rechoose_gen_female"),
+                InlineKeyboardButton(S(u_lang, 'gender_male'), callback_data="rechoose_gen_male")
             )
             bot.send_message(
                 chat_id,
-                "🔍 <b>የጾታ ማረጋገጫ (Gender Confirmation)</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-                "በመልዕክትዎ ውስጥ የጾታ ለውጥ አስተውያለሁ። የ AI አማካሪው ለእርስዎ በሚስማማ አነጋገር እና ትክክለኛ ምክር እንዲያናግርዎት፣ እባክዎ ጾታዎን ያረጋግጡ፦",
+                f"{S(u_lang, 'gender_confirm_title')}\n━━━━━━━━━━━━━━━━━━━━\n{S(u_lang, 'gender_confirm_body')}",
                 parse_mode="HTML",
                 reply_markup=markup
             )
@@ -6171,15 +6132,7 @@ class DummyHandler(BaseHTTPRequestHandler):
                     database.convert_book_to_lifetime(uid, bkey)
                     result_msg = f"Converted {b_title} to Lifetime access!"
                     if notify:
-                        try:
-                            bot.send_message(
-                                uid,
-                                f"👑 <b>የቋሚ ባለቤትነት ስጦታ!</b>\n\n"
-                                f"📖 የ <b>«{b_title}»</b> መጽሐፍ <b>ለዘላለም በቋሚነት (Lifetime)</b> ተከፍቶልዎታል!\n"
-                                f"በማንኛውም ጊዜ ገብተው ሙሉውን መጽሐፍ ማንበብ ይችላሉ! 📚✨",
-                                parse_mode="HTML"
-                            )
-                        except Exception: pass
+                        notify_user_book_unlocked(uid, bkey, days=None)
                 elif action == 'expire':
                     database.expire_book_rental_now(uid, bkey)
                     result_msg = f"Expired {b_title} rental now."
@@ -6320,13 +6273,25 @@ class DummyHandler(BaseHTTPRequestHandler):
                             "👋 <b>ሰላም!</b>\n\n"
                             "የጀመሩት ክፍያ እንዳልተጠናቀቀ አስተውለናል። ማንኛውም የክፍያ ወይም የቦት ችግር ካጋጠመዎት "
                             "እርዳታ ለመስጠት ዝግጁ ነን!\n\n"
-                            "እንደገና ለመሞከር ከታች <b>«💎 ጥቅል ግዛ (Top Up)»</b> የሚለውን ይጫኑ ወይም በድጋፍ መስመር ያነጋግሩን። 💙"
+                            "እንደገና ለመሞከር ከታች <b>«💎 ጥቅል ግዛ»</b> የሚለውን ይጫኑ ወይም በድጋፍ መስመር ያነጋግሩን። 💙"
                         ),
                         'en': (
                             "👋 <b>Hello!</b>\n\n"
                             "We noticed your payment checkout was not completed. If you experienced any issue or need assistance, "
                             "we are here to help!\n\n"
                             "Feel free to try again or reach out to our support anytime. 💙"
+                        ),
+                        'ti': (
+                            "👋 <b>ሰላም!</b>\n\n"
+                            "ዝጀመርኩምዎ ክፍሊት ከምዘይተዛዘመ ኣስተውዒልና ኣለና። ዝኾነ ናይ ክፍሊት ወይ ናይ ቦት ጸገም እንተጋጢምኩም "
+                            "ሓገዝ ንምሃብ ድሉዋት ኢና!\n\n"
+                            "እንደገና ንምፍታን ካብ ታሕቲ <b>«💎 ጥቅሊ ዓድግ»</b> ዝብል ጠውቑ ወይ ብናይ ሓገዝ መስመር ተወከሱና። 💙"
+                        ),
+                        'om': (
+                            "👋 <b>Akkam!</b>\n\n"
+                            "Kaffaltiin ati jalqabde akka hin xumuramne hubanneerra. Rakkoon kaffaltii ykn kan boottii yoo si mudate "
+                            "gargaarsa kennuuf qophiidha!\n\n"
+                            "Ammas yaaluuf gadiin <b>«💎 Paakeejii Biti»</b> kan jedhu tuqi ykn sarara deeggarsaa keenyaan nu qunnami. 💙"
                         )
                     }
                     bot.send_message(target_uid, nudge_msgs.get(u_lang, nudge_msgs['am']), parse_mode="HTML")
@@ -6358,16 +6323,16 @@ class DummyHandler(BaseHTTPRequestHandler):
                 if not b_text:
                     raise ValueError("Broadcast text cannot be empty.")
                     
-                markup = None
-                if has_app:
-                    markup = InlineKeyboardMarkup()
-                    markup.add(InlineKeyboardButton("📚 መጻሕፍት ቤት (Library)", web_app=WebAppInfo(url=f"{config.BASE_URL}/app")))
-                    
                 if act == 'test':
                     admins_to_test = get_all_admin_ids()
                     if admins_to_test:
                         for adm_id in admins_to_test:
                             try:
+                                a_lang = database.get_bot_language(adm_id) or 'am'
+                                markup = None
+                                if has_app:
+                                    markup = InlineKeyboardMarkup()
+                                    markup.add(InlineKeyboardButton(S(a_lang, 'menu_library'), web_app=WebAppInfo(url=f"{config.BASE_URL}/app")))
                                 bot.send_message(adm_id, f"🧪 <b>[TEST BROADCAST PREVIEW]</b>\n\n{b_text}", parse_mode="HTML", reply_markup=markup)
                             except Exception:
                                 pass
@@ -6379,11 +6344,16 @@ class DummyHandler(BaseHTTPRequestHandler):
                         uids = database.get_all_user_ids()
                         for u in uids:
                             try:
-                                if lang_filter != 'all' and database.get_bot_language(u) != lang_filter:
+                                u_l = database.get_bot_language(u) or 'am'
+                                if lang_filter != 'all' and u_l != lang_filter:
                                     continue
                                 if target_group == 'active' and database.is_banned(u):
                                     continue
-                                bot.send_message(u, b_text, parse_mode="HTML", reply_markup=markup)
+                                u_markup = None
+                                if has_app:
+                                    u_markup = InlineKeyboardMarkup()
+                                    u_markup.add(InlineKeyboardButton(S(u_l, 'menu_library'), web_app=WebAppInfo(url=f"{config.BASE_URL}/app")))
+                                bot.send_message(u, b_text, parse_mode="HTML", reply_markup=u_markup)
                             except Exception:
                                 pass
                             time.sleep(0.05)
@@ -6545,7 +6515,7 @@ def auto_nudge_daemon():
                         InlineKeyboardButton(S(u_lang, 'gender_female'), callback_data="onboard_gen_f")
                     )
                     markup.add(
-                        InlineKeyboardButton("⚡ ዝለል እና ቀጥታ ጀምር (Skip & Start)", callback_data="onboard_gen_skip")
+                        InlineKeyboardButton(S(u_lang, 'onboard_skip_btn'), callback_data="onboard_gen_skip")
                     )
                     try:
                         bot.send_message(uid, text, parse_mode="HTML", reply_markup=markup)
@@ -6578,7 +6548,7 @@ def auto_nudge_daemon():
                 for u in ended:
                     uid, name, u_lang = u['user_id'], u['first_name'] or 'there', u.get('bot_language') or 'am'
                     text = {
-                        'am': f"👋 ሰላም <b>{name}</b>፣ ያለፈውን ውይይታችንን መለስ ብዬ እያየሁት ነበር።\n\nስለተወያየንበት ጉዳይ አንድ ያልነገርኩዎት ትልቅ ነገር አለ። እስካሁን ያወራነው የችግሩን ገፅታ (Surface) ብቻ ነው፤ ዋናው ስር ያለው ግን ሌላ ቦታ ነው።\n\nውይይታችንን አቋርጠን መፍትሄውን ሳልነግርዎት በመቅረቴ ቅር ብሎኛል። መፍትሄውን ለማወቅ እና የጀመርነውን ለመጨረስ... 👇",
+                        'am': f"👋 ሰላም <b>{name}</b>፣ ያለፈውን ውይይታችንን መለስ ብዬ እያየሁት ነበር።\n\nስለተወያየንበት ጉዳይ አንድ ያልነገርኩዎት ትልቅ ነገር አለ። እስካሁን ያወራነው የችግሩን የውጪ ገፅታ ብቻ ነው፤ ዋናው ስር ያለው ግን ሌላ ቦታ ነው።\n\nውይይታችንን አቋርጠን መፍትሄውን ሳልነግርዎት በመቅረቴ ቅር ብሎኛል። መፍትሄውን ለማወቅ እና የጀመርነውን ለመጨረስ... 👇",
                         'en': f"👋 Hi <b>{name}</b>, I was looking back at our previous chat.\n\nThere's one major thing I haven't told you about what we discussed. So far, we only scratched the surface of the problem. The real root is somewhere else entirely.\n\nIt bothers me that we stopped before I could give you the actual solution. To find out the solution and finish what we started... 👇",
                         'ti': f"👋 ሰላም <b>{name}</b>፡ ነቲ ሕሉፍ ዕላልና ምልስ ኢለ እርእዮ ነይረ።\n\nብዛዕባ ዝተመያየጥናሉ ጉዳይ ሓደ ዘይነገርኩኻ ዓቢ ነገር ኣሎ። ክሳብ ሕጂ ዘውራዕናዮ ገጽታ ናይቲ ጸገም ጥራይ እዩ፣ እቲ ቀንዲ ሱር ግን ካልእ ቦታ እዩ ዘሎ።\n\nመፍትሒኡ ከይነገርኩኻ ዕላልና ብምቁራጹ ጓህዩኒ። መፍትሒኡ ንምፍላጥን ዝጀመርናዮ ንምውዳእን... 👇",
                         'om': f"👋 Akkam <b>{name}</b>, marii keenya darbe deebi'een ilaalaa ture.\n\nWaa'ee dhimma irratti mari'annee sana wanta guddaa tokko kanin sitti hin himin jira. Hanga ammaatti kan haasofne fuula rakkinichaa qofa; hundeen rakkinichaa garuu iddoo biraa jira.\n\nFurmaata isaa osoo sitti hin himin mariin keenya addaan cituun isaa na gaddisiiseera. Furmaata isaa beekuu fi waan jalqabne xumuruuf... 👇",
@@ -6606,10 +6576,10 @@ def auto_nudge_daemon():
                     payment_id = p['id']
                     
                     text = {
-                        'am': f"👋 ሰላም <b>{name}</b>፣ የክፍያ ፓኬጅ መርጠው ደረሰኝ እስካሁን አልላኩም።\n\nክፍያዎን ሲያጠናቅቁ፣ በቀጥታ <b>እዚሁ ቻት ላይ</b> የከፈሉበትን ደረሰኝ (Screenshot) ይላኩልን። ሲስተማችን ወዲያውኑ አረጋግጦ አካውንትዎን ይከፍትልዎታል!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የክፍያ ፓኬጅ መርጠው ደረሰኝ እስካሁን አልላኩም።\n\nክፍያዎን ሲያጠናቅቁ፣ በቀጥታ <b>እዚሁ ቻት ላይ</b> የከፈሉበትን ደረሰኝ ይላኩልን። ሲስተማችን ወዲያውኑ አረጋግጦ አካውንትዎን ይከፍትልዎታል!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
                         'en': f"👋 Hi <b>{name}</b>, we noticed you selected a package but haven't uploaded your receipt yet.\n\nWhenever you're ready, simply upload a screenshot of your receipt <b>directly in this chat</b>. Our system will automatically verify it and unlock your account!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
-                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናይ ክፍሊት ፓኬጅ መሪጽኩም ቅዳሕ (ደረሰኝ) ክሳብ ሕጂ ኣይለኣኽኩምን።\n\nክፍሊትኩም ምስ ፈጸምኩም፡ ብቐጥታ <b>ኣብዚ ቻት</b> ናይ ዝኸፈልኩምሉ ቅዳሕ ስደዱልና። ሲስተምና ብቕጽበት ኣረጋጊጹ ኣካውንትኩም ክኸፍተልኩም እዩ!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
-                        'om': f"👋 Akkam <b>{name}</b>, Paakeejii kaffaltii filattanii nagahee (receipt) ammallee hin ergine.\n\nYeroo kaffaltii raawwattan, nagahee keessan (Screenshot) <b>kallattiin asuma chat irratti</b> nuuf ergaa. Sirnichi yeruma sana mirkaneessee akkawuntii keessan ni bana!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናይ ክፍሊት ፓኬጅ መሪጽኩም ቅዳሕ ደረሰኝ ክሳብ ሕጂ ኣይለኣኽኩምን።\n\nክፍሊትኩም ምስ ፈጸምኩም፡ ብቐጥታ <b>ኣብዚ ቻት</b> ናይ ዝኸፈልኩምሉ ቅዳሕ ስደዱልና። ሲስተምና ብቕጽበት ኣረጋጊጹ ኣካውንትኩም ክኸፍተልኩም እዩ!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, Paakeejii kaffaltii filattanii nagahee ammallee hin ergine.\n\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa. Sirnichi yeruma sana mirkaneessee akkawuntii keessan ni bana!\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
                     }.get(u_lang, "")
                     
                     try:
@@ -6626,10 +6596,10 @@ def auto_nudge_daemon():
                     uid, name, u_lang = p['user_id'], p['first_name'] or 'there', p.get('bot_language') or 'am'
                     
                     text = {
-                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ አካውንትዎን ይሙሉ (Top up ያድርጉ)።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'am': f"👋 ሰላም <b>{name}</b>፣ የነጻ መልዕክቶችዎ እንዳለቁ አስተውለናል።\n\nምክክራችንን ለመቀጠል እና ለውጥ ለማምጣት እባክዎ ተጨማሪ መልዕክቶችን ይግዙ።\nክፍያዎን ሲያጠናቅቁ ደረሰኙን <b>እዚሁ ቻት ላይ</b> ይላኩልን።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
                         'en': f"👋 Hi <b>{name}</b>, we noticed you've run out of messages.\n\nTo continue our conversation and keep making progress, please top up your account.\nWhenever you're ready, simply transfer and upload a screenshot of your receipt <b>directly in this chat</b>.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
-                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
-                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa (Top up).\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'ti': f"👋 ሰላም <b>{name}</b>፡ ናጻ መልእኽትኹም ከምዝወድአ ኣስተውዒልና።\n\nምይይጥና ንምቕጻል በጃኹም ኣካውንትኩም ምልኡ።\nክፍሊትኩም ምስ ፈጸምኩም፡ ቅዳሕ ደረሰኝ <b>ኣብዚ ቻት</b> ስደዱልና።\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
+                        'om': f"👋 Akkam <b>{name}</b>, ergaawwan bilisaa keessan akka xumuraman hubanneerra.\n\nMarii keenya itti fufuuf maaloo akkawuntii keessan guutaa.\nYeroo kaffaltii raawwattan, nagahee keessan <b>kallattiin asuma chat irratti</b> nuuf ergaa.\n\n🏦 CBE: <code>1000073164765</code>\n🏦 CBE Birr: <code>0912689900</code>\n📱 Telebirr: <code>0912689900</code>",
                     }.get(u_lang, "")
 
                     try:

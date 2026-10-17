@@ -1986,6 +1986,7 @@ def show_admin_menu(chat_id, user):
         InlineKeyboardButton("🎁 TikTok Giveaway Manager", callback_data="adm_gift_menu"),
     )
     markup.add(
+        InlineKeyboardButton("💸 Payouts & Commissions", callback_data="adm_payouts_menu"),
         InlineKeyboardButton("🔄 Refresh All Keyboards", callback_data="adm_refresh_menus"),
     )
     
@@ -1999,6 +2000,46 @@ def show_admin_menu(chat_id, user):
         f"Select an action:",
         parse_mode="HTML", reply_markup=markup,
     )
+
+def send_payouts_admin_dashboard(chat_id, user=None, call=None):
+    stats = database.get_commissions_admin_stats()
+    pending = database.get_pending_referral_payouts()
+    pending_cnt = len(pending)
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    if pending_cnt > 0:
+        markup.add(InlineKeyboardButton(f"⚡ Review Pending Payouts ({pending_cnt})", callback_data="adm_view_pending_payouts"))
+    markup.add(
+        InlineKeyboardButton("📜 All Payouts History", callback_data="adm_all_payouts_history"),
+        InlineKeyboardButton("🏆 Top Referrers", callback_data="adm_top_referrers"),
+        InlineKeyboardButton("🌐 Open Web Payouts Dashboard", web_app=WebAppInfo(url=f"{config.BASE_URL}/admin_dashboard?token={config.ADMIN_SECRET_KEY}#commissions")),
+        InlineKeyboardButton("🔙 Back to Admin", callback_data="adm_back")
+    )
+    
+    text = (
+        f"💸 <b>REFERRAL PAYOUTS & COMMISSIONS DASHBOARD</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"👥 <b>Total Referrals:</b> <b>{stats['total_referrals']}</b> joined | <b>{stats['total_chatted']}</b> chatted\n"
+        f"💰 <b>Total Commissions Earned:</b> <b>{stats['total_commissions_earned']:.2f} ETB</b>\n"
+        f"⏳ <b>Pending Payouts:</b> <b>{stats['pending_payout_count']} requests</b> ({stats['pending_payout_amount']:.2f} ETB)\n"
+        f"✅ <b>Total Paid Out:</b> <b>{stats['total_paid_out']:.2f} ETB</b>\n"
+        f"💳 <b>Active User Balances:</b> <b>{stats['total_active_balance']:.2f} ETB</b>\n\n"
+        f"<i>Tap below to review pending requests or view detailed metrics:</i>"
+    )
+    if call:
+        try:
+            bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+        except Exception:
+            bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
+
+@bot.message_handler(commands=["payouts", "commissions"])
+def cmd_payouts_admin(message):
+    if not is_admin(message.from_user):
+        bot.reply_to(message, "❌ Admin only!")
+        return
+    send_payouts_admin_dashboard(message.chat.id, user=message.from_user)
 
 @bot.message_handler(commands=["perks_broadcast", "broadcast_perks"])
 def cmd_perks_broadcast(message):
@@ -2346,9 +2387,14 @@ def handle_callback(call):
         if payout:
             bot.answer_callback_query(call.id, f"✅ Payout #{pid} Approved!", show_alert=True)
             admin_name = call.from_user.first_name
+            back_markup = InlineKeyboardMarkup()
+            back_markup.add(
+                InlineKeyboardButton("🔄 Refresh Pending", callback_data="adm_view_pending_payouts"),
+                InlineKeyboardButton("🔙 Payouts Dashboard", callback_data="adm_payouts_menu")
+            )
             bot.edit_message_text(
                 f"{call.message.text}\n\n✅ <b>በ {html.escape(admin_name)} ፀድቋል!</b>",
-                chat_id, call.message.message_id, parse_mode="HTML"
+                chat_id, call.message.message_id, parse_mode="HTML", reply_markup=back_markup
             )
             try:
                 target_uid = payout['user_id']
@@ -2376,9 +2422,14 @@ def handle_callback(call):
         if payout:
             bot.answer_callback_query(call.id, f"❌ Payout #{pid} Rejected & Refunded!", show_alert=True)
             admin_name = call.from_user.first_name
+            back_markup = InlineKeyboardMarkup()
+            back_markup.add(
+                InlineKeyboardButton("🔄 Refresh Pending", callback_data="adm_view_pending_payouts"),
+                InlineKeyboardButton("🔙 Payouts Dashboard", callback_data="adm_payouts_menu")
+            )
             bot.edit_message_text(
                 f"{call.message.text}\n\n❌ <b>በ {html.escape(admin_name)} ውድቅ ተደርጓል (ገንዘቡ ተመልሷል)</b>",
-                chat_id, call.message.message_id, parse_mode="HTML"
+                chat_id, call.message.message_id, parse_mode="HTML", reply_markup=back_markup
             )
             try:
                 target_uid = payout['user_id']
@@ -2735,6 +2786,123 @@ def handle_callback(call):
         if not is_admin(call.from_user): return
         bot.answer_callback_query(call.id)
         show_admin_menu(chat_id, call.from_user)
+        return
+
+    # ── Admin: Payouts & Commissions Dashboard Callbacks ──
+    if data == "adm_payouts_menu":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        send_payouts_admin_dashboard(chat_id, user=call.from_user, call=call)
+        return
+
+    if data == "adm_view_pending_payouts":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        pending = database.get_pending_referral_payouts()
+        if not pending:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("🔙 Back to Payouts", callback_data="adm_payouts_menu"))
+            bot.edit_message_text(
+                "✅ <b>ምንም ያልተከፈለ የኮሚሽን ክፍያ ጥያቄ የለም! (No Pending Payouts)</b>\n\nሁሉም ክፍያዎች ተጠናቀዋል ወይም ተሰርዘዋል።",
+                chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup
+            )
+            return
+
+        markup = InlineKeyboardMarkup(row_width=2)
+        for p in pending[:6]:
+            pid = p['id']
+            p_amt = float(p.get('amount') or 0.0)
+            markup.add(
+                InlineKeyboardButton(f"✅ Approve #{pid} ({p_amt:.0f} ETB)", callback_data=f"adm_refpayout_app_{pid}"),
+                InlineKeyboardButton(f"❌ Reject #{pid}", callback_data=f"adm_refpayout_rej_{pid}")
+            )
+        markup.add(
+            InlineKeyboardButton("🔄 Refresh", callback_data="adm_view_pending_payouts"),
+            InlineKeyboardButton("🔙 Back to Payouts", callback_data="adm_payouts_menu")
+        )
+
+        cards = []
+        for p in pending[:6]:
+            pid = p['id']
+            p_uid = p['user_id']
+            p_name = html.escape(p.get('first_name') or 'User')
+            p_uname = f"(@{p['username']})" if p.get('username') else ""
+            p_holder = html.escape(p.get('account_holder') or 'N/A')
+            p_method = p.get('payment_method')
+            p_acc = html.escape(p.get('account_number') or p.get('phone_number') or 'N/A')
+            p_amt = float(p.get('amount') or 0.0)
+            p_date = (p.get('created_at') or '')[:16]
+            cards.append(
+                f"⚡ <b>Request #{pid}</b>\n"
+                f"👤 <b>Promoter:</b> {p_name} {p_uname} (<code>{p_uid}</code>)\n"
+                f"💰 <b>Amount:</b> <b>{p_amt:.2f} ETB</b>\n"
+                f"🏦 <b>Method:</b> <b>{p_method}</b>\n"
+                f"👤 <b>Account Holder:</b> <b>{p_holder}</b>\n"
+                f"🔢 <b>Account/Phone:</b> <code>{p_acc}</code>\n"
+                f"📅 <b>Date:</b> {p_date}\n"
+            )
+
+        text = (
+            f"⏳ <b>PENDING REFERRAL PAYOUTS ({len(pending)})</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            + "\n".join(cards) +
+            f"\n<i>Tap Approve after transferring funds, or Reject to refund back to promoter's balance:</i>"
+        )
+        bot.edit_message_text(text, chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "adm_all_payouts_history":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        payouts = database.get_all_referral_payouts_admin(limit=15)
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔙 Back to Payouts", callback_data="adm_payouts_menu"))
+        if not payouts:
+            bot.edit_message_text("📜 <b>No payout history records found yet.</b>", chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            return
+
+        lines = ["📜 <b>RECENT PAYOUTS HISTORY (Last 15)</b>", "━━━━━━━━━━━━━━━━━━━━\n"]
+        st_icons = {"approved": "✅", "rejected": "❌", "pending": "⏳"}
+        for p in payouts:
+            pid = p['id']
+            st = p.get('status', 'pending')
+            icon = st_icons.get(st, "•")
+            amt = float(p.get('amount') or 0.0)
+            meth = p.get('payment_method')
+            name = html.escape(p.get('account_holder') or p.get('first_name') or 'User')
+            dt = (p.get('created_at') or '')[:10]
+            lines.append(f"{icon} <b>#{pid}</b> — <b>{amt:.2f} ETB</b> ({meth}) to <i>{name}</i> [{st.upper()}] <code>{dt}</code>")
+
+        bot.edit_message_text("\n".join(lines), chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+        return
+
+    if data == "adm_top_referrers":
+        if not is_admin(call.from_user): return
+        bot.answer_callback_query(call.id)
+        top = database.get_top_referrers_admin(limit=10)
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔙 Back to Payouts", callback_data="adm_payouts_menu"))
+        if not top:
+            bot.edit_message_text("🏆 <b>No active promoters found yet.</b>", chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
+            return
+
+        medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+        lines = ["🏆 <b>TOP PROMOTERS & REFERRERS LEADERBOARD</b>", "━━━━━━━━━━━━━━━━━━━━\n"]
+        for idx, u in enumerate(top):
+            medal = medals[idx] if idx < len(medals) else f"#{idx+1}"
+            name = html.escape(u.get('first_name') or 'User')
+            uname = f"(@{u['username']})" if u.get('username') else ""
+            uid_val = u['user_id']
+            earned = float(u.get('total_earned') or 0.0)
+            bal = float(u.get('current_balance') or 0.0)
+            started = u.get('total_started') or 0
+            chatted = u.get('total_chatted') or 0
+            lines.append(
+                f"{medal} <b>{name}</b> {uname} (<code>{uid_val}</code>)\n"
+                f"   👥 <b>{started}</b> started | <b>{chatted}</b> chatted\n"
+                f"   💰 Total Earned: <b>{earned:.2f} ETB</b> | Balance: <b>{bal:.2f} ETB</b>\n"
+            )
+        bot.edit_message_text("\n".join(lines), chat_id, call.message.message_id, parse_mode="HTML", reply_markup=markup)
         return
 
     # ── TikTok Daily Giveaway (የአዕምሮ ምግቦች) Callbacks ──
@@ -5692,6 +5860,32 @@ class DummyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(subs).encode('utf-8'))
             return
 
+        if self.path.startswith('/admin/commissions_data'):
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            token = qs.get('token', [''])[0]
+            if not is_valid_admin_token(token):
+                self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+            
+            c_stats = database.get_commissions_admin_stats()
+            c_payouts = database.get_all_referral_payouts_admin(limit=100)
+            c_recent = database.get_recent_referral_commissions_admin(limit=50)
+            c_top = database.get_top_referrers_admin(limit=25)
+            
+            payload = {
+                "ok": True,
+                "stats": c_stats,
+                "payouts": c_payouts,
+                "recent_commissions": c_recent,
+                "top_referrers": c_top
+            }
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps(payload).encode('utf-8'))
+            return
+
         if self.path.startswith('/admin/advice_history'):
             parsed_url = urlparse(self.path)
             qs = parse_qs(parsed_url.query)
@@ -6104,6 +6298,74 @@ class DummyHandler(BaseHTTPRequestHandler):
                 self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
             return
+
+        if self.path.startswith('/admin/referral_payout_action'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                token = data.get('token')
+                if not is_valid_admin_token(token):
+                    self.send_response(403); self.end_headers(); self.wfile.write(b'Forbidden'); return
+                
+                pid = int(data.get('payout_id'))
+                sub_act = data.get('action') # 'approve' or 'reject'
+                notes = data.get('notes', '').strip()
+                
+                if sub_act == 'approve':
+                    payout = database.approve_referral_payout(pid, admin_notes=notes or "Approved via Web Dashboard")
+                    if not payout:
+                        self.send_response(400); self.end_headers()
+                        self.wfile.write(json.dumps({"ok": False, "error": "Payout request not found or not in pending status"}).encode('utf-8'))
+                        return
+                    try:
+                        t_uid = payout['user_id']
+                        t_lang = get_lang(t_uid)
+                        acc_info = payout['account_number'] or payout['phone_number']
+                        bot.send_message(
+                            t_uid,
+                            S(t_lang, 'payout_approved_notif',
+                              amount=float(payout['amount']),
+                              method=payout['payment_method'],
+                              account=acc_info,
+                              name=html.escape(payout['account_holder'] or 'User')),
+                            parse_mode="HTML"
+                        )
+                    except Exception as ex:
+                        logging.error(f"Failed to notify user {payout['user_id']} of approved payout: {ex}")
+                    
+                    self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                    self.wfile.write(json.dumps({"ok": True, "message": f"Payout #{pid} approved successfully! User has been notified."}).encode('utf-8'))
+                    return
+
+                elif sub_act == 'reject':
+                    payout = database.reject_referral_payout(pid, admin_notes=notes or "Rejected via Web Dashboard")
+                    if not payout:
+                        self.send_response(400); self.end_headers()
+                        self.wfile.write(json.dumps({"ok": False, "error": "Payout request not found or not in pending status"}).encode('utf-8'))
+                        return
+                    try:
+                        t_uid = payout['user_id']
+                        t_lang = get_lang(t_uid)
+                        bot.send_message(
+                            t_uid,
+                            S(t_lang, 'payout_rejected_notif', amount=float(payout['amount'])),
+                            parse_mode="HTML"
+                        )
+                    except Exception as ex:
+                        logging.error(f"Failed to notify user {payout['user_id']} of rejected payout: {ex}")
+
+                    self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                    self.wfile.write(json.dumps({"ok": True, "message": f"Payout #{pid} rejected. {payout['amount']:.2f} ETB has been refunded to promoter's balance."}).encode('utf-8'))
+                    return
+                else:
+                    self.send_response(400); self.end_headers()
+                    self.wfile.write(json.dumps({"ok": False, "error": "Invalid action"}).encode('utf-8'))
+                    return
+            except Exception as e:
+                self.send_response(500); self.send_header("Content-Type", "application/json; charset=utf-8"); self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode('utf-8'))
+                return
 
         if self.path.startswith('/admin/rentals/action'):
             content_length = int(self.headers.get('Content-Length', 0))

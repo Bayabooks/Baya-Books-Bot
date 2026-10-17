@@ -66,6 +66,10 @@
                 <button id="nav_payments" onclick="switchTab('payments')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
                     <i class="fa-solid fa-receipt text-[11px]"></i> Payments
                 </button>
+                <button id="nav_commissions" onclick="switchTab('commissions')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-hand-holding-dollar text-[11px]"></i> Commissions & Payouts
+                    <span id="tab_commissions_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">0</span>
+                </button>
                 <button id="nav_carts" onclick="switchTab('carts')" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
                     <i class="fa-solid fa-cart-shopping text-[11px]"></i> Carts
                     <span id="tab_carts_badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">0</span>
@@ -466,8 +470,160 @@
 
 
         <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- TAB 5: ABANDONED CARTS & RECOVERY                                -->
+        <!-- TAB: COMMISSIONS & REFERRAL PAYOUTS                              -->
         <!-- ════════════════════════════════════════════════════════════════ -->
+        <section id="view_commissions" class="space-y-6 fade-in hidden">
+            <!-- 4 Top Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card p-5 bg-gradient-to-br from-blue-950/20 via-slate-900 to-slate-900 border-blue-500/20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Referral Conversions</span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                            <i class="fa-solid fa-users text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-white" id="comm_stat_referrals">0</div>
+                    <div class="mt-2 flex items-center justify-between text-xs text-slate-400">
+                        <span>Started bot: <b class="text-slate-200" id="comm_stat_started">0</b></span>
+                        <span>Chatted: <b class="text-emerald-400" id="comm_stat_chatted">0</b></span>
+                    </div>
+                </div>
+
+                <div class="card p-5 bg-gradient-to-br from-emerald-950/20 via-slate-900 to-slate-900 border-emerald-500/20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Total Commissions</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                            <i class="fa-solid fa-sack-dollar text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-emerald-400" id="comm_stat_earned">0.00 ETB</div>
+                    <div class="mt-2 text-xs text-slate-400">
+                        <span>Cumulative 30% cuts earned by promoters</span>
+                    </div>
+                </div>
+
+                <div class="card p-5 bg-gradient-to-br from-amber-950/20 via-slate-900 to-slate-900 border-amber-500/20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pending Payouts</span>
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-amber-400" id="comm_stat_pending_amt">0.00 ETB</div>
+                    <div class="mt-2 flex items-center justify-between text-xs text-slate-400">
+                        <span>Awaiting transfer: <b class="text-amber-400" id="comm_stat_pending_cnt">0 requests</b></span>
+                    </div>
+                </div>
+
+                <div class="card p-5 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 border-indigo-500/20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Paid Out & Balances</span>
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                            <i class="fa-solid fa-wallet text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-white" id="comm_stat_paid">0.00 ETB</div>
+                    <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
+                        <span>Active balances: <b class="text-cyan-400" id="comm_stat_balance">0.00 ETB</b></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payout Requests Table Card -->
+            <div class="card overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/40">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <span>Promoter Withdrawal & Payout Requests</span>
+                            <span id="comm_payouts_count_badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">0 Total</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Review, transfer funds via Telebirr or CBE, and approve or refund</p>
+                    </div>
+                    <!-- Filter Buttons -->
+                    <div class="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                        <button onclick="filterPayouts('all')" id="btn_payout_filter_all" class="px-3 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white transition-all shadow">All</button>
+                        <button onclick="filterPayouts('pending')" id="btn_payout_filter_pending" class="px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Pending</button>
+                        <button onclick="filterPayouts('approved')" id="btn_payout_filter_approved" class="px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Approved</button>
+                        <button onclick="filterPayouts('rejected')" id="btn_payout_filter_rejected" class="px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Rejected</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800">
+                                <th class="px-5 py-3 font-semibold">ID</th>
+                                <th class="px-5 py-3 font-semibold">Promoter</th>
+                                <th class="px-5 py-3 font-semibold">Amount</th>
+                                <th class="px-5 py-3 font-semibold">Method</th>
+                                <th class="px-5 py-3 font-semibold">Account / Phone</th>
+                                <th class="px-5 py-3 font-semibold">Holder Name</th>
+                                <th class="px-5 py-3 font-semibold">Requested Date</th>
+                                <th class="px-5 py-3 font-semibold">Status</th>
+                                <th class="px-5 py-3 text-right font-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comm_payouts_table_body" class="divide-y divide-slate-800 text-xs sm:text-sm">
+                            <tr><td colspan="9" class="px-6 py-8 text-center text-slate-500">Loading payout requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Two-Column Grid: Recent Commissions & Top Referrers -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Commission Credits -->
+                <div class="card overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-900/40">
+                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-coins text-amber-400"></i>
+                            <span>Recent 30% Commission Credits</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800 sticky top-0">
+                                    <th class="px-4 py-2.5 font-semibold">Promoter</th>
+                                    <th class="px-4 py-2.5 font-semibold">Customer / Buyer</th>
+                                    <th class="px-4 py-2.5 font-semibold">Purchase</th>
+                                    <th class="px-4 py-2.5 font-semibold text-emerald-400">30% Earned</th>
+                                    <th class="px-4 py-2.5 font-semibold">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comm_recent_table_body" class="divide-y divide-slate-800 text-xs">
+                                <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Loading recent commissions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Top Referrers Leaderboard -->
+                <div class="card overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-700/80 flex justify-between items-center bg-slate-900/40">
+                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-amber-400"></i>
+                            <span>Top Promoters Leaderboard</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs text-slate-400 uppercase tracking-wider bg-slate-900/60 border-b border-slate-800 sticky top-0">
+                                    <th class="px-4 py-2.5 font-semibold">Rank & Promoter</th>
+                                    <th class="px-4 py-2.5 font-semibold">Started</th>
+                                    <th class="px-4 py-2.5 font-semibold">Chatted</th>
+                                    <th class="px-4 py-2.5 font-semibold text-emerald-400">Total Earned</th>
+                                    <th class="px-4 py-2.5 font-semibold text-cyan-400">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comm_top_table_body" class="divide-y divide-slate-800 text-xs">
+                                <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Loading promoter leaderboard...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
         <section id="view_carts" class="space-y-6 fade-in hidden">
             <div class="card p-6 border-amber-500/30 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -1006,6 +1162,60 @@
         </div>
     </div>
 
+    <!-- Modal 7: Payout Request Action (Approve / Reject) -->
+    <div id="payout_action_modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="card p-6 w-full max-w-md bg-slate-900 border border-slate-700 shadow-2xl relative fade-in">
+            <button onclick="closePayoutModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+            <div class="flex items-center gap-3 mb-4">
+                <div id="payout_modal_icon" class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <div>
+                    <h3 id="payout_modal_title" class="text-base font-bold text-white">Approve Payout Request</h3>
+                    <p id="payout_modal_subtitle" class="text-xs text-slate-400">Confirm processing payout request</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700 space-y-2 mb-4 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Promoter:</span>
+                    <span id="payout_modal_promoter" class="text-white font-semibold">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Amount:</span>
+                    <span id="payout_modal_amount" class="text-emerald-400 font-bold text-sm">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Payment Method:</span>
+                    <span id="payout_modal_method" class="text-white font-medium">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Account / Phone:</span>
+                    <span id="payout_modal_account" class="text-cyan-400 font-mono font-bold">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Account Holder:</span>
+                    <span id="payout_modal_holder" class="text-white font-semibold">-</span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Admin Notes / Transfer Ref (Optional):</label>
+                <input type="text" id="payout_modal_notes" placeholder="e.g., Telebirr Ref TX12345 or reason" 
+                    class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+            </div>
+
+            <div id="payout_modal_warning" class="hidden mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                ⚠️ Rejecting will automatically refund the full requested amount back to the promoter's wallet balance.
+            </div>
+
+            <div class="flex items-center justify-end gap-2">
+                <button onclick="closePayoutModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button id="payout_modal_confirm_btn" onclick="submitPayoutAction()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow">Confirm & Process</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ════════════════════════════════════════════════════════════════ -->
     <!-- JAVASCRIPT MASTER CLIENT LOGIC                                   -->
@@ -1054,7 +1264,7 @@
         // Navigation Switcher
         function switchTab(tab) {
             currentTab = tab;
-            const tabs = ['overview', 'rentals', 'users', 'payments', 'carts', 'broadcast', 'authors', 'system'];
+            const tabs = ['overview', 'rentals', 'users', 'payments', 'commissions', 'carts', 'broadcast', 'authors', 'system'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`nav_${t}`);
                 const view = document.getElementById(`view_${t}`);
@@ -1080,6 +1290,7 @@
             else if (currentTab === 'rentals') p = fetchRentalsData();
             else if (currentTab === 'users') p = fetchUsersData();
             else if (currentTab === 'payments') p = fetchPaymentsData();
+            else if (currentTab === 'commissions') p = fetchCommissionsData();
             else if (currentTab === 'carts') p = fetchCartsData();
             else if (currentTab === 'authors') p = fetchAuthorsData();
             else if (currentTab === 'system') p = Promise.all([fetchServerLogs(), fetchSubAdmins()]);
@@ -2057,6 +2268,306 @@
             }
         }
 
+        // ── 8. Commissions & Referral Payouts ──────────────────────────────
+        let commissionsPayoutsData = [];
+        let commissionsFilter = 'all';
+        let activePayoutAction = null;
+
+        async function fetchCommissionsData() {
+            try {
+                const response = await fetch(`/admin/commissions_data?token=${adminToken}`);
+                if (response.status === 403) return showAccessDenied();
+                const d = await response.json();
+                if (!d.ok) return showToast(d.error || "Failed to load commissions data", "error");
+
+                // Update Stats
+                const stats = d.stats || {};
+                setTxt('comm_stat_referrals', fmt(stats.total_referrals || 0));
+                setTxt('comm_stat_started', fmt(stats.total_referrals || 0));
+                setTxt('comm_stat_chatted', fmt(stats.total_chatted || 0));
+                setTxt('comm_stat_earned', `${(stats.total_commissions_earned || 0).toFixed(2)} ETB`);
+                setTxt('comm_stat_pending_amt', `${(stats.pending_payout_amount || 0).toFixed(2)} ETB`);
+                setTxt('comm_stat_pending_cnt', `${stats.pending_payout_count || 0} requests`);
+                setTxt('comm_stat_paid', `${(stats.total_paid_out || 0).toFixed(2)} ETB`);
+                setTxt('comm_stat_balance', `${(stats.total_active_balance || 0).toFixed(2)} ETB`);
+
+                // Update Badges
+                const pendingCnt = stats.pending_payout_count || 0;
+                setTxt('tab_commissions_badge', String(pendingCnt));
+                const badgeEl = document.getElementById('tab_commissions_badge');
+                if (badgeEl) {
+                    if (pendingCnt > 0) {
+                        badgeEl.className = "px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse";
+                    } else {
+                        badgeEl.className = "px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700";
+                    }
+                }
+
+                // Payouts Table
+                commissionsPayoutsData = d.payouts || [];
+                renderPayoutsTable();
+
+                // Recent Commissions Table
+                renderRecentCommissionsTable(d.recent_commissions || []);
+
+                // Top Referrers Table
+                renderTopReferrersTable(d.top_referrers || []);
+
+            } catch (err) {
+                console.error("Commissions error:", err);
+                showToast("Failed to fetch commissions data", "error");
+            }
+        }
+
+        function filterPayouts(status) {
+            commissionsFilter = status;
+            ['all', 'pending', 'approved', 'rejected'].forEach(s => {
+                const btn = document.getElementById(`btn_payout_filter_${s}`);
+                if (btn) {
+                    if (s === status) {
+                        btn.className = "px-3 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow transition-all";
+                    } else {
+                        btn.className = "px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all";
+                    }
+                }
+            });
+            renderPayoutsTable();
+        }
+
+        function renderPayoutsTable() {
+            const tbody = document.getElementById('comm_payouts_table_body');
+            if (!tbody) return;
+
+            let list = commissionsPayoutsData;
+            if (commissionsFilter !== 'all') {
+                list = list.filter(p => p.status === commissionsFilter);
+            }
+
+            setTxt('comm_payouts_count_badge', `${list.length} Requests`);
+
+            if (!list.length) {
+                tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-8 text-center text-slate-500">No ${commissionsFilter !== 'all' ? commissionsFilter : ''} payout requests found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(p => {
+                const isPending = p.status === 'pending';
+                const isApproved = p.status === 'approved';
+                const isRejected = p.status === 'rejected';
+
+                let statusBadge = '';
+                if (isApproved) {
+                    statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-max"><i class="fa-solid fa-check text-[10px]"></i> Approved</span>';
+                } else if (isRejected) {
+                    statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1 w-max"><i class="fa-solid fa-xmark text-[10px]"></i> Rejected</span>';
+                } else {
+                    statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1 w-max"><i class="fa-solid fa-clock text-[10px]"></i> Pending</span>';
+                }
+
+                const methodBadge = p.payment_method === 'Telebirr' ? 
+                    '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">📱 Telebirr</span>' :
+                    '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">🏦 CBE</span>';
+
+                const accNumber = p.account_number || p.phone_number || '—';
+                const promoterName = escapeHtml(p.first_name || 'User');
+                const promoterHandle = p.username ? `@${escapeHtml(p.username)}` : '';
+                const holderName = escapeHtml(p.account_holder || '—');
+                const currentBal = p.commission_balance !== undefined ? `${parseFloat(p.commission_balance).toFixed(2)} ETB` : '—';
+                const dateStr = (p.created_at || '').substring(0, 16);
+
+                let actionHtml = '';
+                if (isPending) {
+                    actionHtml = `
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button onclick="openPayoutModal(${p.id}, 'approve', ${p.amount}, '${holderName.replace(/'/g, "\\'")}', '${p.payment_method}', '${accNumber.replace(/'/g, "\\'")}', '${promoterName.replace(/'/g, "\\'")}')" 
+                                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-check text-[10px]"></i> Approve
+                            </button>
+                            <button onclick="openPayoutModal(${p.id}, 'reject', ${p.amount}, '${holderName.replace(/'/g, "\\'")}', '${p.payment_method}', '${accNumber.replace(/'/g, "\\'")}', '${promoterName.replace(/'/g, "\\'")}')" 
+                                class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-xmark text-[10px]"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    actionHtml = `
+                        <div class="text-right text-[11px] text-slate-400">
+                            <span>${escapeHtml(p.admin_notes || (isApproved ? 'Processed' : 'Refunded'))}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-5 py-3 font-mono text-xs text-slate-400 font-bold">#${p.id}</td>
+                        <td class="px-5 py-3">
+                            <div class="font-bold text-slate-200">${promoterName}</div>
+                            <div class="text-[11px] text-slate-500 font-mono">${promoterHandle} (ID: ${p.user_id})</div>
+                            <div class="text-[10px] text-slate-400">Wallet: <span class="text-cyan-400 font-mono">${currentBal}</span></div>
+                        </td>
+                        <td class="px-5 py-3 font-mono font-bold text-emerald-400 text-sm">${parseFloat(p.amount || 0).toFixed(2)} ETB</td>
+                        <td class="px-5 py-3">${methodBadge}</td>
+                        <td class="px-5 py-3 font-mono text-xs text-slate-200">
+                            <div class="flex items-center gap-1.5">
+                                <span class="select-all">${accNumber}</span>
+                                <button onclick="copyToClipboard('${accNumber}')" class="text-slate-500 hover:text-slate-300 text-[10px]" title="Copy Number"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                        </td>
+                        <td class="px-5 py-3 text-xs text-slate-300 font-medium">${holderName}</td>
+                        <td class="px-5 py-3 font-mono text-xs text-slate-400">${dateStr}</td>
+                        <td class="px-5 py-3">${statusBadge}</td>
+                        <td class="px-5 py-3 text-right whitespace-nowrap">${actionHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderRecentCommissionsTable(commissions) {
+            const tbody = document.getElementById('comm_recent_table_body');
+            if (!tbody) return;
+
+            if (!commissions.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No commissions recorded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = commissions.map(c => {
+                const refName = escapeHtml(c.referrer_name || 'Promoter');
+                const buyerName = escapeHtml(c.buyer_name || 'Buyer');
+                const purchaseAmt = parseFloat(c.purchase_amount || 0).toFixed(2);
+                const commAmt = parseFloat(c.commission_amount || 0).toFixed(2);
+                const dateStr = (c.created_at || '').substring(0, 16);
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-4 py-2.5">
+                            <div class="font-semibold text-slate-200">${refName}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">ID: ${c.referrer_id}</div>
+                        </td>
+                        <td class="px-4 py-2.5">
+                            <div class="text-slate-300">${buyerName}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">ID: ${c.buyer_id}</div>
+                        </td>
+                        <td class="px-4 py-2.5 font-mono text-slate-300">${purchaseAmt} ETB</td>
+                        <td class="px-4 py-2.5 font-mono font-bold text-emerald-400">+${commAmt} ETB</td>
+                        <td class="px-4 py-2.5 font-mono text-[11px] text-slate-400">${dateStr}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderTopReferrersTable(referrers) {
+            const tbody = document.getElementById('comm_top_table_body');
+            if (!tbody) return;
+
+            if (!referrers.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No active promoters yet.</td></tr>';
+                return;
+            }
+
+            const medals = ['🥇', '🥈', '🥉'];
+            tbody.innerHTML = referrers.map((r, idx) => {
+                const medal = medals[idx] || `<span class="text-slate-500 font-mono text-[11px]">#${idx + 1}</span>`;
+                const name = escapeHtml(r.first_name || 'User');
+                const handle = r.username ? `@${escapeHtml(r.username)}` : `ID: ${r.user_id}`;
+                const earned = parseFloat(r.total_earned || 0).toFixed(2);
+                const bal = parseFloat(r.current_balance || 0).toFixed(2);
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-4 py-2.5 flex items-center gap-2">
+                            <span class="text-base">${medal}</span>
+                            <div>
+                                <div class="font-semibold text-slate-200">${name}</div>
+                                <div class="text-[10px] text-slate-500 font-mono">${handle}</div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-2.5 font-mono text-slate-300 text-xs">${r.total_started || 0}</td>
+                        <td class="px-4 py-2.5 font-mono text-emerald-400 font-semibold text-xs">${r.total_chatted || 0}</td>
+                        <td class="px-4 py-2.5 font-mono font-bold text-emerald-400 text-xs">${earned} ETB</td>
+                        <td class="px-4 py-2.5 font-mono font-bold text-cyan-400 text-xs">${bal} ETB</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openPayoutModal(payoutId, action, amount, holder, method, account, promoter) {
+            activePayoutAction = { payoutId, action, amount, holder, method, account, promoter };
+            const modal = document.getElementById('payout_action_modal');
+            const title = document.getElementById('payout_modal_title');
+            const subtitle = document.getElementById('payout_modal_subtitle');
+            const icon = document.getElementById('payout_modal_icon');
+            const confirmBtn = document.getElementById('payout_modal_confirm_btn');
+            const warning = document.getElementById('payout_modal_warning');
+
+            setTxt('payout_modal_promoter', promoter);
+            setTxt('payout_modal_amount', `${parseFloat(amount).toFixed(2)} ETB`);
+            setTxt('payout_modal_method', method);
+            setTxt('payout_modal_account', account);
+            setTxt('payout_modal_holder', holder);
+            document.getElementById('payout_modal_notes').value = '';
+
+            if (action === 'approve') {
+                title.innerText = 'Approve Payout Request';
+                subtitle.innerText = `Confirm that ${amount} ETB has been transferred to this account`;
+                icon.className = 'w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg';
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                confirmBtn.className = 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow';
+                confirmBtn.innerText = 'Approve & Mark Transferred';
+                warning.classList.add('hidden');
+            } else {
+                title.innerText = 'Reject Payout Request';
+                subtitle.innerText = `Decline payout #${payoutId} and refund money to promoter's balance`;
+                icon.className = 'w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg';
+                icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                confirmBtn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow';
+                confirmBtn.innerText = 'Reject & Refund to Balance';
+                warning.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePayoutModal() {
+            document.getElementById('payout_action_modal').classList.add('hidden');
+            activePayoutAction = null;
+        }
+
+        async function submitPayoutAction() {
+            if (!activePayoutAction) return;
+            const { payoutId, action } = activePayoutAction;
+            const notes = document.getElementById('payout_modal_notes').value.trim();
+            const btn = document.getElementById('payout_modal_confirm_btn');
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+
+            try {
+                const response = await fetch('/admin/referral_payout_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: adminToken,
+                        payout_id: payoutId,
+                        action: action,
+                        notes: notes
+                    })
+                });
+                const res = await response.json();
+                if (res.ok) {
+                    showToast(res.message);
+                    closePayoutModal();
+                    fetchCommissionsData();
+                } else {
+                    showToast(res.error || "Action failed", "error");
+                }
+            } catch (err) {
+                console.error("Payout action error:", err);
+                showToast("Network error submitting payout action", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text);
             showToast("Copied to clipboard! 📋");
@@ -2075,7 +2586,7 @@
         // Setup on Load
         document.addEventListener('DOMContentLoaded', () => {
             const hash = window.location.hash.replace('#', '');
-            if (hash && ['overview', 'rentals', 'users', 'payments', 'carts', 'broadcast', 'authors', 'system'].includes(hash)) {
+            if (hash && ['overview', 'rentals', 'users', 'payments', 'commissions', 'carts', 'broadcast', 'authors', 'system'].includes(hash)) {
                 switchTab(hash);
             } else {
                 fetchOverviewData();
@@ -2087,6 +2598,7 @@
         setInterval(() => {
             if (currentTab === 'overview') fetchOverviewData();
             else if (currentTab === 'rentals') fetchRentalsData();
+            else if (currentTab === 'commissions') fetchCommissionsData();
             else if (currentTab === 'carts') fetchCartsData();
             else if (currentTab === 'authors') fetchAuthorsData();
             else if (currentTab === 'system') fetchServerLogs();

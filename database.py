@@ -1148,7 +1148,11 @@ def approve_referral_payout(payout_id, admin_notes=''):
     ''', (admin_notes, now_str, payout_id))
     conn.commit()
     conn.close()
-    return dict(row)
+    res = dict(row)
+    res['status'] = 'approved'
+    res['admin_notes'] = admin_notes
+    res['processed_at'] = now_str
+    return res
 
 def reject_referral_payout(payout_id, admin_notes=''):
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1170,7 +1174,11 @@ def reject_referral_payout(payout_id, admin_notes=''):
     conn.close()
     # Refund amount back to user's commission balance
     add_commission_balance(user_id, amount)
-    return dict(row)
+    res = dict(row)
+    res['status'] = 'rejected'
+    res['admin_notes'] = admin_notes
+    res['processed_at'] = now_str
+    return res
 
 def get_user_referral_payouts(user_id, limit=10):
     conn = get_connection()
@@ -1183,7 +1191,121 @@ def get_user_referral_payouts(user_id, limit=10):
 def get_pending_referral_payouts():
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM referral_payouts WHERE status = 'pending' ORDER BY id ASC")
+    c.execute('''
+        SELECT rp.*, u.first_name, u.username, u.commission_balance
+        FROM referral_payouts rp
+        LEFT JOIN users u ON rp.user_id = u.user_id
+        WHERE rp.status = 'pending' 
+        ORDER BY rp.id ASC
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_commissions_admin_stats():
+    """
+    Returns summary statistics for the Referral & Commission Dashboard:
+    - total_referrals: total referral joins
+    - total_chatted: total who chatted
+    - total_commissions_earned: sum of commission_amount in referral_commissions
+    - total_paid_out: sum of approved payouts in referral_payouts
+    - pending_payout_amount: sum of pending payouts in referral_payouts
+    - pending_payout_count: count of pending payouts in referral_payouts
+    - total_active_balance: sum of positive commission_balance in users
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM referrals")
+    total_referrals = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM referrals WHERE has_chatted = 1")
+    total_chatted = c.fetchone()[0]
+
+    c.execute("SELECT IFNULL(SUM(commission_amount), 0.0) FROM referral_commissions")
+    total_commissions_earned = float(c.fetchone()[0])
+
+    c.execute("SELECT IFNULL(SUM(amount), 0.0) FROM referral_payouts WHERE status = 'approved'")
+    total_paid_out = float(c.fetchone()[0])
+
+    c.execute("SELECT IFNULL(SUM(amount), 0.0), COUNT(*) FROM referral_payouts WHERE status = 'pending'")
+    prow = c.fetchone()
+    pending_amount = float(prow[0]) if prow else 0.0
+    pending_count = int(prow[1]) if prow else 0
+
+    c.execute("SELECT IFNULL(SUM(commission_balance), 0.0) FROM users WHERE commission_balance > 0")
+    total_active_balance = float(c.fetchone()[0])
+    conn.close()
+
+    return {
+        "total_referrals": total_referrals,
+        "total_chatted": total_chatted,
+        "total_commissions_earned": total_commissions_earned,
+        "total_paid_out": total_paid_out,
+        "pending_payout_amount": pending_amount,
+        "pending_payout_count": pending_count,
+        "total_active_balance": total_active_balance
+    }
+
+def get_all_referral_payouts_admin(limit=100, status=None):
+    """
+    Returns referral payouts with user information for the admin dashboard.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    query = '''
+        SELECT rp.*, u.first_name, u.username, u.commission_balance
+        FROM referral_payouts rp
+        LEFT JOIN users u ON rp.user_id = u.user_id
+    '''
+    params = []
+    if status and status != 'all':
+        query += ' WHERE rp.status = ?'
+        params.append(status)
+    query += ' ORDER BY rp.id DESC LIMIT ?'
+    params.append(limit)
+
+    c.execute(query, tuple(params))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_recent_referral_commissions_admin(limit=50):
+    """
+    Returns recent commissions earned from purchases with user details.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT rc.*,
+               u_ref.first_name as referrer_name, u_ref.username as referrer_username,
+               u_buy.first_name as buyer_name, u_buy.username as buyer_username
+        FROM referral_commissions rc
+        LEFT JOIN users u_ref ON rc.referrer_id = u_ref.user_id
+        LEFT JOIN users u_buy ON rc.buyer_id = u_buy.user_id
+        ORDER BY rc.id DESC LIMIT ?
+    ''', (limit,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_top_referrers_admin(limit=20):
+    """
+    Returns top referrers ranked by total earned commission and referral count.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT u.user_id, u.first_name, u.username,
+               IFNULL(u.total_earned_commission, 0.0) as total_earned,
+               IFNULL(u.commission_balance, 0.0) as current_balance,
+               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.user_id) as total_started,
+               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.user_id AND r.has_chatted = 1) as total_chatted
+        FROM users u
+        WHERE (u.total_earned_commission > 0 OR u.commission_balance > 0 
+               OR (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.user_id) > 0)
+        ORDER BY total_earned DESC, total_chatted DESC, total_started DESC
+        LIMIT ?
+    ''', (limit,))
     rows = c.fetchall()
     conn.close()
     return [dict(r) for r in rows]
